@@ -10,7 +10,7 @@ APIs used (all free):
   - MLB Stats API     : no key needed
   - The Odds API      : free tier (500 req/month)
   - OpenWeatherMap    : free tier
-  - Google Gemini API : free tier (1500 req/day) — set GEMINI_API_KEY in env
+  - Groq API          : free tier — set GROQ_API_KEY in env
 """
 
 import os, json, datetime, requests
@@ -18,7 +18,7 @@ from pathlib import Path
 
 ODDS_API_KEY    = os.environ.get("ODDS_API_KEY", "")
 WEATHER_API_KEY = os.environ.get("WEATHER_API_KEY", "")
-GEMINI_KEY      = os.environ.get("GEMINI_API_KEY", "")
+GROQ_KEY        = os.environ.get("GROQ_API_KEY", "")
 OUTPUT_DIR      = Path("output")
 OUTPUT_DIR.mkdir(exist_ok=True)
 TODAY = datetime.date.today().isoformat()
@@ -265,27 +265,32 @@ Each entry must have ALL of these exact fields:
   "avoid_reason": "if SKIP: one sentence why no edge. Empty string if not a skip."
 }"""
 
-def call_gemini(games_with_data):
-    if not GEMINI_KEY:
-        print("No GEMINI_API_KEY -- skipping AI call")
+def call_groq(games_with_data):
+    if not GROQ_KEY:
+        print("No GROQ_API_KEY -- skipping AI call")
         return []
 
-    prompt = SYSTEM_PROMPT + "\n\nToday is " + TODAY + ". Analyze ALL of these MLB games and return your assessment as a JSON array.\nEvery game must appear in the output. Do not omit any game.\nReturn ONLY the JSON array with no other text.\n\nGAMES DATA:\n" + json.dumps(games_with_data, indent=2) + "\n\n" + str(len(games_with_data)) + " games in = " + str(len(games_with_data)) + " entries out."
+    user_content = "Today is " + TODAY + ". Analyze ALL of these MLB games and return your assessment as a JSON array.\nEvery game must appear in the output. Do not omit any game.\nReturn ONLY the JSON array with no other text.\n\nGAMES DATA:\n" + json.dumps(games_with_data, indent=2) + "\n\n" + str(len(games_with_data)) + " games in = " + str(len(games_with_data)) + " entries out."
 
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + GEMINI_KEY
+    headers = {
+        "Authorization": "Bearer " + GROQ_KEY,
+        "Content-Type": "application/json",
+    }
     body = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "temperature": 0.2,
-            "maxOutputTokens": 8000,
-        }
+        "model": "llama-3.3-70b-versatile",
+        "messages": [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": user_content},
+        ],
+        "temperature": 0.2,
+        "max_tokens": 8000,
     }
     try:
-        r = requests.post(url, json=body, timeout=90)
+        r = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=body, timeout=90)
         if not r.ok:
-            print("Gemini API error detail: " + r.text[:500])
+            print("Groq API error detail: " + r.text[:500])
         r.raise_for_status()
-        raw = r.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+        raw = r.json()["choices"][0]["message"]["content"].strip()
         if raw.startswith("```"):
             raw = raw.split("```")[1]
             if raw.startswith("json"):
@@ -296,7 +301,7 @@ def call_gemini(games_with_data):
         print("JSON parse error: " + str(e))
         return []
     except Exception as e:
-        print("Gemini API error: " + str(e))
+        print("Groq API error: " + str(e))
         return []
 
 def build_archive_index():
@@ -327,7 +332,7 @@ def build_archive_index():
 </head>
 <body>
   <h1>MLB Picks Archive</h1>
-  <div class="meta">Click any date to review that day's full slate and picks</div>
+  <div class="meta">Click any date to review that day\'s full slate and picks</div>
   <a href="index.html" style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#E1F5EE;border:0.5px solid #5DCAA5;border-radius:9px;margin-bottom:16px;text-decoration:none;color:#0F6E56">
     <span style="font-size:14px;font-weight:600">Today -- """ + TODAY + """</span>
     <span style="font-size:12px">View today &rarr;</span>
@@ -355,8 +360,8 @@ def main():
         weather = fetch_weather(g["home"])
         games_with_data.append(dict(list(g.items()) + list({"odds": odds, "weather": weather}.items())))
 
-    print("Found " + str(len(games_with_data)) + " games -- calling Gemini...")
-    picks = call_gemini(games_with_data)
+    print("Found " + str(len(games_with_data)) + " games -- calling Groq...")
+    picks = call_groq(games_with_data)
 
     active_picks = [p for p in picks if p.get("tier") != "SKIP"]
 
