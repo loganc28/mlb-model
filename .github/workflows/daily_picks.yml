@@ -33,4 +33,4 @@ jobs:
           git config --global user.email "bot@mlbmodel.local"
           git add output/
           git diff --staged --quiet || git commit -m "picks: $(date +%Y-%m-%d)"
-          git push
+          git pull --rebase && git push
