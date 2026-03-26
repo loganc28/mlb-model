@@ -296,6 +296,8 @@ Return ONLY the JSON array. {len(games_with_data)} games in = {len(games_with_da
     }
     try:
         r = requests.post("https://api.anthropic.com/v1/messages", headers=headers, json=body, timeout=90)
+        if not r.ok:
+            print(f"Claude API error detail: {r.text}")
         r.raise_for_status()
         raw = r.json()["content"][0]["text"].strip()
         if raw.startswith("```"):
@@ -551,10 +553,4 @@ def build_html(data):
 </html>"""
 
 if __name__ == "__main__":
-    try:
-        main()
-    except Exception as e:
-        import traceback
-        print(f"FATAL ERROR: {e}")
-        traceback.print_exc()
-        raise
+    main()
