@@ -67,6 +67,7 @@ def fetch_mlb_games():
             for g in date_entry.get("games", []):
                 status = g.get("status", {}).get("abstractGameState", "")
                 detailed = g.get("status", {}).get("detailedState", "")
+                print(f"Game: {g["teams"]["away"]["team"]["name"]} @ {g["teams"]["home"]["team"]["name"]} | abstract={status} | detailed={detailed}")
                 home = g["teams"]["home"]["team"]["name"]
                 away = g["teams"]["away"]["team"]["name"]
                 game_time = g.get("gameDate", "")
