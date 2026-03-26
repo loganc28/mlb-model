@@ -57,7 +57,7 @@ STADIUMS = {
 }
 
 def fetch_mlb_games():
-    url = f"https://statsapi.mlb.com/api/v1/schedule?sportId=1&date={TODAY}&hydrate=probablePitcher,linescore,team"
+    url = "https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=" + TODAY + "&hydrate=probablePitcher,linescore,team"
     try:
         r = requests.get(url, timeout=10)
         r.raise_for_status()
@@ -65,30 +65,30 @@ def fetch_mlb_games():
         games = []
         for date_entry in data.get("dates", []):
             for g in date_entry.get("games", []):
-                status = g.get("status", {}).get("abstractGameState", "")
+                abstract = g.get("status", {}).get("abstractGameState", "")
                 detailed = g.get("status", {}).get("detailedState", "")
-                print(f"Game: {g["teams"]["away"]["team"]["name"]} @ {g["teams"]["home"]["team"]["name"]} | abstract={status} | detailed={detailed}")
-                home = g["teams"]["home"]["team"]["name"]
-                away = g["teams"]["away"]["team"]["name"]
+                home_name = g["teams"]["home"]["team"]["name"]
+                away_name = g["teams"]["away"]["team"]["name"]
+                print("STATUS: " + away_name + " @ " + home_name + " | abstract=" + abstract + " | detailed=" + detailed)
                 game_time = g.get("gameDate", "")
                 home_sp = g["teams"]["home"].get("probablePitcher", {}).get("fullName", "TBD")
                 away_sp = g["teams"]["away"].get("probablePitcher", {}).get("fullName", "TBD")
                 home_score = g["teams"]["home"].get("score", None)
                 away_score = g["teams"]["away"].get("score", None)
-                live_score = f"{away} {away_score} - {home} {home_score}" if home_score is not None else None
+                live_score = away_name + " " + str(away_score) + " - " + home_name + " " + str(home_score) if home_score is not None else None
                 games.append({
-                    "home": home,
-                    "away": away,
+                    "home": home_name,
+                    "away": away_name,
                     "game_time": game_time,
                     "home_sp": home_sp,
                     "away_sp": away_sp,
                     "venue": g.get("venue", {}).get("name", ""),
-                    "status": detailed or status,
+                    "status": detailed or abstract,
                     "live_score": live_score,
                 })
         return games
     except Exception as e:
-        print(f"MLB API error: {e}")
+        print("MLB API error: " + str(e))
         return []
 
 def fetch_odds():
@@ -111,7 +111,7 @@ def fetch_odds():
         for event in events:
             home = event.get("home_team", "")
             away = event.get("away_team", "")
-            key = f"{away}@{home}"
+            key = away + "@" + home
             ml = {}
             total = {}
             for bookmaker in event.get("bookmakers", [])[:1]:
@@ -129,7 +129,7 @@ def fetch_odds():
             odds_map[key] = {"moneyline": ml, "total": total}
         return odds_map
     except Exception as e:
-        print(f"Odds API error: {e}")
+        print("Odds API error: " + str(e))
         return {}
 
 def fetch_weather(team_name):
@@ -152,7 +152,7 @@ def fetch_weather(team_name):
         precip_pct = round(entry.get("pop", 0) * 100)
         return {"temp_f": temp_f, "wind_mph": wind_mph, "wind_dir": wind_dir, "precip_pct": precip_pct}
     except Exception as e:
-        print(f"Weather error for {team_name}: {e}")
+        print("Weather error for " + team_name + ": " + str(e))
         return {"temp_f": "N/A", "wind_mph": "N/A", "wind_dir": "N/A", "precip_pct": "N/A"}
 
 SYSTEM_PROMPT = """You are a sharp MLB betting analyst. Your only job is to find positive expected value (EV) bets.
@@ -271,18 +271,9 @@ def call_gemini(games_with_data):
         print("No GEMINI_API_KEY -- skipping AI call")
         return []
 
-    prompt = f"""{SYSTEM_PROMPT}
+    prompt = SYSTEM_PROMPT + "\n\nToday is " + TODAY + ". Analyze ALL of these MLB games and return your assessment as a JSON array.\nEvery game must appear in the output. Do not omit any game.\nReturn ONLY the JSON array with no other text.\n\nGAMES DATA:\n" + json.dumps(games_with_data, indent=2) + "\n\n" + str(len(games_with_data)) + " games in = " + str(len(games_with_data)) + " entries out."
 
-Today is {TODAY}. Analyze ALL of these MLB games and return your assessment as a JSON array.
-Every game must appear in the output. Do not omit any game.
-Return ONLY the JSON array with no other text.
-
-GAMES DATA:
-{json.dumps(games_with_data, indent=2)}
-
-{len(games_with_data)} games in = {len(games_with_data)} entries out."""
-
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + GEMINI_KEY
     body = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
@@ -293,10 +284,9 @@ GAMES DATA:
     try:
         r = requests.post(url, json=body, timeout=90)
         if not r.ok:
-            print(f"Gemini API error detail: {r.text}")
+            print("Gemini API error detail: " + r.text[:500])
         r.raise_for_status()
         raw = r.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
-        # Strip any accidental markdown fences
         if raw.startswith("```"):
             raw = raw.split("```")[1]
             if raw.startswith("json"):
@@ -304,11 +294,10 @@ GAMES DATA:
         raw = raw.strip()
         return json.loads(raw)
     except json.JSONDecodeError as e:
-        print(f"JSON parse error: {e}")
-        print(f"Raw response: {raw[:500]}")
+        print("JSON parse error: " + str(e))
         return []
     except Exception as e:
-        print(f"Gemini API error: {e}")
+        print("Gemini API error: " + str(e))
         return []
 
 def build_archive_index():
@@ -322,47 +311,38 @@ def build_archive_index():
     rows = ""
     for f in dated_files:
         date_str = f.stem
-        rows += f"""
-        <a href="{date_str}.html" style="display:flex;justify-content:space-between;align-items:center;
-           padding:12px 16px;background:#fff;border:0.5px solid #e8e8e5;border-radius:9px;
-           margin-bottom:8px;text-decoration:none;color:#1a1a1a">
-          <span style="font-size:14px;font-weight:500">{date_str}</span>
-          <span style="font-size:12px;color:#999">View slate &rarr;</span>
-        </a>"""
+        rows += '<a href="' + date_str + '.html" style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#fff;border:0.5px solid #e8e8e5;border-radius:9px;margin-bottom:8px;text-decoration:none;color:#1a1a1a"><span style="font-size:14px;font-weight:500">' + date_str + '</span><span style="font-size:12px;color:#999">View slate &rarr;</span></a>'
 
-    html = f"""<!DOCTYPE html>
+    html = """<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MLB Picks Archive</title>
   <style>
-    *{{box-sizing:border-box;margin:0;padding:0}}
-    body{{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-         background:#f9f9f7;color:#1a1a1a;padding:1.25rem;max-width:700px;margin:0 auto}}
-    h1{{font-size:20px;font-weight:700;margin-bottom:4px}}
-    .meta{{font-size:13px;color:#888;margin-bottom:1.5rem}}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f9f9f7;color:#1a1a1a;padding:1.25rem;max-width:700px;margin:0 auto}
+    h1{font-size:20px;font-weight:700;margin-bottom:4px}
+    .meta{font-size:13px;color:#888;margin-bottom:1.5rem}
   </style>
 </head>
 <body>
   <h1>MLB Picks Archive</h1>
   <div class="meta">Click any date to review that day's full slate and picks</div>
-  <a href="index.html" style="display:flex;justify-content:space-between;align-items:center;
-     padding:12px 16px;background:#E1F5EE;border:0.5px solid #5DCAA5;border-radius:9px;
-     margin-bottom:16px;text-decoration:none;color:#0F6E56">
-    <span style="font-size:14px;font-weight:600">Today -- {TODAY}</span>
+  <a href="index.html" style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#E1F5EE;border:0.5px solid #5DCAA5;border-radius:9px;margin-bottom:16px;text-decoration:none;color:#0F6E56">
+    <span style="font-size:14px;font-weight:600">Today -- """ + TODAY + """</span>
     <span style="font-size:12px">View today &rarr;</span>
   </a>
-  {rows}
+  """ + rows + """
 </body>
 </html>"""
 
     archive_path = OUTPUT_DIR / "archive.html"
     archive_path.write_text(html)
-    print(f"Wrote {archive_path}")
+    print("Wrote " + str(archive_path))
 
 def main():
-    print(f"Running MLB picks generator for {TODAY}...")
+    print("Running MLB picks generator for " + TODAY + "...")
     games = fetch_mlb_games()
     if not games:
         print("No games found today -- exiting")
@@ -371,12 +351,12 @@ def main():
     odds_map = fetch_odds()
     games_with_data = []
     for g in games:
-        key = f"{g['away']}@{g['home']}"
+        key = g["away"] + "@" + g["home"]
         odds = odds_map.get(key, {})
         weather = fetch_weather(g["home"])
-        games_with_data.append({**g, "odds": odds, "weather": weather})
+        games_with_data.append(dict(list(g.items()) + list({"odds": odds, "weather": weather}.items())))
 
-    print(f"Found {len(games_with_data)} games -- calling Gemini...")
+    print("Found " + str(len(games_with_data)) + " games -- calling Gemini...")
     picks = call_gemini(games_with_data)
 
     active_picks = [p for p in picks if p.get("tier") != "SKIP"]
@@ -392,20 +372,20 @@ def main():
 
     json_path = OUTPUT_DIR / "picks.json"
     json_path.write_text(json.dumps(output, indent=2))
-    print(f"Wrote {json_path}")
+    print("Wrote " + str(json_path))
 
     html = build_html(output)
 
-    dated_path = OUTPUT_DIR / f"{TODAY}.html"
+    dated_path = OUTPUT_DIR / (TODAY + ".html")
     dated_path.write_text(html)
-    print(f"Wrote {dated_path}")
+    print("Wrote " + str(dated_path))
 
     index_path = OUTPUT_DIR / "index.html"
     index_path.write_text(html)
-    print(f"Wrote {index_path}")
+    print("Wrote " + str(index_path))
 
     build_archive_index()
-    print(f"Done. {len(active_picks)} active picks across {len(games)} games.")
+    print("Done. " + str(len(active_picks)) + " active picks across " + str(len(games)) + " games.")
 
 def build_html(data):
     all_picks = data.get("picks", [])
@@ -421,10 +401,10 @@ def build_html(data):
     def status_badge(p):
         live = p.get("live_score")
         status = p.get("status", "")
-        if status == "Final" and live:
-            return f'<span style="font-size:11px;background:#f0f0ee;color:#666;padding:2px 8px;border-radius:4px;margin-left:6px">FINAL: {live}</span>'
+        if "Final" in status and live:
+            return '<span style="font-size:11px;background:#f0f0ee;color:#666;padding:2px 8px;border-radius:4px;margin-left:6px">FINAL: ' + str(live) + '</span>'
         elif live:
-            return f'<span style="font-size:11px;background:#FAEEDA;color:#633806;padding:2px 8px;border-radius:4px;margin-left:6px">LIVE: {live}</span>'
+            return '<span style="font-size:11px;background:#FAEEDA;color:#633806;padding:2px 8px;border-radius:4px;margin-left:6px">LIVE: ' + str(live) + '</span>'
         return ""
 
     def card(p):
@@ -435,69 +415,55 @@ def build_html(data):
         lbl   = tier_label.get(tier, "LEAN")
         ev    = p.get("ev_pct", 0)
         bar_w = min(int(ev) * 8, 100)
-        return f"""
-<div style="background:#fff;border:0.5px solid #e0e0e0;border-left:3px solid {color};border-radius:10px;padding:1rem 1.25rem;margin-bottom:10px">
-  <span style="background:{bg};color:{tc};font-size:11px;font-weight:600;padding:2px 9px;border-radius:4px;display:inline-block;margin-bottom:8px">{lbl}</span>
-  <div style="font-size:16px;font-weight:600;margin-bottom:2px">{p.get("pick","")}</div>
-  <div style="font-size:13px;color:#666;margin-bottom:10px">{p.get("game","")} &nbsp;·&nbsp; {p.get("line","N/A")} &nbsp;·&nbsp; {p.get("units",0)}u{status_badge(p)}</div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-    <div style="background:#f7f7f5;border-radius:7px;padding:8px 10px">
-      <div style="font-size:10px;color:#999;margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Away SP</div>
-      <div style="font-size:13px;font-weight:500">{p.get("away_sp","TBD")}</div>
-    </div>
-    <div style="background:#f7f7f5;border-radius:7px;padding:8px 10px">
-      <div style="font-size:10px;color:#999;margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Home SP</div>
-      <div style="font-size:13px;font-weight:500">{p.get("home_sp","TBD")}</div>
-    </div>
-  </div>
-  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
-    <span style="font-size:11px;background:#f0f0ee;padding:2px 9px;border-radius:20px;color:#555">Win {p.get("win_prob_pct",0)}% vs implied {p.get("implied_prob_pct",0)}%</span>
-    <span style="font-size:11px;background:{bg};color:{tc};padding:2px 9px;border-radius:20px;font-weight:600">+{ev}% EV edge</span>
-  </div>
-  <div style="height:4px;background:#f0f0ee;border-radius:2px;margin-bottom:10px;overflow:hidden">
-    <div style="height:100%;width:{bar_w}%;background:{color};border-radius:2px"></div>
-  </div>
-  <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">
-    <div style="font-size:12px;color:#555">&#9918; {p.get("sp_analysis","N/A")}</div>
-    <div style="font-size:12px;color:#555">&#128101; {p.get("bullpen_note","N/A")}</div>
-    <div style="font-size:12px;color:#555">&#128200; {p.get("lineup_note","N/A")}</div>
-    <div style="font-size:12px;color:#555">&#127966; {p.get("park_note","N/A")}</div>
-    <div style="font-size:12px;color:#555">&#127748; {p.get("weather_impact","N/A")}</div>
-  </div>
-  <div style="border-top:0.5px solid #eee;padding-top:8px">
-    <div style="font-size:12px;font-weight:600;color:#333;margin-bottom:3px">Key edge: {p.get("key_edge","")}</div>
-    <div style="font-size:12px;color:#666;line-height:1.6">{p.get("rationale","")}</div>
-  </div>
-</div>"""
+        return (
+            '<div style="background:#fff;border:0.5px solid #e0e0e0;border-left:3px solid ' + color + ';border-radius:10px;padding:1rem 1.25rem;margin-bottom:10px">'
+            '<span style="background:' + bg + ';color:' + tc + ';font-size:11px;font-weight:600;padding:2px 9px;border-radius:4px;display:inline-block;margin-bottom:8px">' + lbl + '</span>'
+            '<div style="font-size:16px;font-weight:600;margin-bottom:2px">' + str(p.get("pick","")) + '</div>'
+            '<div style="font-size:13px;color:#666;margin-bottom:10px">' + str(p.get("game","")) + ' &nbsp;·&nbsp; ' + str(p.get("line","N/A")) + ' &nbsp;·&nbsp; ' + str(p.get("units",0)) + 'u' + status_badge(p) + '</div>'
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'
+            '<div style="background:#f7f7f5;border-radius:7px;padding:8px 10px"><div style="font-size:10px;color:#999;margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Away SP</div><div style="font-size:13px;font-weight:500">' + str(p.get("away_sp","TBD")) + '</div></div>'
+            '<div style="background:#f7f7f5;border-radius:7px;padding:8px 10px"><div style="font-size:10px;color:#999;margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Home SP</div><div style="font-size:13px;font-weight:500">' + str(p.get("home_sp","TBD")) + '</div></div>'
+            '</div>'
+            '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">'
+            '<span style="font-size:11px;background:#f0f0ee;padding:2px 9px;border-radius:20px;color:#555">Win ' + str(p.get("win_prob_pct",0)) + '% vs implied ' + str(p.get("implied_prob_pct",0)) + '%</span>'
+            '<span style="font-size:11px;background:' + bg + ';color:' + tc + ';padding:2px 9px;border-radius:20px;font-weight:600">+' + str(ev) + '% EV edge</span>'
+            '</div>'
+            '<div style="height:4px;background:#f0f0ee;border-radius:2px;margin-bottom:10px;overflow:hidden"><div style="height:100%;width:' + str(bar_w) + '%;background:' + color + ';border-radius:2px"></div></div>'
+            '<div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">'
+            '<div style="font-size:12px;color:#555">&#9918; ' + str(p.get("sp_analysis","N/A")) + '</div>'
+            '<div style="font-size:12px;color:#555">&#128101; ' + str(p.get("bullpen_note","N/A")) + '</div>'
+            '<div style="font-size:12px;color:#555">&#128200; ' + str(p.get("lineup_note","N/A")) + '</div>'
+            '<div style="font-size:12px;color:#555">&#127966; ' + str(p.get("park_note","N/A")) + '</div>'
+            '<div style="font-size:12px;color:#555">&#127748; ' + str(p.get("weather_impact","N/A")) + '</div>'
+            '</div>'
+            '<div style="border-top:0.5px solid #eee;padding-top:8px">'
+            '<div style="font-size:12px;font-weight:600;color:#333;margin-bottom:3px">Key edge: ' + str(p.get("key_edge","")) + '</div>'
+            '<div style="font-size:12px;color:#666;line-height:1.6">' + str(p.get("rationale","")) + '</div>'
+            '</div></div>'
+        )
 
     def skip_card(p):
-        return f"""
-<div style="background:#fff;border:0.5px solid #e0e0e0;border-left:3px solid #B4B2A9;border-radius:10px;padding:1rem 1.25rem;margin-bottom:10px">
-  <span style="background:#F1EFE8;color:#5F5E5A;font-size:11px;font-weight:600;padding:2px 9px;border-radius:4px;display:inline-block;margin-bottom:8px">SKIP -- NO EDGE</span>
-  <div style="font-size:16px;font-weight:600;margin-bottom:2px">{p.get("game","")}{status_badge(p)}</div>
-  <div style="font-size:13px;color:#666;margin-bottom:10px">{p.get("venue","")} &nbsp;·&nbsp; {p.get("game_time","")}</div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-    <div style="background:#f7f7f5;border-radius:7px;padding:8px 10px">
-      <div style="font-size:10px;color:#999;margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Away SP</div>
-      <div style="font-size:13px;font-weight:500">{p.get("away_sp","TBD")}</div>
-    </div>
-    <div style="background:#f7f7f5;border-radius:7px;padding:8px 10px">
-      <div style="font-size:10px;color:#999;margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Home SP</div>
-      <div style="font-size:13px;font-weight:500">{p.get("home_sp","TBD")}</div>
-    </div>
-  </div>
-  <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">
-    <div style="font-size:12px;color:#777">&#9918; {p.get("sp_analysis","N/A")}</div>
-    <div style="font-size:12px;color:#777">&#128101; {p.get("bullpen_note","N/A")}</div>
-    <div style="font-size:12px;color:#777">&#128200; {p.get("lineup_note","N/A")}</div>
-    <div style="font-size:12px;color:#777">&#127966; {p.get("park_note","N/A")}</div>
-    <div style="font-size:12px;color:#777">&#127748; {p.get("weather_impact","N/A")}</div>
-  </div>
-  <div style="border-top:0.5px solid #eee;padding-top:8px">
-    <div style="font-size:12px;font-weight:600;color:#A32D2D;margin-bottom:3px">Why skip: {p.get("avoid_reason","No edge identified")}</div>
-    <div style="font-size:12px;color:#888;line-height:1.6">{p.get("rationale","")}</div>
-  </div>
-</div>"""
+        return (
+            '<div style="background:#fff;border:0.5px solid #e0e0e0;border-left:3px solid #B4B2A9;border-radius:10px;padding:1rem 1.25rem;margin-bottom:10px">'
+            '<span style="background:#F1EFE8;color:#5F5E5A;font-size:11px;font-weight:600;padding:2px 9px;border-radius:4px;display:inline-block;margin-bottom:8px">SKIP -- NO EDGE</span>'
+            '<div style="font-size:16px;font-weight:600;margin-bottom:2px">' + str(p.get("game","")) + status_badge(p) + '</div>'
+            '<div style="font-size:13px;color:#666;margin-bottom:10px">' + str(p.get("venue","")) + ' &nbsp;·&nbsp; ' + str(p.get("game_time","")) + '</div>'
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'
+            '<div style="background:#f7f7f5;border-radius:7px;padding:8px 10px"><div style="font-size:10px;color:#999;margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Away SP</div><div style="font-size:13px;font-weight:500">' + str(p.get("away_sp","TBD")) + '</div></div>'
+            '<div style="background:#f7f7f5;border-radius:7px;padding:8px 10px"><div style="font-size:10px;color:#999;margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Home SP</div><div style="font-size:13px;font-weight:500">' + str(p.get("home_sp","TBD")) + '</div></div>'
+            '</div>'
+            '<div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">'
+            '<div style="font-size:12px;color:#777">&#9918; ' + str(p.get("sp_analysis","N/A")) + '</div>'
+            '<div style="font-size:12px;color:#777">&#128101; ' + str(p.get("bullpen_note","N/A")) + '</div>'
+            '<div style="font-size:12px;color:#777">&#128200; ' + str(p.get("lineup_note","N/A")) + '</div>'
+            '<div style="font-size:12px;color:#777">&#127966; ' + str(p.get("park_note","N/A")) + '</div>'
+            '<div style="font-size:12px;color:#777">&#127748; ' + str(p.get("weather_impact","N/A")) + '</div>'
+            '</div>'
+            '<div style="border-top:0.5px solid #eee;padding-top:8px">'
+            '<div style="font-size:12px;font-weight:600;color:#A32D2D;margin-bottom:3px">Why skip: ' + str(p.get("avoid_reason","No edge identified")) + '</div>'
+            '<div style="font-size:12px;color:#888;line-height:1.6">' + str(p.get("rationale","")) + '</div>'
+            '</div></div>'
+        )
 
     all_cards = "".join(card(p) for p in active)
     all_cards += "".join(skip_card(p) for p in skipped)
@@ -506,36 +472,36 @@ def build_html(data):
         all_cards = '<div style="color:#888;font-size:14px;padding:1.5rem 0;text-align:center">No games found for today.</div>'
 
     generated = data.get("generated_at","")[:16].replace("T"," ")
-    return f"""<!DOCTYPE html>
+    return """<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MLB Picks - {data["date"]}</title>
+  <title>MLB Picks - """ + data["date"] + """</title>
   <style>
-    *{{box-sizing:border-box;margin:0;padding:0}}
-    body{{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f9f9f7;color:#1a1a1a;padding:1.25rem;max-width:700px;margin:0 auto}}
-    h1{{font-size:20px;font-weight:700;margin-bottom:3px}}
-    .meta{{font-size:13px;color:#888;margin-bottom:1.25rem}}
-    .summary{{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1.25rem}}
-    .s{{background:#fff;border:0.5px solid #e8e8e5;border-radius:9px;padding:10px 12px}}
-    .s-n{{font-size:22px;font-weight:700}}
-    .s-l{{font-size:10px;color:#999;margin-top:2px;text-transform:uppercase;letter-spacing:.04em}}
-    .section-title{{font-size:13px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:.06em;margin:1.25rem 0 0.6rem}}
-    footer{{font-size:11px;color:#bbb;margin-top:1.5rem;text-align:center;padding-bottom:1rem}}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f9f9f7;color:#1a1a1a;padding:1.25rem;max-width:700px;margin:0 auto}
+    h1{font-size:20px;font-weight:700;margin-bottom:3px}
+    .meta{font-size:13px;color:#888;margin-bottom:1.25rem}
+    .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1.25rem}
+    .s{background:#fff;border:0.5px solid #e8e8e5;border-radius:9px;padding:10px 12px}
+    .s-n{font-size:22px;font-weight:700}
+    .s-l{font-size:10px;color:#999;margin-top:2px;text-transform:uppercase;letter-spacing:.04em}
+    .section-title{font-size:13px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:.06em;margin:1.25rem 0 0.6rem}
+    footer{font-size:11px;color:#bbb;margin-top:1.5rem;text-align:center;padding-bottom:1rem}
   </style>
 </head>
 <body>
   <h1>MLB Betting Model</h1>
-  <div class="meta">{data["date"]} &nbsp;&#183;&nbsp; {data["total_games"]} games &nbsp;&#183;&nbsp; Updated {generated} UTC &nbsp;&#183;&nbsp; <a href="archive.html" style="color:#378ADD;text-decoration:none">View archive &rarr;</a></div>
+  <div class="meta">""" + data["date"] + """ &nbsp;&#183;&nbsp; """ + str(data["total_games"]) + """ games &nbsp;&#183;&nbsp; Updated """ + generated + """ UTC &nbsp;&#183;&nbsp; <a href="archive.html" style="color:#378ADD;text-decoration:none">View archive &rarr;</a></div>
   <div class="summary">
-    <div class="s"><div class="s-n" style="color:#1D9E75">{len(active)}</div><div class="s-l">Active picks</div></div>
-    <div class="s"><div class="s-n">{total_units:.1f}u</div><div class="s-l">Total units</div></div>
-    <div class="s"><div class="s-n">{len(skipped)}</div><div class="s-l">No edge</div></div>
+    <div class="s"><div class="s-n" style="color:#1D9E75">""" + str(len(active)) + """</div><div class="s-l">Active picks</div></div>
+    <div class="s"><div class="s-n">""" + str(round(total_units, 1)) + """u</div><div class="s-l">Total units</div></div>
+    <div class="s"><div class="s-n">""" + str(len(skipped)) + """</div><div class="s-l">No edge</div></div>
     <div class="s"><div class="s-n">5u</div><div class="s-l">Daily max</div></div>
   </div>
-  <div class="section-title">Full Slate - {data["date"]}</div>
-  {all_cards}
+  <div class="section-title">Full Slate - """ + data["date"] + """</div>
+  """ + all_cards + """
   <footer>EV-based model &nbsp;&#183;&nbsp; Never bet more than you can afford to lose</footer>
 </body>
 </html>"""
