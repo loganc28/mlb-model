@@ -1,6 +1,6 @@
 """
 MLB Betting Model — Daily Picks Generator
-Runs every morning, outputs picks to output/picks.json and output/index.html
+Runs every 2 hours 9AM-7PM ET, outputs picks to output/picks.json and output/index.html
 
 APIs used (all free):
   - MLB Stats API     : no key needed
@@ -12,16 +12,13 @@ APIs used (all free):
 import os, json, datetime, requests
 from pathlib import Path
 
-# ── Config ────────────────────────────────────────────────────────────────────
 ODDS_API_KEY    = os.environ.get("ODDS_API_KEY", "")
 WEATHER_API_KEY = os.environ.get("WEATHER_API_KEY", "")
 ANTHROPIC_KEY   = os.environ.get("ANTHROPIC_API_KEY", "")
 OUTPUT_DIR      = Path("output")
 OUTPUT_DIR.mkdir(exist_ok=True)
-
 TODAY = datetime.date.today().isoformat()
 
-# ── Stadium coordinates for weather lookup ────────────────────────────────────
 STADIUMS = {
     "New York Mets":          (40.7571, -73.8458),
     "New York Yankees":       (40.8296, -73.9262),
@@ -55,7 +52,6 @@ STADIUMS = {
     "St. Louis Cardinals":    (38.6226, -90.1928),
 }
 
-# ── Step 1: Fetch today's MLB games from official MLB Stats API ───────────────
 def fetch_mlb_games():
     url = f"https://statsapi.mlb.com/api/v1/schedule?sportId=1&date={TODAY}&hydrate=probablePitcher,linescore,team"
     try:
@@ -65,15 +61,19 @@ def fetch_mlb_games():
         games = []
         for date_entry in data.get("dates", []):
             for g in date_entry.get("games", []):
-                # Only scheduled/pre-game games
                 status = g.get("status", {}).get("abstractGameState", "")
-                if status not in ("Preview", "Pre-Game", "Scheduled"):
+                detailed = g.get("status", {}).get("detailedState", "")
+                # Skip only fully completed games
+                if status == "Final" or detailed == "Final":
                     continue
                 home = g["teams"]["home"]["team"]["name"]
                 away = g["teams"]["away"]["team"]["name"]
                 game_time = g.get("gameDate", "")
                 home_sp = g["teams"]["home"].get("probablePitcher", {}).get("fullName", "TBD")
                 away_sp = g["teams"]["away"].get("probablePitcher", {}).get("fullName", "TBD")
+                home_score = g["teams"]["home"].get("score", None)
+                away_score = g["teams"]["away"].get("score", None)
+                live_score = f"{away} {away_score} - {home} {home_score}" if home_score is not None else None
                 games.append({
                     "home": home,
                     "away": away,
@@ -81,13 +81,14 @@ def fetch_mlb_games():
                     "home_sp": home_sp,
                     "away_sp": away_sp,
                     "venue": g.get("venue", {}).get("name", ""),
+                    "status": detailed or status,
+                    "live_score": live_score,
                 })
         return games
     except Exception as e:
         print(f"MLB API error: {e}")
         return []
 
-# ── Step 2: Fetch odds from The Odds API ──────────────────────────────────────
 def fetch_odds():
     if not ODDS_API_KEY:
         print("No ODDS_API_KEY — skipping odds fetch")
@@ -111,7 +112,7 @@ def fetch_odds():
             key = f"{away}@{home}"
             ml = {}
             total = {}
-            for bookmaker in event.get("bookmakers", [])[:1]:  # take first book
+            for bookmaker in event.get("bookmakers", [])[:1]:
                 for market in bookmaker.get("markets", []):
                     if market["key"] == "h2h":
                         for outcome in market["outcomes"]:
@@ -129,7 +130,6 @@ def fetch_odds():
         print(f"Odds API error: {e}")
         return {}
 
-# ── Step 3: Fetch weather for each home stadium ───────────────────────────────
 def fetch_weather(team_name):
     coords = STADIUMS.get(team_name)
     if not coords or not WEATHER_API_KEY:
@@ -141,9 +141,8 @@ def fetch_weather(team_name):
         r = requests.get(url, params=params, timeout=10)
         r.raise_for_status()
         data = r.json()
-        # take the first forecast entry (closest to game time)
         entry = data["list"][0]
-        wind_mph = round(entry["wind"]["speed"] * 2.237, 1)  # m/s to mph
+        wind_mph = round(entry["wind"]["speed"] * 2.237, 1)
         wind_deg = entry["wind"].get("deg", 0)
         dirs = ["N","NE","E","SE","S","SW","W","NW"]
         wind_dir = dirs[round(wind_deg / 45) % 8]
@@ -154,110 +153,107 @@ def fetch_weather(team_name):
         print(f"Weather error for {team_name}: {e}")
         return {"temp_f": "N/A", "wind_mph": "N/A", "wind_dir": "N/A", "precip_pct": "N/A"}
 
-# ── Step 4: Build prompt and call Claude ─────────────────────────────────────
 SYSTEM_PROMPT = """You are a sharp MLB betting analyst. Your only job is to find positive expected value (EV) bets.
 You think like a professional handicapper, not a fan. You are ruthless about skipping games with no edge.
 
-═══ CORE PHILOSOPHY ═══
-- EV = (win probability × potential profit) - (loss probability × stake)
+CORE PHILOSOPHY:
+- EV = (win probability x potential profit) - (loss probability x stake)
 - Only recommend bets where your estimated win probability beats the implied odds by at least 3%
 - It is ALWAYS better to have 0 picks than bad picks. Passing is a valid and often correct decision.
 - Never chase action. Never recommend a bet just to have something on the slate.
+- If a game is already IN PROGRESS, note that in your analysis but still provide the pre-game assessment.
 
-═══ WHAT TO EVALUATE FOR EVERY GAME ═══
+WHAT TO EVALUATE FOR EVERY GAME:
 
 1. STARTING PITCHER QUALITY (highest weight)
-   - Use FIP and xFIP over ERA — ERA is luck-influenced, FIP is skill
+   - Use FIP and xFIP over ERA -- ERA is luck-influenced, FIP is skill
    - K/9 and BB/9 matter more than wins/losses
-   - Pitcher handedness vs. opposing lineup's L/R splits
-   - Pitcher's historical performance at this specific ballpark
-   - Days of rest (pitchers on extra rest outperform, short rest underperform)
-   - Spring training ERA is noisy — discount it heavily unless the gap is extreme (4.00+ difference)
+   - Pitcher handedness vs opposing lineup L/R splits
+   - Days of rest (extra rest = edge, short rest = red flag)
+   - Spring training ERA is noisy -- discount heavily unless gap is extreme (4.00+)
 
 2. WEATHER (second highest weight for totals)
-   - Wind 12+ mph BLOWING OUT toward CF/LCF/RCF = strong OVER lean on totals
-   - Wind 12+ mph BLOWING IN from CF = strong UNDER lean on totals
-   - Wind blowing across the diamond (L-R or R-L) = mild effect, slight over lean
-   - Temp above 80°F = ball carries further, adds ~0.3-0.5 runs to total
-   - Temp below 50°F = ball dies, subtracts ~0.3-0.5 runs from total
-   - Dome stadiums: weather is IRRELEVANT, do not factor it in
-   - Rain 40%+ chance = postponement risk, flag the game
+   - Wind 12+ mph BLOWING OUT toward CF/LCF/RCF = strong OVER lean
+   - Wind 12+ mph BLOWING IN from CF = strong UNDER lean
+   - Wind across diamond = mild effect, slight over lean
+   - Temp above 80F = ball carries further, adds ~0.3-0.5 runs
+   - Temp below 50F = ball dies, subtracts ~0.3-0.5 runs
+   - Dome stadiums: weather is IRRELEVANT
+   - Rain 40%+ = postponement risk, flag the game
 
 3. PARK FACTORS
-   - Extreme overs parks: Coors Field (Colorado), Great American Ball Park (Cincinnati), Globe Life (Texas)
-   - Extreme unders parks: Petco Park (San Diego), Oracle Park (SF), T-Mobile Park (Seattle)  
-   - Neutral parks: most others, small adjustments only
+   - Extreme overs: Coors Field, Great American Ball Park, Globe Life
+   - Extreme unders: Petco Park, Oracle Park, T-Mobile Park
+   - Neutral: most others
 
 4. LINE VALUE
-   - Always calculate implied probability from the American odds
-   - Positive odds: implied% = 100 / (odds + 100)
-   - Negative odds: implied% = |odds| / (|odds| + 100)
-   - Your edge = your win prob% - implied prob%
-   - Minimum edge to recommend: 3% for ML bets, 4% for totals
-   - Never recommend ML bets worse than -200 (requires 67%+ win rate to be profitable)
-   - Heavy favorites (-180 or worse) are almost always overpriced — skip unless edge is clear
+   - Positive odds implied%: 100 / (odds + 100)
+   - Negative odds implied%: |odds| / (|odds| + 100)
+   - Edge = your win prob% minus implied prob%
+   - Minimum edge: 3% for ML, 4% for totals
+   - Never recommend ML worse than -200
 
-5. SITUATIONS TO AUTOMATICALLY SKIP
+5. AUTO-SKIP SITUATIONS
    - SP listed as TBD
-   - Game already started or in progress
-   - Dome stadium with no other edge identified
-   - Both pitchers are unknown rookies with no MLB sample
-   - Line is -200 or worse with no clear analytical edge
-   - Back-to-back games where bullpen usage is unknown
+   - Dome stadium with no other edge
+   - Line is -200 or worse with no clear edge
+   - Both pitchers are unknown rookies
 
-═══ BET TYPE PRIORITY ═══
-1. Game totals (OVER/UNDER) — most reliable, weather edge is clear
-2. F5 totals (first 5 innings) — isolates SP quality, removes bullpen variance
-3. Run line (+1.5 or -1.5) — better value than ML in most cases
-4. Moneyline — only when edge is very clear and juice is reasonable
-5. Team totals — useful when one SP is clearly dominant vs the other
+BET TYPE PRIORITY:
+1. Game totals (OVER/UNDER)
+2. F5 totals (first 5 innings)
+3. Run line (+1.5 or -1.5)
+4. Moneyline -- only when edge is very clear
+5. Team totals
 
-═══ BANKROLL RULES ═══
-- Tier A (edge 7%+): 1.5 units — strong, well-supported edge
-- Tier B (edge 4-6%): 1.0 unit — solid edge
-- Tier C (edge 3%): 0.5 units — lean, small exposure only
-- SKIP: edge under 3%, bad data, or situational red flag
-- Maximum 5 units total per day regardless of slate size
-- If total units across all picks exceeds 5u, downgrade the weakest picks to SKIP
+BANKROLL RULES:
+- Tier A (edge 7%+): 1.5 units
+- Tier B (edge 4-6%): 1.0 unit
+- Tier C (edge 3%): 0.5 units
+- SKIP: edge under 3% or red flag
+- Maximum 5 units total per day
 
-═══ OUTPUT FORMAT ═══
+OUTPUT FORMAT:
 Respond ONLY with a valid JSON array. No preamble, no markdown fences, no text outside the JSON.
-Every game on the slate must appear in the output — either as a pick or a SKIP with a reason.
+Every single game on the slate MUST appear in the output -- either as a pick or a SKIP.
+Do not omit any game. If there are 11 games, there must be 11 entries.
 
-Each entry must have ALL of these fields:
+Each entry must have ALL of these exact fields:
 {
   "game": "AWAY TEAM @ HOME TEAM",
   "venue": "stadium name",
-  "game_time": "time string from input data",
+  "game_time": "time string from input",
+  "status": "Scheduled or In Progress or Delayed",
+  "live_score": "score if in progress or null",
   "away_sp": "pitcher name",
   "home_sp": "pitcher name",
-  "bet_type": "Total OVER | Total UNDER | F5 OVER | F5 UNDER | ML | Run Line | SKIP",
+  "bet_type": "Total OVER or Total UNDER or F5 OVER or F5 UNDER or ML or Run Line or SKIP",
   "pick": "exact plain-English bet e.g. OVER 8.5 or Cubs ML or SKIP",
   "line": "American odds e.g. -110 or N/A if skip",
-  "tier": "A | B | C | SKIP",
+  "tier": "A or B or C or SKIP",
   "units": 1.0,
   "win_prob_pct": 56,
   "implied_prob_pct": 52,
   "ev_pct": 4,
-  "weather_impact": "brief note on how weather affects this game e.g. 14mph out, adds ~0.4 runs or Dome - N/A",
+  "weather_impact": "brief note e.g. 14mph out adds ~0.4 runs or Dome - N/A",
   "sp_edge": "one line on which pitcher has the edge and why",
-  "park_note": "one line on park factor e.g. Petco suppresses offense or neutral park",
-  "key_edge": "single most important reason to bet this — be specific",
-  "rationale": "2-3 sentences of sharp analysis. Reference specific stats, weather numbers, or situational factors. No vague language.",
-  "avoid_reason": "if SKIP: one sentence on why there is no edge here"
+  "park_note": "one line on park factor",
+  "key_edge": "single most important reason to bet this",
+  "rationale": "2-3 sentences of sharp analysis referencing specific stats and weather",
+  "avoid_reason": "if SKIP: one sentence on why there is no edge. Empty string if not a skip."
 }"""
 
 def call_claude(games_with_data):
     if not ANTHROPIC_KEY:
-        print("No ANTHROPIC_API_KEY — skipping Claude call")
+        print("No ANTHROPIC_API_KEY -- skipping Claude call")
         return []
-    
-    user_content = f"""Today is {TODAY}. Analyze these MLB games and return your picks as JSON.
+    user_content = f"""Today is {TODAY}. Analyze ALL of these MLB games and return your assessment as a JSON array.
+Every game must appear in the output. Do not skip any game silently.
 
 GAMES DATA:
 {json.dumps(games_with_data, indent=2)}
 
-Return ONLY the JSON array of picks. Tier A = strong edge (1.5u max), Tier B = moderate (1u), Tier C = lean (0.5u), SKIP = no value or bad data."""
+Return ONLY the JSON array. {len(games_with_data)} games in = {len(games_with_data)} entries out."""
 
     headers = {
         "x-api-key": ANTHROPIC_KEY,
@@ -266,15 +262,14 @@ Return ONLY the JSON array of picks. Tier A = strong edge (1.5u max), Tier B = m
     }
     body = {
         "model": "claude-sonnet-4-20250514",
-        "max_tokens": 4000,
+        "max_tokens": 8000,
         "system": SYSTEM_PROMPT,
         "messages": [{"role": "user", "content": user_content}],
     }
     try:
-        r = requests.post("https://api.anthropic.com/v1/messages", headers=headers, json=body, timeout=60)
+        r = requests.post("https://api.anthropic.com/v1/messages", headers=headers, json=body, timeout=90)
         r.raise_for_status()
         raw = r.json()["content"][0]["text"].strip()
-        # Strip accidental markdown fences
         if raw.startswith("```"):
             raw = raw.split("```")[1]
             if raw.startswith("json"):
@@ -284,18 +279,14 @@ Return ONLY the JSON array of picks. Tier A = strong edge (1.5u max), Tier B = m
         print(f"Claude API error: {e}")
         return []
 
-# ── Step 5: Assemble everything and write output ──────────────────────────────
 def main():
     print(f"Running MLB picks generator for {TODAY}...")
-
     games = fetch_mlb_games()
     if not games:
-        print("No games found today — exiting")
+        print("No games found today -- exiting")
         return
 
     odds_map = fetch_odds()
-
-    # Enrich each game with odds + weather
     games_with_data = []
     for g in games:
         key = f"{g['away']}@{g['home']}"
@@ -303,10 +294,9 @@ def main():
         weather = fetch_weather(g["home"])
         games_with_data.append({**g, "odds": odds, "weather": weather})
 
-    print(f"Found {len(games_with_data)} games — calling Claude...")
+    print(f"Found {len(games_with_data)} games -- calling Claude...")
     picks = call_claude(games_with_data)
 
-    # Filter out SKIP tiers
     active_picks = [p for p in picks if p.get("tier") != "SKIP"]
 
     output = {
@@ -314,23 +304,20 @@ def main():
         "generated_at": datetime.datetime.utcnow().isoformat() + "Z",
         "total_games": len(games),
         "total_picks": len(active_picks),
-        "picks": active_picks,
+        "picks": picks,
         "raw_games_data": games_with_data,
     }
 
-    # Write JSON
     json_path = OUTPUT_DIR / "picks.json"
     json_path.write_text(json.dumps(output, indent=2))
     print(f"Wrote {json_path}")
 
-    # Write HTML dashboard
     html = build_html(output)
     html_path = OUTPUT_DIR / "index.html"
     html_path.write_text(html)
     print(f"Wrote {html_path}")
-    print(f"Done. {len(active_picks)} picks generated.")
+    print(f"Done. {len(active_picks)} active picks across {len(games)} games.")
 
-# ── HTML builder ──────────────────────────────────────────────────────────────
 def build_html(data):
     all_picks = data.get("picks", [])
     active = [p for p in all_picks if p.get("tier") != "SKIP"]
@@ -350,116 +337,108 @@ def build_html(data):
         lbl   = tier_label.get(tier, "LEAN")
         ev    = p.get("ev_pct", 0)
         bar_w = min(int(ev) * 8, 100)
+        live  = p.get("live_score")
+        live_html = f'<span style="font-size:11px;background:#FAEEDA;color:#633806;padding:2px 8px;border-radius:4px;margin-left:8px">LIVE: {live}</span>' if live else ""
         return f"""
-<div style="background:#fff;border:0.5px solid #e0e0e0;border-left:3px solid {color};
-            border-radius:10px;padding:1rem 1.25rem;margin-bottom:10px">
-  <span style="background:{bg};color:{tc};font-size:11px;font-weight:600;
-               padding:2px 9px;border-radius:4px;display:inline-block;margin-bottom:8px">{lbl}</span>
-  <div style="font-size:16px;font-weight:600;margin-bottom:2px">{p.get('pick','')}</div>
-  <div style="font-size:13px;color:#666;margin-bottom:10px">
-    {p.get('game','')} &nbsp;·&nbsp; {p.get('line','N/A')} &nbsp;·&nbsp; {p.get('units',0)}u
-  </div>
+<div style="background:#fff;border:0.5px solid #e0e0e0;border-left:3px solid {color};border-radius:10px;padding:1rem 1.25rem;margin-bottom:10px">
+  <span style="background:{bg};color:{tc};font-size:11px;font-weight:600;padding:2px 9px;border-radius:4px;display:inline-block;margin-bottom:8px">{lbl}</span>
+  <div style="font-size:16px;font-weight:600;margin-bottom:2px">{p.get("pick","")}</div>
+  <div style="font-size:13px;color:#666;margin-bottom:10px">{p.get("game","")} &nbsp;·&nbsp; {p.get("line","N/A")} &nbsp;·&nbsp; {p.get("units",0)}u{live_html}</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
     <div style="background:#f7f7f5;border-radius:7px;padding:8px 10px">
       <div style="font-size:10px;color:#999;margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Away SP</div>
-      <div style="font-size:13px;font-weight:600">{p.get('away_sp','TBD')}</div>
+      <div style="font-size:13px;font-weight:600">{p.get("away_sp","TBD")}</div>
     </div>
     <div style="background:#f7f7f5;border-radius:7px;padding:8px 10px">
       <div style="font-size:10px;color:#999;margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Home SP</div>
-      <div style="font-size:13px;font-weight:600">{p.get('home_sp','TBD')}</div>
+      <div style="font-size:13px;font-weight:600">{p.get("home_sp","TBD")}</div>
     </div>
   </div>
   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
-    <span style="font-size:11px;background:#f0f0ee;padding:2px 9px;border-radius:20px;color:#555">
-      Win {p.get('win_prob_pct',0)}% vs implied {p.get('implied_prob_pct',0)}%
-    </span>
-    <span style="font-size:11px;background:{bg};color:{tc};padding:2px 9px;border-radius:20px;font-weight:600">
-      +{ev}% EV edge
-    </span>
+    <span style="font-size:11px;background:#f0f0ee;padding:2px 9px;border-radius:20px;color:#555">Win {p.get("win_prob_pct",0)}% vs implied {p.get("implied_prob_pct",0)}%</span>
+    <span style="font-size:11px;background:{bg};color:{tc};padding:2px 9px;border-radius:20px;font-weight:600">+{ev}% EV edge</span>
   </div>
   <div style="height:4px;background:#f0f0ee;border-radius:2px;margin-bottom:10px;overflow:hidden">
     <div style="height:100%;width:{bar_w}%;background:{color};border-radius:2px"></div>
   </div>
   <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">
-    <div style="font-size:12px;color:#555">🌤 {p.get('weather_impact','N/A')}</div>
-    <div style="font-size:12px;color:#555">⚾ {p.get('sp_edge','N/A')}</div>
-    <div style="font-size:12px;color:#555">🏟 {p.get('park_note','N/A')}</div>
+    <div style="font-size:12px;color:#555">&#127748; {p.get("weather_impact","N/A")}</div>
+    <div style="font-size:12px;color:#555">&#9918; {p.get("sp_edge","N/A")}</div>
+    <div style="font-size:12px;color:#555">&#127966; {p.get("park_note","N/A")}</div>
   </div>
   <div style="border-top:0.5px solid #eee;padding-top:8px">
-    <div style="font-size:12px;font-weight:600;color:#333;margin-bottom:3px">Key edge: {p.get('key_edge','')}</div>
-    <div style="font-size:12px;color:#666;line-height:1.6">{p.get('rationale','')}</div>
+    <div style="font-size:12px;font-weight:600;color:#333;margin-bottom:3px">Key edge: {p.get("key_edge","")}</div>
+    <div style="font-size:12px;color:#666;line-height:1.6">{p.get("rationale","")}</div>
   </div>
 </div>"""
 
     def skip_card(p):
+        live  = p.get("live_score")
+        live_html = f'<span style="font-size:11px;background:#FAEEDA;color:#633806;padding:2px 8px;border-radius:4px;margin-left:8px">LIVE: {live}</span>' if live else ""
         return f"""
-<div style="background:#fff;border:0.5px solid #e0e0e0;border-left:3px solid #B4B2A9;
-            border-radius:10px;padding:1rem 1.25rem;margin-bottom:10px">
-  <span style="background:#F1EFE8;color:#5F5E5A;font-size:11px;font-weight:600;
-               padding:2px 9px;border-radius:4px;display:inline-block;margin-bottom:8px">SKIP — NO EDGE</span>
-  <div style="font-size:16px;font-weight:600;margin-bottom:2px">{p.get('game','')}</div>
-  <div style="font-size:13px;color:#666;margin-bottom:10px">{p.get('game_time','')} &nbsp;·&nbsp; {p.get('venue','')}</div>
+<div style="background:#fff;border:0.5px solid #e0e0e0;border-left:3px solid #B4B2A9;border-radius:10px;padding:1rem 1.25rem;margin-bottom:10px">
+  <span style="background:#F1EFE8;color:#5F5E5A;font-size:11px;font-weight:600;padding:2px 9px;border-radius:4px;display:inline-block;margin-bottom:8px">SKIP — NO EDGE</span>
+  <div style="font-size:16px;font-weight:600;margin-bottom:2px">{p.get("game","")}{live_html}</div>
+  <div style="font-size:13px;color:#666;margin-bottom:10px">{p.get("venue","")} &nbsp;·&nbsp; {p.get("game_time","")}</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
     <div style="background:#f7f7f5;border-radius:7px;padding:8px 10px">
       <div style="font-size:10px;color:#999;margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Away SP</div>
-      <div style="font-size:13px;font-weight:600">{p.get('away_sp','TBD')}</div>
+      <div style="font-size:13px;font-weight:600">{p.get("away_sp","TBD")}</div>
     </div>
     <div style="background:#f7f7f5;border-radius:7px;padding:8px 10px">
       <div style="font-size:10px;color:#999;margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Home SP</div>
-      <div style="font-size:13px;font-weight:600">{p.get('home_sp','TBD')}</div>
+      <div style="font-size:13px;font-weight:600">{p.get("home_sp","TBD")}</div>
     </div>
   </div>
   <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">
-    <div style="font-size:12px;color:#777">🌤 {p.get('weather_impact','N/A')}</div>
-    <div style="font-size:12px;color:#777">⚾ {p.get('sp_edge','N/A')}</div>
-    <div style="font-size:12px;color:#777">🏟 {p.get('park_note','N/A')}</div>
+    <div style="font-size:12px;color:#777">&#127748; {p.get("weather_impact","N/A")}</div>
+    <div style="font-size:12px;color:#777">&#9918; {p.get("sp_edge","N/A")}</div>
+    <div style="font-size:12px;color:#777">&#127966; {p.get("park_note","N/A")}</div>
   </div>
   <div style="border-top:0.5px solid #eee;padding-top:8px">
-    <div style="font-size:12px;font-weight:600;color:#A32D2D;margin-bottom:3px">Why skip: {p.get('avoid_reason','No edge identified')}</div>
-    <div style="font-size:12px;color:#888;line-height:1.6">{p.get('rationale','')}</div>
+    <div style="font-size:12px;font-weight:600;color:#A32D2D;margin-bottom:3px">Why skip: {p.get("avoid_reason","No edge identified")}</div>
+    <div style="font-size:12px;color:#888;line-height:1.6">{p.get("rationale","")}</div>
   </div>
 </div>"""
 
-    # Build all cards — plays first, then skips — all as full cards
     all_cards = "".join(card(p) for p in active)
     all_cards += "".join(skip_card(p) for p in skipped)
 
     if not all_cards:
-        all_cards = '<div style="color:#888;font-size:14px;padding:1.5rem 0;text-align:center">No games found today.</div>'
+        all_cards = '<div style="color:#888;font-size:14px;padding:1.5rem 0;text-align:center">No games found for today.</div>'
 
+    generated = data.get("generated_at","")[:16].replace("T"," ")
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MLB Picks — {data['date']}</title>
+  <title>MLB Picks - {data["date"]}</title>
   <style>
     *{{box-sizing:border-box;margin:0;padding:0}}
-    body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-         background:#f9f9f7;color:#1a1a1a;padding:1.25rem;max-width:700px;margin:0 auto}}
+    body{{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f9f9f7;color:#1a1a1a;padding:1.25rem;max-width:700px;margin:0 auto}}
     h1{{font-size:20px;font-weight:700;margin-bottom:3px}}
     .meta{{font-size:13px;color:#888;margin-bottom:1.25rem}}
     .summary{{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1.25rem}}
     .s{{background:#fff;border:0.5px solid #e8e8e5;border-radius:9px;padding:10px 12px}}
     .s-n{{font-size:22px;font-weight:700}}
     .s-l{{font-size:10px;color:#999;margin-top:2px;text-transform:uppercase;letter-spacing:.04em}}
-    .section-title{{font-size:13px;font-weight:600;color:#999;text-transform:uppercase;
-                   letter-spacing:.06em;margin:1.25rem 0 0.6rem}}
+    .section-title{{font-size:13px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:.06em;margin:1.25rem 0 0.6rem}}
     footer{{font-size:11px;color:#bbb;margin-top:1.5rem;text-align:center;padding-bottom:1rem}}
   </style>
 </head>
 <body>
   <h1>MLB Betting Model</h1>
-  <div class="meta">{data['date']} &nbsp;·&nbsp; {data['total_games']} games analyzed &nbsp;·&nbsp; Generated {data.get('generated_at','')[:16].replace('T',' ')} UTC</div>
+  <div class="meta">{data["date"]} &nbsp;&#183;&nbsp; {data["total_games"]} games &nbsp;&#183;&nbsp; Updated {generated} UTC &nbsp;&#183;&nbsp; Refreshes every 2 hours</div>
   <div class="summary">
     <div class="s"><div class="s-n" style="color:#1D9E75">{len(active)}</div><div class="s-l">Active picks</div></div>
     <div class="s"><div class="s-n">{total_units:.1f}u</div><div class="s-l">Total units</div></div>
     <div class="s"><div class="s-n">{len(skipped)}</div><div class="s-l">No edge</div></div>
     <div class="s"><div class="s-n">5u</div><div class="s-l">Daily max</div></div>
   </div>
-  <div class="section-title">Full Slate Analysis — {data['date']}</div>
+  <div class="section-title">Full Slate - {data["date"]}</div>
   {all_cards}
-  <footer>EV-based model · Never bet more than you can afford to lose · Refreshes daily at 10 AM ET</footer>
+  <footer>EV-based model &nbsp;&#183;&nbsp; Never bet more than you can afford to lose</footer>
 </body>
 </html>"""
 
