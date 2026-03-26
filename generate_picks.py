@@ -272,7 +272,7 @@ def call_gemini(games_with_data):
 
     prompt = SYSTEM_PROMPT + "\n\nToday is " + TODAY + ". Analyze ALL of these MLB games and return your assessment as a JSON array.\nEvery game must appear in the output. Do not omit any game.\nReturn ONLY the JSON array with no other text.\n\nGAMES DATA:\n" + json.dumps(games_with_data, indent=2) + "\n\n" + str(len(games_with_data)) + " games in = " + str(len(games_with_data)) + " entries out."
 
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + GEMINI_KEY
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + GEMINI_KEY
     body = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
