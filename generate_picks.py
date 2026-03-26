@@ -69,7 +69,6 @@ def fetch_mlb_games():
                 detailed = g.get("status", {}).get("detailedState", "")
                 home_name = g["teams"]["home"]["team"]["name"]
                 away_name = g["teams"]["away"]["team"]["name"]
-                print("STATUS: " + away_name + " @ " + home_name + " | abstract=" + abstract + " | detailed=" + detailed)
                 game_time = g.get("gameDate", "")
                 home_sp = g["teams"]["home"].get("probablePitcher", {}).get("fullName", "TBD")
                 away_sp = g["teams"]["away"].get("probablePitcher", {}).get("fullName", "TBD")
