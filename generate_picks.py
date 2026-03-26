@@ -155,34 +155,96 @@ def fetch_weather(team_name):
         return {"temp_f": "N/A", "wind_mph": "N/A", "wind_dir": "N/A", "precip_pct": "N/A"}
 
 # ── Step 4: Build prompt and call Claude ─────────────────────────────────────
-SYSTEM_PROMPT = """You are an elite MLB betting analyst. Your job is to identify positive expected value (EV) bets.
+SYSTEM_PROMPT = """You are a sharp MLB betting analyst. Your only job is to find positive expected value (EV) bets.
+You think like a professional handicapper, not a fan. You are ruthless about skipping games with no edge.
 
-CORE RULES:
-- Only recommend bets where your estimated win probability exceeds the implied odds probability by at least 3%
-- Never recommend negative EV bets regardless of narrative
-- Prioritize: moneylines, game totals, F5 (first 5 innings) totals
-- Account for: pitcher quality (FIP > ERA), weather (wind direction is critical for totals), park factors, lineup matchups
-- Flag if a game should be skipped (bad data, key injuries unknown, dome stadium irrelevant weather, etc.)
+═══ CORE PHILOSOPHY ═══
+- EV = (win probability × potential profit) - (loss probability × stake)
+- Only recommend bets where your estimated win probability beats the implied odds by at least 3%
+- It is ALWAYS better to have 0 picks than bad picks. Passing is a valid and often correct decision.
+- Never chase action. Never recommend a bet just to have something on the slate.
 
-WIND RULES (hard-coded edges):
-- Wind 10+ mph BLOWING OUT + warm temp (75°F+) = strong lean OVER on totals
-- Wind 10+ mph BLOWING IN from center = strong lean UNDER on totals  
-- Wrigley Field wind in from CF = one of the most reliable unders in baseball
+═══ WHAT TO EVALUATE FOR EVERY GAME ═══
 
-OUTPUT: Respond ONLY with a valid JSON array. No preamble, no markdown, no explanation outside the JSON.
-Each pick must have these fields:
+1. STARTING PITCHER QUALITY (highest weight)
+   - Use FIP and xFIP over ERA — ERA is luck-influenced, FIP is skill
+   - K/9 and BB/9 matter more than wins/losses
+   - Pitcher handedness vs. opposing lineup's L/R splits
+   - Pitcher's historical performance at this specific ballpark
+   - Days of rest (pitchers on extra rest outperform, short rest underperform)
+   - Spring training ERA is noisy — discount it heavily unless the gap is extreme (4.00+ difference)
+
+2. WEATHER (second highest weight for totals)
+   - Wind 12+ mph BLOWING OUT toward CF/LCF/RCF = strong OVER lean on totals
+   - Wind 12+ mph BLOWING IN from CF = strong UNDER lean on totals
+   - Wind blowing across the diamond (L-R or R-L) = mild effect, slight over lean
+   - Temp above 80°F = ball carries further, adds ~0.3-0.5 runs to total
+   - Temp below 50°F = ball dies, subtracts ~0.3-0.5 runs from total
+   - Dome stadiums: weather is IRRELEVANT, do not factor it in
+   - Rain 40%+ chance = postponement risk, flag the game
+
+3. PARK FACTORS
+   - Extreme overs parks: Coors Field (Colorado), Great American Ball Park (Cincinnati), Globe Life (Texas)
+   - Extreme unders parks: Petco Park (San Diego), Oracle Park (SF), T-Mobile Park (Seattle)  
+   - Neutral parks: most others, small adjustments only
+
+4. LINE VALUE
+   - Always calculate implied probability from the American odds
+   - Positive odds: implied% = 100 / (odds + 100)
+   - Negative odds: implied% = |odds| / (|odds| + 100)
+   - Your edge = your win prob% - implied prob%
+   - Minimum edge to recommend: 3% for ML bets, 4% for totals
+   - Never recommend ML bets worse than -200 (requires 67%+ win rate to be profitable)
+   - Heavy favorites (-180 or worse) are almost always overpriced — skip unless edge is clear
+
+5. SITUATIONS TO AUTOMATICALLY SKIP
+   - SP listed as TBD
+   - Game already started or in progress
+   - Dome stadium with no other edge identified
+   - Both pitchers are unknown rookies with no MLB sample
+   - Line is -200 or worse with no clear analytical edge
+   - Back-to-back games where bullpen usage is unknown
+
+═══ BET TYPE PRIORITY ═══
+1. Game totals (OVER/UNDER) — most reliable, weather edge is clear
+2. F5 totals (first 5 innings) — isolates SP quality, removes bullpen variance
+3. Run line (+1.5 or -1.5) — better value than ML in most cases
+4. Moneyline — only when edge is very clear and juice is reasonable
+5. Team totals — useful when one SP is clearly dominant vs the other
+
+═══ BANKROLL RULES ═══
+- Tier A (edge 7%+): 1.5 units — strong, well-supported edge
+- Tier B (edge 4-6%): 1.0 unit — solid edge
+- Tier C (edge 3%): 0.5 units — lean, small exposure only
+- SKIP: edge under 3%, bad data, or situational red flag
+- Maximum 5 units total per day regardless of slate size
+- If total units across all picks exceeds 5u, downgrade the weakest picks to SKIP
+
+═══ OUTPUT FORMAT ═══
+Respond ONLY with a valid JSON array. No preamble, no markdown fences, no text outside the JSON.
+Every game on the slate must appear in the output — either as a pick or a SKIP with a reason.
+
+Each entry must have ALL of these fields:
 {
-  "game": "AWAY @ HOME",
-  "bet_type": "ML | Total OVER | Total UNDER | F5 Total OVER | F5 Total UNDER | Run Line | Prop",
-  "pick": "exact bet description",
-  "line": "odds as American moneyline e.g. -110",
+  "game": "AWAY TEAM @ HOME TEAM",
+  "venue": "stadium name",
+  "game_time": "time string from input data",
+  "away_sp": "pitcher name",
+  "home_sp": "pitcher name",
+  "bet_type": "Total OVER | Total UNDER | F5 OVER | F5 UNDER | ML | Run Line | SKIP",
+  "pick": "exact plain-English bet e.g. OVER 8.5 or Cubs ML or SKIP",
+  "line": "American odds e.g. -110 or N/A if skip",
   "tier": "A | B | C | SKIP",
-  "units": 0.5,
-  "win_prob_pct": 58,
+  "units": 1.0,
+  "win_prob_pct": 56,
   "implied_prob_pct": 52,
-  "ev_pct": 6,
-  "rationale": "2-3 sentence sharp justification referencing the data provided",
-  "key_edge": "one-line summary of the primary edge"
+  "ev_pct": 4,
+  "weather_impact": "brief note on how weather affects this game e.g. 14mph out, adds ~0.4 runs or Dome - N/A",
+  "sp_edge": "one line on which pitcher has the edge and why",
+  "park_note": "one line on park factor e.g. Petco suppresses offense or neutral park",
+  "key_edge": "single most important reason to bet this — be specific",
+  "rationale": "2-3 sentences of sharp analysis. Reference specific stats, weather numbers, or situational factors. No vague language.",
+  "avoid_reason": "if SKIP: one sentence on why there is no edge here"
 }"""
 
 def call_claude(games_with_data):
@@ -270,46 +332,85 @@ def main():
 
 # ── HTML builder ──────────────────────────────────────────────────────────────
 def build_html(data):
-    picks_html = ""
-    tier_colors = {"A": "#1D9E75", "B": "#378ADD", "C": "#BA7517"}
-    tier_bg = {"A": "#E1F5EE", "B": "#E6F1FB", "C": "#FAEEDA"}
-    tier_text = {"A": "#0F6E56", "B": "#185FA5", "C": "#854F0B"}
+    all_picks = data.get("picks", [])
+    active = [p for p in all_picks if p.get("tier") != "SKIP"]
+    skipped = [p for p in all_picks if p.get("tier") == "SKIP"]
+    total_units = sum(p.get("units", 0) for p in active)
 
-    for p in data["picks"]:
-        tier = p.get("tier", "C")
-        color = tier_colors.get(tier, "#888")
-        bg = tier_bg.get(tier, "#f5f5f5")
-        tc = tier_text.get(tier, "#333")
-        ev = p.get("ev_pct", 0)
-        ev_width = min(ev * 8, 100)
+    tier_bar   = {"A": "#1D9E75", "B": "#378ADD", "C": "#BA7517"}
+    tier_bg    = {"A": "#E1F5EE", "B": "#E6F1FB", "C": "#FAEEDA"}
+    tier_text  = {"A": "#0F6E56", "B": "#185FA5", "C": "#854F0B"}
+    tier_label = {"A": "TIER A — PLAY", "B": "TIER B — PLAY", "C": "TIER C — LEAN"}
 
-        picks_html += f"""
-        <div style="background:#fff;border:0.5px solid #e0e0e0;border-left:3px solid {color};
-                    border-radius:10px;padding:1rem 1.25rem;margin-bottom:0.75rem">
-          <span style="background:{bg};color:{tc};font-size:11px;font-weight:600;
-                       padding:2px 8px;border-radius:4px;display:inline-block;margin-bottom:6px">
-            TIER {tier}
-          </span>
-          <div style="font-size:15px;font-weight:600;margin-bottom:2px">{p.get('pick','')}</div>
-          <div style="font-size:13px;color:#666;margin-bottom:8px">{p.get('game','')} · {p.get('bet_type','')} · {p.get('line','')} · {p.get('units',0)}u</div>
-          <div style="font-size:11px;color:#888;margin-bottom:3px">
-            Win prob: {p.get('win_prob_pct',0)}% &nbsp;|&nbsp; 
-            Implied: {p.get('implied_prob_pct',0)}% &nbsp;|&nbsp; 
-            EV edge: +{ev}%
-          </div>
-          <div style="height:5px;background:#f0f0f0;border-radius:3px;margin-bottom:10px;overflow:hidden">
-            <div style="height:100%;width:{ev_width}%;background:{color};border-radius:3px"></div>
-          </div>
-          <div style="font-size:12px;color:#555;line-height:1.6;padding-top:8px;border-top:0.5px solid #eee">
-            <strong>Key edge:</strong> {p.get('key_edge','')}<br>
-            {p.get('rationale','')}
-          </div>
-        </div>"""
+    def card(p):
+        tier  = p.get("tier", "C")
+        color = tier_bar.get(tier, "#888")
+        bg    = tier_bg.get(tier, "#f5f5f5")
+        tc    = tier_text.get(tier, "#333")
+        lbl   = tier_label.get(tier, "LEAN")
+        ev    = p.get("ev_pct", 0)
+        bar_w = min(int(ev) * 8, 100)
+        return f"""
+<div style="background:#fff;border:0.5px solid #e0e0e0;border-left:3px solid {color};
+            border-radius:10px;padding:1rem 1.25rem;margin-bottom:10px">
+  <span style="background:{bg};color:{tc};font-size:11px;font-weight:600;
+               padding:2px 9px;border-radius:4px;display:inline-block;margin-bottom:8px">{lbl}</span>
+  <div style="font-size:16px;font-weight:600;margin-bottom:2px">{p.get('pick','')}</div>
+  <div style="font-size:13px;color:#666;margin-bottom:10px">
+    {p.get('game','')} &nbsp;·&nbsp; {p.get('line','N/A')} &nbsp;·&nbsp; {p.get('units',0)}u
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+    <div style="background:#f7f7f5;border-radius:7px;padding:8px 10px">
+      <div style="font-size:10px;color:#999;margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Away SP</div>
+      <div style="font-size:13px;font-weight:600">{p.get('away_sp','TBD')}</div>
+    </div>
+    <div style="background:#f7f7f5;border-radius:7px;padding:8px 10px">
+      <div style="font-size:10px;color:#999;margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Home SP</div>
+      <div style="font-size:13px;font-weight:600">{p.get('home_sp','TBD')}</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+    <span style="font-size:11px;background:#f0f0ee;padding:2px 9px;border-radius:20px;color:#555">
+      Win {p.get('win_prob_pct',0)}% vs implied {p.get('implied_prob_pct',0)}%
+    </span>
+    <span style="font-size:11px;background:{bg};color:{tc};padding:2px 9px;border-radius:20px;font-weight:600">
+      +{ev}% EV edge
+    </span>
+  </div>
+  <div style="height:4px;background:#f0f0ee;border-radius:2px;margin-bottom:10px;overflow:hidden">
+    <div style="height:100%;width:{bar_w}%;background:{color};border-radius:2px"></div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">
+    <div style="font-size:12px;color:#555">🌤 {p.get('weather_impact','N/A')}</div>
+    <div style="font-size:12px;color:#555">⚾ {p.get('sp_edge','N/A')}</div>
+    <div style="font-size:12px;color:#555">🏟 {p.get('park_note','N/A')}</div>
+  </div>
+  <div style="border-top:0.5px solid #eee;padding-top:8px">
+    <div style="font-size:12px;font-weight:600;color:#333;margin-bottom:3px">Key edge: {p.get('key_edge','')}</div>
+    <div style="font-size:12px;color:#666;line-height:1.6">{p.get('rationale','')}</div>
+  </div>
+</div>"""
 
-    if not picks_html:
-        picks_html = '<div style="color:#888;font-size:14px;padding:1rem 0">No picks with positive EV found today. Good discipline — pass the day.</div>'
+    def skip_row(p):
+        return f"""
+<div style="background:#fff;border:0.5px solid #e0e0e0;border-left:3px solid #ccc;
+            border-radius:10px;padding:0.75rem 1.25rem;margin-bottom:8px;
+            display:flex;justify-content:space-between;align-items:center;gap:12px">
+  <div>
+    <div style="font-size:13px;font-weight:600;color:#333">{p.get('game','')}</div>
+    <div style="font-size:12px;color:#999;margin-top:2px">{p.get('away_sp','TBD')} vs {p.get('home_sp','TBD')}</div>
+  </div>
+  <div style="text-align:right;flex-shrink:0">
+    <span style="font-size:11px;background:#f5f5f5;color:#999;padding:2px 9px;
+                 border-radius:4px;display:block;margin-bottom:3px">SKIP</span>
+    <div style="font-size:11px;color:#bbb">{p.get('avoid_reason','No edge identified')}</div>
+  </div>
+</div>"""
 
-    total_units = sum(p.get("units", 0) for p in data["picks"])
+    picks_html = "".join(card(p) for p in active) if active else \
+        '<div style="color:#888;font-size:14px;padding:1.5rem 0;text-align:center">No picks with positive EV today. Passing is the right call.</div>'
+
+    skips_html = "".join(skip_row(p) for p in skipped)
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -318,28 +419,34 @@ def build_html(data):
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MLB Picks — {data['date']}</title>
   <style>
-    * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-           background: #f9f9f7; color: #1a1a1a; padding: 1.5rem; max-width: 680px; margin: 0 auto; }}
-    h1 {{ font-size: 20px; font-weight: 600; margin-bottom: 4px; }}
-    .meta {{ font-size: 13px; color: #888; margin-bottom: 1.25rem; }}
-    .stats {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1.25rem; }}
-    .stat {{ background: #f0f0ee; border-radius: 8px; padding: 0.75rem 1rem; }}
-    .stat-label {{ font-size: 11px; color: #888; margin-bottom: 3px; }}
-    .stat-val {{ font-size: 22px; font-weight: 600; }}
-    footer {{ font-size: 11px; color: #aaa; margin-top: 1.5rem; text-align: center; }}
+    *{{box-sizing:border-box;margin:0;padding:0}}
+    body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+         background:#f9f9f7;color:#1a1a1a;padding:1.25rem;max-width:700px;margin:0 auto}}
+    h1{{font-size:20px;font-weight:700;margin-bottom:3px}}
+    .meta{{font-size:13px;color:#888;margin-bottom:1.25rem}}
+    .summary{{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1.25rem}}
+    .s{{background:#fff;border:0.5px solid #e8e8e5;border-radius:9px;padding:10px 12px}}
+    .s-n{{font-size:22px;font-weight:700}}
+    .s-l{{font-size:10px;color:#999;margin-top:2px;text-transform:uppercase;letter-spacing:.04em}}
+    .section-title{{font-size:13px;font-weight:600;color:#999;text-transform:uppercase;
+                   letter-spacing:.06em;margin:1.25rem 0 0.6rem}}
+    footer{{font-size:11px;color:#bbb;margin-top:1.5rem;text-align:center;padding-bottom:1rem}}
   </style>
 </head>
 <body>
   <h1>MLB Betting Model</h1>
-  <div class="meta">Generated {data['date']} · {data['total_games']} games analyzed</div>
-  <div class="stats">
-    <div class="stat"><div class="stat-label">Active Picks</div><div class="stat-val">{data['total_picks']}</div></div>
-    <div class="stat"><div class="stat-label">Total Units</div><div class="stat-val">{total_units:.1f}u</div></div>
-    <div class="stat"><div class="stat-label">Max Daily Exp.</div><div class="stat-val">5u</div></div>
+  <div class="meta">{data['date']} &nbsp;·&nbsp; {data['total_games']} games analyzed &nbsp;·&nbsp; Generated {data.get('generated_at','')[:16].replace('T',' ')} UTC</div>
+  <div class="summary">
+    <div class="s"><div class="s-n" style="color:#1D9E75">{len(active)}</div><div class="s-l">Active picks</div></div>
+    <div class="s"><div class="s-n">{total_units:.1f}u</div><div class="s-l">Total units</div></div>
+    <div class="s"><div class="s-n">{len(skipped)}</div><div class="s-l">Games skipped</div></div>
+    <div class="s"><div class="s-n">5u</div><div class="s-l">Daily max</div></div>
   </div>
+  <div class="section-title">Today's Picks</div>
   {picks_html}
-  <footer>EV-based model. Never bet more than you can afford to lose. Generated automatically.</footer>
+  <div class="section-title">Skipped Games</div>
+  {skips_html if skips_html else '<div style="color:#bbb;font-size:13px">—</div>'}
+  <footer>EV-based model · Never bet more than you can afford to lose · Refreshes daily at 10 AM ET</footer>
 </body>
 </html>"""
 
