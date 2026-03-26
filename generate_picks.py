@@ -261,7 +261,7 @@ Return ONLY the JSON array. {len(games_with_data)} games in = {len(games_with_da
         "content-type": "application/json",
     }
     body = {
-        "model": "claude-sonnet-4-20250514",
+        "model": "claude-sonnet-4-6",
         "max_tokens": 8000,
         "system": SYSTEM_PROMPT,
         "messages": [{"role": "user", "content": user_content}],
