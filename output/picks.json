@@ -1,0 +1,59 @@
+{
+  "date": "2026-03-26",
+  "generated_at": "2026-03-26T19:55:31.200604Z",
+  "total_games": 2,
+  "total_picks": 0,
+  "picks": [],
+  "raw_games_data": [
+    {
+      "home": "Los Angeles Dodgers",
+      "away": "Arizona Diamondbacks",
+      "game_time": "2026-03-27T00:30:00Z",
+      "home_sp": "Yoshinobu Yamamoto",
+      "away_sp": "Zac Gallen",
+      "venue": "UNIQLO FIELD AT DODGER STADIUM",
+      "odds": {
+        "moneyline": {
+          "Arizona Diamondbacks": 184,
+          "Los Angeles Dodgers": -220
+        },
+        "total": {
+          "line": 8.5,
+          "over": -118,
+          "under": -104
+        }
+      },
+      "weather": {
+        "temp_f": 84,
+        "wind_mph": 24.7,
+        "wind_dir": "SW",
+        "precip_pct": 0
+      }
+    },
+    {
+      "home": "Seattle Mariners",
+      "away": "Cleveland Guardians",
+      "game_time": "2026-03-27T02:10:00Z",
+      "home_sp": "Logan Gilbert",
+      "away_sp": "Tanner Bibee",
+      "venue": "T-Mobile Park",
+      "odds": {
+        "moneyline": {
+          "Cleveland Guardians": 152,
+          "Seattle Mariners": -180
+        },
+        "total": {
+          "line": 7.0,
+          "over": -115,
+          "under": -105
+        }
+      },
+      "weather": {
+        "temp_f": 52,
+        "wind_mph": 10.3,
+        "wind_dir": "S",
+        "precip_pct": 0
+      }
+    }
+  ]
+}
