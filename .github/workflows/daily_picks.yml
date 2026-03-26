@@ -31,6 +31,8 @@ jobs:
         run: |
           git config --global user.name "mlb-model-bot"
           git config --global user.email "bot@mlbmodel.local"
+          git fetch origin
+          git reset --hard origin/main
           git add output/
           git diff --staged --quiet || git commit -m "picks: $(date +%Y-%m-%d)"
-          git pull --rebase && git push
+          git push
