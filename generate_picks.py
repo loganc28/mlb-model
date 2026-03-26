@@ -1,11 +1,15 @@
 """
 MLB Betting Model — Daily Picks Generator
-Runs every 2 hours 9AM-7PM ET, outputs picks to output/picks.json and output/index.html
+Runs every 2 hours, outputs picks to:
+  output/index.html         — today's slate (always current)
+  output/YYYY-MM-DD.html    — permanent archive for each day
+  output/archive.html       — index of all past days
+  output/picks.json         — raw data
 
 APIs used (all free):
   - MLB Stats API     : no key needed
-  - The Odds API      : free tier (500 req/month) — set ODDS_API_KEY in env
-  - OpenWeatherMap    : free tier — set WEATHER_API_KEY in env
+  - The Odds API      : free tier (500 req/month)
+  - OpenWeatherMap    : free tier
   - Anthropic API     : set ANTHROPIC_API_KEY in env
 """
 
@@ -61,10 +65,9 @@ def fetch_mlb_games():
         games = []
         for date_entry in data.get("dates", []):
             for g in date_entry.get("games", []):
+                # Include ALL games — scheduled, live, and final
                 status = g.get("status", {}).get("abstractGameState", "")
                 detailed = g.get("status", {}).get("detailedState", "")
-                if status == "Final" or detailed == "Final":
-                    continue
                 home = g["teams"]["home"]["team"]["name"]
                 away = g["teams"]["away"]["team"]["name"]
                 game_time = g.get("gameDate", "")
@@ -160,7 +163,7 @@ CORE PHILOSOPHY:
 - Only recommend bets where your estimated win probability beats the implied odds by at least 3%
 - It is ALWAYS better to have 0 picks than bad picks. Passing is a valid and often correct decision.
 - Never chase action. Never recommend a bet just to have something on the slate.
-- If a game is IN PROGRESS, note it but still provide full analysis.
+- If a game is IN PROGRESS or FINAL, still provide full pre-game analysis and note the status.
 
 ANALYSIS HIERARCHY — evaluate every game in this exact order:
 
@@ -168,111 +171,86 @@ ANALYSIS HIERARCHY — evaluate every game in this exact order:
    - FIP and xFIP are the gold standard. ERA is luck-influenced and misleading.
    - K/9 tells you swing-and-miss ability. BB/9 tells you control. Both matter more than wins.
    - A starter with FIP 1.5+ runs better than his opponent is a meaningful edge.
-   - Pitcher handedness vs opposing lineup L/R splits — a lefty against a lineup with
-     strong left-handed hitters is a red flag even if his overall stats look good.
+   - Pitcher handedness vs opposing lineup L/R splits matters.
    - Days of rest: extra rest (6+ days) = slight edge. Short rest (3 days) = red flag.
-   - Pitch count trends: a pitcher coming off a 110-pitch outing may not go deep today.
-   - Spring training stats are noise. Discount them heavily. Only flag if ERA gap is 4.00+
-     AND the underlying K rate has also dropped significantly.
-   - Opening Day note: all pitchers are fully rested and ramped. Do not penalize for rest.
+   - Spring training stats are noise. Discount heavily unless ERA gap is 4.00+ AND K rate dropped.
+   - Opening Day: all pitchers fully rested. Do not penalize for rest.
 
 2. BULLPEN STRENGTH AND FATIGUE (second most important for full-game totals)
    - Bullpen ERA and FIP matter as much as SP for full-game totals.
-   - A dominant SP paired with a bad bullpen = full-game total risk even with a good starter.
-   - F5 totals isolate the SP quality and remove bullpen variance. Prefer F5 when SP edge
-     is clear but bullpen data is uncertain or negative.
-   - Early season: no bullpen usage data yet. Flag this uncertainty explicitly and lean
-     toward F5 totals over full-game totals in April.
-   - Known elite bullpens (recent years): Dodgers, Rays, Braves, Phillies.
-   - Known shaky bullpens (recent years): Rockies, Athletics, Nationals, White Sox.
+   - A dominant SP paired with a bad bullpen = full-game total risk.
+   - F5 totals isolate SP quality and remove bullpen variance. Prefer F5 when bullpen data
+     is uncertain or negative.
+   - Early season: no bullpen usage data yet. Flag this and lean toward F5 totals in April.
+   - Known elite bullpens: Dodgers, Rays, Braves, Phillies.
+   - Known shaky bullpens: Rockies, Athletics, Nationals, White Sox.
 
 3. LINEUP QUALITY AND MATCHUP SPLITS
    - A full healthy lineup vs a depleted one is a significant run environment shift.
    - Platoon splits matter: right-handed lineup vs left-handed pitcher and vice versa.
    - Team wOBA and wRC+ give the best picture of lineup quality.
-   - A lineup missing 2+ regulars to injury = lower run expectation, lean under on team total.
-   - Hot streaks: a team scoring 6+ runs per game over last 7 is worth noting but not
-     overweighting — regression to mean is real.
-   - Cold streaks: a lineup that has scored under 3 runs per game for 7+ days is a
-     meaningful lean toward the under on their team total.
+   - A lineup missing 2+ regulars = lower run expectation, lean under on team total.
+   - Cold streaks: under 3 runs per game for 7+ days = meaningful lean toward under.
 
-4. PARK FACTORS (adjust run expectation before applying line value)
-   - Coors Field (Colorado): add ~1.5 runs to expected total. Always lean over unless
-     both SPs are elite AND wind is blowing in hard.
-   - Great American Ball Park (Cincinnati): add ~0.7 runs. Strong hitter environment.
-   - Globe Life Field (Texas): add ~0.4 runs. Warm, dry air helps offense.
-   - Petco Park (San Diego): subtract ~0.7 runs. Strong pitcher environment.
-   - Oracle Park (San Francisco): subtract ~0.5 runs. Cold, damp marine air kills offense.
-   - T-Mobile Park (Seattle): subtract ~0.4 runs. Pitcher-friendly dimensions.
-   - Wrigley Field (Chicago): neutral on its own, but the most weather-reactive park
-     in baseball. Wind in = strong under. Wind out = strong over. Never ignore Wrigley wind.
+4. PARK FACTORS
+   - Coors Field: add ~1.5 runs. Always lean over unless both SPs elite AND wind blowing in.
+   - Great American Ball Park: add ~0.7 runs. Strong hitter environment.
+   - Globe Life Field: add ~0.4 runs.
+   - Petco Park: subtract ~0.7 runs. Strong pitcher environment.
+   - Oracle Park: subtract ~0.5 runs.
+   - T-Mobile Park: subtract ~0.4 runs.
+   - Wrigley Field: neutral alone but most weather-reactive park in baseball.
    - All other parks: neutral to minor adjustments only.
 
 5. WEATHER (tiebreaker and marginal edge — not the foundation of a bet)
-   - Weather matters most at outdoor parks. Dome stadiums: weather is completely irrelevant.
-   - Wind direction relative to the field is the most actionable weather variable:
-     * 12+ mph blowing OUT toward CF/LCF/RCF = warning-track outs become home runs, lean OVER
-     * 12+ mph blowing IN from CF = fly balls die, lean UNDER
-     * Crosswind (L-R or R-L) = mild hitter lean, 0.2-0.3 run effect only
-   - Temperature effect on run environment:
-     * Above 85F = ball carries ~0.4 runs further than neutral
-     * Below 50F = ball dies, subtract ~0.4 runs from expected total
-     * 50-85F = neutral, no adjustment needed
-   - Rain risk: 40%+ chance of rain = flag for postponement risk. Do not bet a game
-     with 50%+ rain probability before first pitch.
-   - Humidity: high humidity slightly helps ball carry. Minor effect, only relevant
-     when all other factors are equal.
-   - Weather is the LAST factor evaluated. A bad pitching matchup with outblowing wind
-     is still a bad pitching matchup. Weather tips the scales, it does not set them.
+   - Dome stadiums: weather completely irrelevant.
+   - Wind 12+ mph OUT toward CF/LCF/RCF = lean OVER
+   - Wind 12+ mph IN from CF = lean UNDER
+   - Above 85F = adds ~0.4 runs. Below 50F = subtracts ~0.4 runs.
+   - Rain 40%+ = flag postponement risk. Never bet 50%+ rain before first pitch.
+   - Weather tips the scales, it does not set them. Never Tier A based on weather alone.
 
-6. LINE VALUE (the final gate every pick must pass)
-   - Calculate implied probability from American odds before making any recommendation:
-     * Positive odds: implied% = 100 / (odds + 100)
-     * Negative odds: implied% = |odds| / (|odds| + 100)
-   - Your edge = your estimated win probability minus the implied probability.
-   - Minimum edge required: 3% for ML bets, 4% for totals, 5% for run lines.
-   - Hard limits that override all other analysis:
-     * Never recommend a ML worse than -200 (requires 67%+ to break even)
-     * Never recommend a total where your projected run total is within 0.3 of the line
-     * Never recommend a bet where the juice exceeds -130 on a total
-   - Line shopping note: always check multiple books. A line difference of even
-     10 cents on a ML or half a point on a total compounds significantly over a season.
+6. LINE VALUE (final gate every pick must pass)
+   - Implied probability: positive odds = 100/(odds+100), negative = |odds|/(|odds|+100)
+   - Edge = your win prob% minus implied prob%
+   - Minimums: 3% for ML, 4% for totals, 5% for run lines
+   - Never recommend ML worse than -200
+   - Never recommend total where projected runs within 0.3 of the line
+   - Never recommend total with juice worse than -130
 
-BET TYPE PRIORITY (in order of reliability):
-1. F5 totals — isolates SP quality, removes bullpen variance, most reliable early season
-2. Full game totals — use when bullpen edge is also clear, not just SP
-3. Run line (+1.5 or -1.5) — often better value than ML, use when SP edge is strong
-4. Moneyline — only when edge is clear AND juice is reasonable (no worse than -180)
-5. Team totals — useful when one SP is clearly dominant and lineup matchup confirms it
+BET TYPE PRIORITY:
+1. F5 totals — isolates SP, removes bullpen variance, most reliable early season
+2. Full game totals — use when bullpen edge is also clear
+3. Run line (+1.5 or -1.5) — often better value than ML
+4. Moneyline — only when edge is clear AND juice reasonable (no worse than -180)
+5. Team totals — when one SP is dominant and lineup matchup confirms it
 
-SITUATIONS TO SKIP AUTOMATICALLY:
+AUTO-SKIP:
 - SP listed as TBD on either side
-- Dome stadium with no SP or lineup edge identified
-- ML priced at -200 or worse with no overwhelming analytical edge
-- Both starters are unproven rookies with under 10 MLB starts
-- Rain probability 50%+ at first pitch
-- Game already in final innings (7th inning or later)
+- Dome with no SP or lineup edge
+- ML at -200 or worse with no overwhelming edge
+- Both starters unproven rookies under 10 MLB starts
+- Rain 50%+ at first pitch
 
-BANKROLL RULES — enforce these strictly:
-- Tier A (edge 7%+): 1.5 units — strong, well-supported edge across multiple factors
-- Tier B (edge 4-6%): 1.0 unit — solid edge on at least 2 of the top 3 factors
-- Tier C (edge 3%): 0.5 units — lean, single factor edge only
-- SKIP: edge under 3%, missing data, or any auto-skip condition triggered
-- Maximum 5 units total per day. If picks exceed 5u, downgrade weakest picks to SKIP.
-- Never assign Tier A to a bet supported only by weather. Weather alone is never a Tier A edge.
+BANKROLL RULES:
+- Tier A (edge 7%+): 1.5 units
+- Tier B (edge 4-6%): 1.0 unit
+- Tier C (edge 3%): 0.5 units
+- SKIP: under 3% or auto-skip triggered
+- Max 5 units per day. Downgrade weakest picks if exceeded.
+- Never Tier A based on weather alone.
 
 OUTPUT FORMAT:
 Respond ONLY with a valid JSON array. No preamble, no markdown fences, no text outside the JSON.
-Every single game on the slate MUST appear in the output -- either as a pick or a SKIP.
-Do not omit any game silently. Count the games in the input and match that count in the output.
+Every single game MUST appear. Count input games and match that count in output.
 
 Each entry must have ALL of these exact fields:
 {
   "game": "AWAY TEAM @ HOME TEAM",
   "venue": "stadium name",
   "game_time": "time string from input",
-  "status": "Scheduled or In Progress or Delayed",
-  "live_score": "score string if in progress or null",
+  "status": "Scheduled or In Progress or Final",
+  "live_score": "score string if known or null",
   "away_sp": "pitcher name",
   "home_sp": "pitcher name",
   "bet_type": "F5 OVER or F5 UNDER or Total OVER or Total UNDER or ML or Run Line or Team Total or SKIP",
@@ -283,14 +261,14 @@ Each entry must have ALL of these exact fields:
   "win_prob_pct": 56,
   "implied_prob_pct": 52,
   "ev_pct": 4,
-  "sp_analysis": "2 sentences on the SP matchup covering FIP/xFIP, K rate, and which pitcher has the edge",
-  "bullpen_note": "1 sentence on bullpen situation for both teams or flag if data unavailable",
-  "lineup_note": "1 sentence on lineup quality, injuries, or relevant platoon splits",
-  "park_note": "1 sentence on park factor and run environment adjustment",
-  "weather_impact": "1 sentence on weather effect — be specific with mph and direction or state Dome - N/A",
-  "key_edge": "single most important reason to make this bet — must reference a specific stat or number",
-  "rationale": "3 sentences of sharp analysis. Sentence 1: SP edge. Sentence 2: supporting factors (bullpen/lineup/park). Sentence 3: why the line has value.",
-  "avoid_reason": "if SKIP: one specific sentence on why there is no edge. Empty string if not a skip."
+  "sp_analysis": "2 sentences on SP matchup covering FIP/xFIP, K rate, and which pitcher has the edge",
+  "bullpen_note": "1 sentence on bullpen situation or flag if data unavailable",
+  "lineup_note": "1 sentence on lineup quality, injuries, or platoon splits",
+  "park_note": "1 sentence on park factor and run environment",
+  "weather_impact": "1 sentence on weather — specific mph and direction or Dome - N/A",
+  "key_edge": "single most important reason for this bet referencing a specific stat or number",
+  "rationale": "3 sentences. Sentence 1: SP edge. Sentence 2: supporting factors. Sentence 3: why the line has value.",
+  "avoid_reason": "if SKIP: one specific sentence why no edge. Empty string if not a skip."
 }"""
 
 def call_claude(games_with_data):
@@ -329,6 +307,57 @@ Return ONLY the JSON array. {len(games_with_data)} games in = {len(games_with_da
         print(f"Claude API error: {e}")
         return []
 
+def build_archive_index():
+    """Scan output folder for dated HTML files and rebuild archive.html"""
+    dated_files = sorted(
+        [f for f in OUTPUT_DIR.glob("????-??-??.html")],
+        reverse=True
+    )
+    if not dated_files:
+        return
+
+    rows = ""
+    for f in dated_files:
+        date_str = f.stem
+        rows += f"""
+        <a href="{date_str}.html" style="display:flex;justify-content:space-between;align-items:center;
+           padding:12px 16px;background:#fff;border:0.5px solid #e8e8e5;border-radius:9px;
+           margin-bottom:8px;text-decoration:none;color:#1a1a1a">
+          <span style="font-size:14px;font-weight:500">{date_str}</span>
+          <span style="font-size:12px;color:#999">View slate &rarr;</span>
+        </a>"""
+
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MLB Picks Archive</title>
+  <style>
+    *{{box-sizing:border-box;margin:0;padding:0}}
+    body{{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+         background:#f9f9f7;color:#1a1a1a;padding:1.25rem;max-width:700px;margin:0 auto}}
+    h1{{font-size:20px;font-weight:700;margin-bottom:4px}}
+    .meta{{font-size:13px;color:#888;margin-bottom:1.5rem}}
+  </style>
+</head>
+<body>
+  <h1>MLB Picks Archive</h1>
+  <div class="meta">Click any date to review that day's full slate and picks</div>
+  <a href="index.html" style="display:flex;justify-content:space-between;align-items:center;
+     padding:12px 16px;background:#E1F5EE;border:0.5px solid #5DCAA5;border-radius:9px;
+     margin-bottom:16px;text-decoration:none;color:#0F6E56">
+    <span style="font-size:14px;font-weight:600">Today — {TODAY}</span>
+    <span style="font-size:12px">View today &rarr;</span>
+  </a>
+  {rows}
+</body>
+</html>"""
+
+    archive_path = OUTPUT_DIR / "archive.html"
+    archive_path.write_text(html)
+    print(f"Wrote {archive_path}")
+
 def main():
     print(f"Running MLB picks generator for {TODAY}...")
     games = fetch_mlb_games()
@@ -358,14 +387,27 @@ def main():
         "raw_games_data": games_with_data,
     }
 
+    # Save JSON
     json_path = OUTPUT_DIR / "picks.json"
     json_path.write_text(json.dumps(output, indent=2))
     print(f"Wrote {json_path}")
 
+    # Build HTML
     html = build_html(output)
-    html_path = OUTPUT_DIR / "index.html"
-    html_path.write_text(html)
-    print(f"Wrote {html_path}")
+
+    # Save as today's archive copy (permanent)
+    dated_path = OUTPUT_DIR / f"{TODAY}.html"
+    dated_path.write_text(html)
+    print(f"Wrote {dated_path}")
+
+    # Save as index.html (today's live page)
+    index_path = OUTPUT_DIR / "index.html"
+    index_path.write_text(html)
+    print(f"Wrote {index_path}")
+
+    # Rebuild archive index
+    build_archive_index()
+
     print(f"Done. {len(active_picks)} active picks across {len(games)} games.")
 
 def build_html(data):
@@ -388,12 +430,18 @@ def build_html(data):
         ev    = p.get("ev_pct", 0)
         bar_w = min(int(ev) * 8, 100)
         live  = p.get("live_score")
-        live_html = f'<span style="font-size:11px;background:#FAEEDA;color:#633806;padding:2px 8px;border-radius:4px;margin-left:6px">LIVE: {live}</span>' if live else ""
+        status = p.get("status", "")
+        if status == "Final" and live:
+            status_html = f'<span style="font-size:11px;background:#f0f0ee;color:#666;padding:2px 8px;border-radius:4px;margin-left:6px">FINAL: {live}</span>'
+        elif live:
+            status_html = f'<span style="font-size:11px;background:#FAEEDA;color:#633806;padding:2px 8px;border-radius:4px;margin-left:6px">LIVE: {live}</span>'
+        else:
+            status_html = ""
         return f"""
 <div style="background:#fff;border:0.5px solid #e0e0e0;border-left:3px solid {color};border-radius:10px;padding:1rem 1.25rem;margin-bottom:10px">
   <span style="background:{bg};color:{tc};font-size:11px;font-weight:600;padding:2px 9px;border-radius:4px;display:inline-block;margin-bottom:8px">{lbl}</span>
   <div style="font-size:16px;font-weight:600;margin-bottom:2px">{p.get("pick","")}</div>
-  <div style="font-size:13px;color:#666;margin-bottom:10px">{p.get("game","")} &nbsp;·&nbsp; {p.get("line","N/A")} &nbsp;·&nbsp; {p.get("units",0)}u{live_html}</div>
+  <div style="font-size:13px;color:#666;margin-bottom:10px">{p.get("game","")} &nbsp;·&nbsp; {p.get("line","N/A")} &nbsp;·&nbsp; {p.get("units",0)}u{status_html}</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
     <div style="background:#f7f7f5;border-radius:7px;padding:8px 10px">
       <div style="font-size:10px;color:#999;margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Away SP</div>
@@ -426,11 +474,17 @@ def build_html(data):
 
     def skip_card(p):
         live  = p.get("live_score")
-        live_html = f'<span style="font-size:11px;background:#FAEEDA;color:#633806;padding:2px 8px;border-radius:4px;margin-left:6px">LIVE: {live}</span>' if live else ""
+        status = p.get("status", "")
+        if status == "Final" and live:
+            status_html = f'<span style="font-size:11px;background:#f0f0ee;color:#666;padding:2px 8px;border-radius:4px;margin-left:6px">FINAL: {live}</span>'
+        elif live:
+            status_html = f'<span style="font-size:11px;background:#FAEEDA;color:#633806;padding:2px 8px;border-radius:4px;margin-left:6px">LIVE: {live}</span>'
+        else:
+            status_html = ""
         return f"""
 <div style="background:#fff;border:0.5px solid #e0e0e0;border-left:3px solid #B4B2A9;border-radius:10px;padding:1rem 1.25rem;margin-bottom:10px">
   <span style="background:#F1EFE8;color:#5F5E5A;font-size:11px;font-weight:600;padding:2px 9px;border-radius:4px;display:inline-block;margin-bottom:8px">SKIP — NO EDGE</span>
-  <div style="font-size:16px;font-weight:600;margin-bottom:2px">{p.get("game","")}{live_html}</div>
+  <div style="font-size:16px;font-weight:600;margin-bottom:2px">{p.get("game","")}{status_html}</div>
   <div style="font-size:13px;color:#666;margin-bottom:10px">{p.get("venue","")} &nbsp;·&nbsp; {p.get("game_time","")}</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
     <div style="background:#f7f7f5;border-radius:7px;padding:8px 10px">
@@ -483,7 +537,7 @@ def build_html(data):
 </head>
 <body>
   <h1>MLB Betting Model</h1>
-  <div class="meta">{data["date"]} &nbsp;&#183;&nbsp; {data["total_games"]} games &nbsp;&#183;&nbsp; Updated {generated} UTC &nbsp;&#183;&nbsp; Refreshes every 2 hours</div>
+  <div class="meta">{data["date"]} &nbsp;&#183;&nbsp; {data["total_games"]} games &nbsp;&#183;&nbsp; Updated {generated} UTC &nbsp;&#183;&nbsp; <a href="archive.html" style="color:#378ADD;text-decoration:none">View archive &rarr;</a></div>
   <div class="summary">
     <div class="s"><div class="s-n" style="color:#1D9E75">{len(active)}</div><div class="s-l">Active picks</div></div>
     <div class="s"><div class="s-n">{total_units:.1f}u</div><div class="s-l">Total units</div></div>
