@@ -391,26 +391,41 @@ def build_html(data):
   </div>
 </div>"""
 
-    def skip_row(p):
+    def skip_card(p):
         return f"""
-<div style="background:#fff;border:0.5px solid #e0e0e0;border-left:3px solid #ccc;
-            border-radius:10px;padding:0.75rem 1.25rem;margin-bottom:8px;
-            display:flex;justify-content:space-between;align-items:center;gap:12px">
-  <div>
-    <div style="font-size:13px;font-weight:600;color:#333">{p.get('game','')}</div>
-    <div style="font-size:12px;color:#999;margin-top:2px">{p.get('away_sp','TBD')} vs {p.get('home_sp','TBD')}</div>
+<div style="background:#fff;border:0.5px solid #e0e0e0;border-left:3px solid #B4B2A9;
+            border-radius:10px;padding:1rem 1.25rem;margin-bottom:10px">
+  <span style="background:#F1EFE8;color:#5F5E5A;font-size:11px;font-weight:600;
+               padding:2px 9px;border-radius:4px;display:inline-block;margin-bottom:8px">SKIP — NO EDGE</span>
+  <div style="font-size:16px;font-weight:600;margin-bottom:2px">{p.get('game','')}</div>
+  <div style="font-size:13px;color:#666;margin-bottom:10px">{p.get('game_time','')} &nbsp;·&nbsp; {p.get('venue','')}</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+    <div style="background:#f7f7f5;border-radius:7px;padding:8px 10px">
+      <div style="font-size:10px;color:#999;margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Away SP</div>
+      <div style="font-size:13px;font-weight:600">{p.get('away_sp','TBD')}</div>
+    </div>
+    <div style="background:#f7f7f5;border-radius:7px;padding:8px 10px">
+      <div style="font-size:10px;color:#999;margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Home SP</div>
+      <div style="font-size:13px;font-weight:600">{p.get('home_sp','TBD')}</div>
+    </div>
   </div>
-  <div style="text-align:right;flex-shrink:0">
-    <span style="font-size:11px;background:#f5f5f5;color:#999;padding:2px 9px;
-                 border-radius:4px;display:block;margin-bottom:3px">SKIP</span>
-    <div style="font-size:11px;color:#bbb">{p.get('avoid_reason','No edge identified')}</div>
+  <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">
+    <div style="font-size:12px;color:#777">🌤 {p.get('weather_impact','N/A')}</div>
+    <div style="font-size:12px;color:#777">⚾ {p.get('sp_edge','N/A')}</div>
+    <div style="font-size:12px;color:#777">🏟 {p.get('park_note','N/A')}</div>
+  </div>
+  <div style="border-top:0.5px solid #eee;padding-top:8px">
+    <div style="font-size:12px;font-weight:600;color:#A32D2D;margin-bottom:3px">Why skip: {p.get('avoid_reason','No edge identified')}</div>
+    <div style="font-size:12px;color:#888;line-height:1.6">{p.get('rationale','')}</div>
   </div>
 </div>"""
 
-    picks_html = "".join(card(p) for p in active) if active else \
-        '<div style="color:#888;font-size:14px;padding:1.5rem 0;text-align:center">No picks with positive EV today. Passing is the right call.</div>'
+    # Build all cards — plays first, then skips — all as full cards
+    all_cards = "".join(card(p) for p in active)
+    all_cards += "".join(skip_card(p) for p in skipped)
 
-    skips_html = "".join(skip_row(p) for p in skipped)
+    if not all_cards:
+        all_cards = '<div style="color:#888;font-size:14px;padding:1.5rem 0;text-align:center">No games found today.</div>'
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -439,13 +454,11 @@ def build_html(data):
   <div class="summary">
     <div class="s"><div class="s-n" style="color:#1D9E75">{len(active)}</div><div class="s-l">Active picks</div></div>
     <div class="s"><div class="s-n">{total_units:.1f}u</div><div class="s-l">Total units</div></div>
-    <div class="s"><div class="s-n">{len(skipped)}</div><div class="s-l">Games skipped</div></div>
+    <div class="s"><div class="s-n">{len(skipped)}</div><div class="s-l">No edge</div></div>
     <div class="s"><div class="s-n">5u</div><div class="s-l">Daily max</div></div>
   </div>
-  <div class="section-title">Today's Picks</div>
-  {picks_html}
-  <div class="section-title">Skipped Games</div>
-  {skips_html if skips_html else '<div style="color:#bbb;font-size:13px">—</div>'}
+  <div class="section-title">Full Slate Analysis — {data['date']}</div>
+  {all_cards}
   <footer>EV-based model · Never bet more than you can afford to lose · Refreshes daily at 10 AM ET</footer>
 </body>
 </html>"""
