@@ -10,7 +10,7 @@ APIs used (all free):
   - MLB Stats API     : no key needed
   - The Odds API      : free tier (500 req/month)
   - OpenWeatherMap    : free tier
-  - Anthropic API     : set ANTHROPIC_API_KEY in env
+  - Google Gemini API : free tier (1500 req/day) — set GEMINI_API_KEY in env
 """
 
 import os, json, datetime, requests
@@ -18,7 +18,7 @@ from pathlib import Path
 
 ODDS_API_KEY    = os.environ.get("ODDS_API_KEY", "")
 WEATHER_API_KEY = os.environ.get("WEATHER_API_KEY", "")
-ANTHROPIC_KEY   = os.environ.get("ANTHROPIC_API_KEY", "")
+GEMINI_KEY      = os.environ.get("GEMINI_API_KEY", "")
 OUTPUT_DIR      = Path("output")
 OUTPUT_DIR.mkdir(exist_ok=True)
 TODAY = datetime.date.today().isoformat()
@@ -65,7 +65,6 @@ def fetch_mlb_games():
         games = []
         for date_entry in data.get("dates", []):
             for g in date_entry.get("games", []):
-                # Include ALL games — scheduled, live, and final
                 status = g.get("status", {}).get("abstractGameState", "")
                 detailed = g.get("status", {}).get("detailedState", "")
                 home = g["teams"]["home"]["team"]["name"]
@@ -165,71 +164,64 @@ CORE PHILOSOPHY:
 - Never chase action. Never recommend a bet just to have something on the slate.
 - If a game is IN PROGRESS or FINAL, still provide full pre-game analysis and note the status.
 
-ANALYSIS HIERARCHY — evaluate every game in this exact order:
+ANALYSIS HIERARCHY - evaluate every game in this exact order:
 
 1. STARTING PITCHER QUALITY (primary driver of all bets)
    - FIP and xFIP are the gold standard. ERA is luck-influenced and misleading.
-   - K/9 tells you swing-and-miss ability. BB/9 tells you control. Both matter more than wins.
+   - K/9 tells you swing-and-miss ability. BB/9 tells you control.
    - A starter with FIP 1.5+ runs better than his opponent is a meaningful edge.
    - Pitcher handedness vs opposing lineup L/R splits matters.
    - Days of rest: extra rest (6+ days) = slight edge. Short rest (3 days) = red flag.
    - Spring training stats are noise. Discount heavily unless ERA gap is 4.00+ AND K rate dropped.
-   - Opening Day: all pitchers fully rested. Do not penalize for rest.
 
 2. BULLPEN STRENGTH AND FATIGUE (second most important for full-game totals)
    - Bullpen ERA and FIP matter as much as SP for full-game totals.
-   - A dominant SP paired with a bad bullpen = full-game total risk.
-   - F5 totals isolate SP quality and remove bullpen variance. Prefer F5 when bullpen data
-     is uncertain or negative.
-   - Early season: no bullpen usage data yet. Flag this and lean toward F5 totals in April.
+   - F5 totals isolate SP quality and remove bullpen variance. Prefer F5 in April.
    - Known elite bullpens: Dodgers, Rays, Braves, Phillies.
    - Known shaky bullpens: Rockies, Athletics, Nationals, White Sox.
 
 3. LINEUP QUALITY AND MATCHUP SPLITS
-   - A full healthy lineup vs a depleted one is a significant run environment shift.
+   - A full healthy lineup vs a depleted one is significant.
    - Platoon splits matter: right-handed lineup vs left-handed pitcher and vice versa.
-   - Team wOBA and wRC+ give the best picture of lineup quality.
    - A lineup missing 2+ regulars = lower run expectation, lean under on team total.
    - Cold streaks: under 3 runs per game for 7+ days = meaningful lean toward under.
 
 4. PARK FACTORS
    - Coors Field: add ~1.5 runs. Always lean over unless both SPs elite AND wind blowing in.
-   - Great American Ball Park: add ~0.7 runs. Strong hitter environment.
+   - Great American Ball Park: add ~0.7 runs.
    - Globe Life Field: add ~0.4 runs.
-   - Petco Park: subtract ~0.7 runs. Strong pitcher environment.
+   - Petco Park: subtract ~0.7 runs.
    - Oracle Park: subtract ~0.5 runs.
    - T-Mobile Park: subtract ~0.4 runs.
-   - Wrigley Field: neutral alone but most weather-reactive park in baseball.
-   - All other parks: neutral to minor adjustments only.
+   - Wrigley Field: most weather-reactive park in baseball. Wind in = under. Wind out = over.
 
-5. WEATHER (tiebreaker and marginal edge — not the foundation of a bet)
+5. WEATHER (tiebreaker only - not the foundation of a bet)
    - Dome stadiums: weather completely irrelevant.
-   - Wind 12+ mph OUT toward CF/LCF/RCF = lean OVER
-   - Wind 12+ mph IN from CF = lean UNDER
+   - Wind 12+ mph OUT toward CF/LCF/RCF = lean OVER.
+   - Wind 12+ mph IN from CF = lean UNDER.
    - Above 85F = adds ~0.4 runs. Below 50F = subtracts ~0.4 runs.
-   - Rain 40%+ = flag postponement risk. Never bet 50%+ rain before first pitch.
-   - Weather tips the scales, it does not set them. Never Tier A based on weather alone.
+   - Rain 40%+ = flag postponement risk.
+   - Never Tier A based on weather alone.
 
 6. LINE VALUE (final gate every pick must pass)
    - Implied probability: positive odds = 100/(odds+100), negative = |odds|/(|odds|+100)
    - Edge = your win prob% minus implied prob%
    - Minimums: 3% for ML, 4% for totals, 5% for run lines
    - Never recommend ML worse than -200
-   - Never recommend total where projected runs within 0.3 of the line
    - Never recommend total with juice worse than -130
 
 BET TYPE PRIORITY:
-1. F5 totals — isolates SP, removes bullpen variance, most reliable early season
-2. Full game totals — use when bullpen edge is also clear
-3. Run line (+1.5 or -1.5) — often better value than ML
-4. Moneyline — only when edge is clear AND juice reasonable (no worse than -180)
-5. Team totals — when one SP is dominant and lineup matchup confirms it
+1. F5 totals
+2. Full game totals
+3. Run line
+4. Moneyline (only when edge clear AND juice no worse than -180)
+5. Team totals
 
 AUTO-SKIP:
 - SP listed as TBD on either side
 - Dome with no SP or lineup edge
-- ML at -200 or worse with no overwhelming edge
-- Both starters unproven rookies under 10 MLB starts
+- ML at -200 or worse
+- Both starters rookies under 10 MLB starts
 - Rain 50%+ at first pitch
 
 BANKROLL RULES:
@@ -237,12 +229,14 @@ BANKROLL RULES:
 - Tier B (edge 4-6%): 1.0 unit
 - Tier C (edge 3%): 0.5 units
 - SKIP: under 3% or auto-skip triggered
-- Max 5 units per day. Downgrade weakest picks if exceeded.
-- Never Tier A based on weather alone.
+- Max 5 units per day
+- Never Tier A based on weather alone
 
 OUTPUT FORMAT:
-Respond ONLY with a valid JSON array. No preamble, no markdown fences, no text outside the JSON.
-Every single game MUST appear. Count input games and match that count in output.
+You must respond with ONLY a valid JSON array.
+Do not include any text before or after the JSON.
+Do not use markdown code blocks or backticks.
+Every single game MUST appear in the output.
 
 Each entry must have ALL of these exact fields:
 {
@@ -261,56 +255,62 @@ Each entry must have ALL of these exact fields:
   "win_prob_pct": 56,
   "implied_prob_pct": 52,
   "ev_pct": 4,
-  "sp_analysis": "2 sentences on SP matchup covering FIP/xFIP, K rate, and which pitcher has the edge",
+  "sp_analysis": "2 sentences on SP matchup covering FIP/xFIP and which pitcher has the edge",
   "bullpen_note": "1 sentence on bullpen situation or flag if data unavailable",
-  "lineup_note": "1 sentence on lineup quality, injuries, or platoon splits",
-  "park_note": "1 sentence on park factor and run environment",
-  "weather_impact": "1 sentence on weather — specific mph and direction or Dome - N/A",
-  "key_edge": "single most important reason for this bet referencing a specific stat or number",
-  "rationale": "3 sentences. Sentence 1: SP edge. Sentence 2: supporting factors. Sentence 3: why the line has value.",
-  "avoid_reason": "if SKIP: one specific sentence why no edge. Empty string if not a skip."
+  "lineup_note": "1 sentence on lineup quality or platoon splits",
+  "park_note": "1 sentence on park factor",
+  "weather_impact": "1 sentence on weather or Dome - N/A",
+  "key_edge": "single most important reason referencing a specific stat or number",
+  "rationale": "3 sentences. SP edge. Supporting factors. Why the line has value.",
+  "avoid_reason": "if SKIP: one sentence why no edge. Empty string if not a skip."
 }"""
 
-def call_claude(games_with_data):
-    if not ANTHROPIC_KEY:
-        print("No ANTHROPIC_API_KEY -- skipping Claude call")
+def call_gemini(games_with_data):
+    if not GEMINI_KEY:
+        print("No GEMINI_API_KEY -- skipping AI call")
         return []
-    user_content = f"""Today is {TODAY}. Analyze ALL of these MLB games and return your assessment as a JSON array.
+
+    prompt = f"""{SYSTEM_PROMPT}
+
+Today is {TODAY}. Analyze ALL of these MLB games and return your assessment as a JSON array.
 Every game must appear in the output. Do not omit any game.
+Return ONLY the JSON array with no other text.
 
 GAMES DATA:
 {json.dumps(games_with_data, indent=2)}
 
-Return ONLY the JSON array. {len(games_with_data)} games in = {len(games_with_data)} entries out."""
+{len(games_with_data)} games in = {len(games_with_data)} entries out."""
 
-    headers = {
-        "x-api-key": ANTHROPIC_KEY,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-    }
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
     body = {
-        "model": "claude-sonnet-4-6",
-        "max_tokens": 8000,
-        "system": SYSTEM_PROMPT,
-        "messages": [{"role": "user", "content": user_content}],
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {
+            "temperature": 0.2,
+            "maxOutputTokens": 8000,
+        }
     }
     try:
-        r = requests.post("https://api.anthropic.com/v1/messages", headers=headers, json=body, timeout=90)
+        r = requests.post(url, json=body, timeout=90)
         if not r.ok:
-            print(f"Claude API error detail: {r.text}")
+            print(f"Gemini API error detail: {r.text}")
         r.raise_for_status()
-        raw = r.json()["content"][0]["text"].strip()
+        raw = r.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+        # Strip any accidental markdown fences
         if raw.startswith("```"):
             raw = raw.split("```")[1]
             if raw.startswith("json"):
                 raw = raw[4:]
-        return json.loads(raw.strip())
+        raw = raw.strip()
+        return json.loads(raw)
+    except json.JSONDecodeError as e:
+        print(f"JSON parse error: {e}")
+        print(f"Raw response: {raw[:500]}")
+        return []
     except Exception as e:
-        print(f"Claude API error: {e}")
+        print(f"Gemini API error: {e}")
         return []
 
 def build_archive_index():
-    """Scan output folder for dated HTML files and rebuild archive.html"""
     dated_files = sorted(
         [f for f in OUTPUT_DIR.glob("????-??-??.html")],
         reverse=True
@@ -349,7 +349,7 @@ def build_archive_index():
   <a href="index.html" style="display:flex;justify-content:space-between;align-items:center;
      padding:12px 16px;background:#E1F5EE;border:0.5px solid #5DCAA5;border-radius:9px;
      margin-bottom:16px;text-decoration:none;color:#0F6E56">
-    <span style="font-size:14px;font-weight:600">Today — {TODAY}</span>
+    <span style="font-size:14px;font-weight:600">Today -- {TODAY}</span>
     <span style="font-size:12px">View today &rarr;</span>
   </a>
   {rows}
@@ -375,8 +375,8 @@ def main():
         weather = fetch_weather(g["home"])
         games_with_data.append({**g, "odds": odds, "weather": weather})
 
-    print(f"Found {len(games_with_data)} games -- calling Claude...")
-    picks = call_claude(games_with_data)
+    print(f"Found {len(games_with_data)} games -- calling Gemini...")
+    picks = call_gemini(games_with_data)
 
     active_picks = [p for p in picks if p.get("tier") != "SKIP"]
 
@@ -389,27 +389,21 @@ def main():
         "raw_games_data": games_with_data,
     }
 
-    # Save JSON
     json_path = OUTPUT_DIR / "picks.json"
     json_path.write_text(json.dumps(output, indent=2))
     print(f"Wrote {json_path}")
 
-    # Build HTML
     html = build_html(output)
 
-    # Save as today's archive copy (permanent)
     dated_path = OUTPUT_DIR / f"{TODAY}.html"
     dated_path.write_text(html)
     print(f"Wrote {dated_path}")
 
-    # Save as index.html (today's live page)
     index_path = OUTPUT_DIR / "index.html"
     index_path.write_text(html)
     print(f"Wrote {index_path}")
 
-    # Rebuild archive index
     build_archive_index()
-
     print(f"Done. {len(active_picks)} active picks across {len(games)} games.")
 
 def build_html(data):
@@ -421,7 +415,16 @@ def build_html(data):
     tier_bar   = {"A": "#1D9E75", "B": "#378ADD", "C": "#BA7517"}
     tier_bg    = {"A": "#E1F5EE", "B": "#E6F1FB", "C": "#FAEEDA"}
     tier_text  = {"A": "#0F6E56", "B": "#185FA5", "C": "#854F0B"}
-    tier_label = {"A": "TIER A — PLAY", "B": "TIER B — PLAY", "C": "TIER C — LEAN"}
+    tier_label = {"A": "TIER A -- PLAY", "B": "TIER B -- PLAY", "C": "TIER C -- LEAN"}
+
+    def status_badge(p):
+        live = p.get("live_score")
+        status = p.get("status", "")
+        if status == "Final" and live:
+            return f'<span style="font-size:11px;background:#f0f0ee;color:#666;padding:2px 8px;border-radius:4px;margin-left:6px">FINAL: {live}</span>'
+        elif live:
+            return f'<span style="font-size:11px;background:#FAEEDA;color:#633806;padding:2px 8px;border-radius:4px;margin-left:6px">LIVE: {live}</span>'
+        return ""
 
     def card(p):
         tier  = p.get("tier", "C")
@@ -431,19 +434,11 @@ def build_html(data):
         lbl   = tier_label.get(tier, "LEAN")
         ev    = p.get("ev_pct", 0)
         bar_w = min(int(ev) * 8, 100)
-        live  = p.get("live_score")
-        status = p.get("status", "")
-        if status == "Final" and live:
-            status_html = f'<span style="font-size:11px;background:#f0f0ee;color:#666;padding:2px 8px;border-radius:4px;margin-left:6px">FINAL: {live}</span>'
-        elif live:
-            status_html = f'<span style="font-size:11px;background:#FAEEDA;color:#633806;padding:2px 8px;border-radius:4px;margin-left:6px">LIVE: {live}</span>'
-        else:
-            status_html = ""
         return f"""
 <div style="background:#fff;border:0.5px solid #e0e0e0;border-left:3px solid {color};border-radius:10px;padding:1rem 1.25rem;margin-bottom:10px">
   <span style="background:{bg};color:{tc};font-size:11px;font-weight:600;padding:2px 9px;border-radius:4px;display:inline-block;margin-bottom:8px">{lbl}</span>
   <div style="font-size:16px;font-weight:600;margin-bottom:2px">{p.get("pick","")}</div>
-  <div style="font-size:13px;color:#666;margin-bottom:10px">{p.get("game","")} &nbsp;·&nbsp; {p.get("line","N/A")} &nbsp;·&nbsp; {p.get("units",0)}u{status_html}</div>
+  <div style="font-size:13px;color:#666;margin-bottom:10px">{p.get("game","")} &nbsp;·&nbsp; {p.get("line","N/A")} &nbsp;·&nbsp; {p.get("units",0)}u{status_badge(p)}</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
     <div style="background:#f7f7f5;border-radius:7px;padding:8px 10px">
       <div style="font-size:10px;color:#999;margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Away SP</div>
@@ -475,18 +470,10 @@ def build_html(data):
 </div>"""
 
     def skip_card(p):
-        live  = p.get("live_score")
-        status = p.get("status", "")
-        if status == "Final" and live:
-            status_html = f'<span style="font-size:11px;background:#f0f0ee;color:#666;padding:2px 8px;border-radius:4px;margin-left:6px">FINAL: {live}</span>'
-        elif live:
-            status_html = f'<span style="font-size:11px;background:#FAEEDA;color:#633806;padding:2px 8px;border-radius:4px;margin-left:6px">LIVE: {live}</span>'
-        else:
-            status_html = ""
         return f"""
 <div style="background:#fff;border:0.5px solid #e0e0e0;border-left:3px solid #B4B2A9;border-radius:10px;padding:1rem 1.25rem;margin-bottom:10px">
-  <span style="background:#F1EFE8;color:#5F5E5A;font-size:11px;font-weight:600;padding:2px 9px;border-radius:4px;display:inline-block;margin-bottom:8px">SKIP — NO EDGE</span>
-  <div style="font-size:16px;font-weight:600;margin-bottom:2px">{p.get("game","")}{status_html}</div>
+  <span style="background:#F1EFE8;color:#5F5E5A;font-size:11px;font-weight:600;padding:2px 9px;border-radius:4px;display:inline-block;margin-bottom:8px">SKIP -- NO EDGE</span>
+  <div style="font-size:16px;font-weight:600;margin-bottom:2px">{p.get("game","")}{status_badge(p)}</div>
   <div style="font-size:13px;color:#666;margin-bottom:10px">{p.get("venue","")} &nbsp;·&nbsp; {p.get("game_time","")}</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
     <div style="background:#f7f7f5;border-radius:7px;padding:8px 10px">
