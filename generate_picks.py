@@ -1401,7 +1401,15 @@ def build_html(data):
     watched = [p for p in all_picks if p.get("tier") == "WATCH"]
     skipped = [p for p in all_picks if p.get("tier") == "SKIP"]
     total_u = round(sum(p.get("units",0) for p in active),1)
-    gen      = data.get("generated_at","")[:16].replace("T"," ")
+    gen_utc  = data.get("generated_at","")
+    try:
+        import datetime as _dt
+        utc_dt = _dt.datetime.strptime(gen_utc[:19], "%Y-%m-%dT%H:%M:%S")
+        et_offset = -4  # EDT (use -5 for EST Nov-Mar)
+        et_dt = utc_dt + _dt.timedelta(hours=et_offset)
+        gen = et_dt.strftime("%-I:%M %p ET")
+    except:
+        gen = gen_utc[:16].replace("T"," ")
     date     = data["date"]
     ai_model = data.get("ai_model","Unknown")
 
@@ -1756,7 +1764,7 @@ def main():
 
     output = {
         "date":         TODAY,
-        "generated_at": datetime.datetime.utcnow().isoformat()+"Z",
+        "generated_at": datetime.datetime.utcnow().isoformat()+"Z",  # stored UTC, displayed as ET
         "stats_date":   stats.get("date",""),
         "ai_model":     ai_model,
         "total_games":  len(games),
