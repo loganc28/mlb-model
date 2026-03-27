@@ -1004,6 +1004,198 @@ def call_ai(games_with_data):
 
 # ── Record tracker with CLV ───────────────────────────────────────────────────
 
+
+def american_odds_to_payout(odds_str, units):
+    """Calculate units won/lost from American odds and stake."""
+    try:
+        odds = float(str(odds_str).replace("+","").replace(" ",""))
+        if odds < 0:
+            return round(units * 100 / abs(odds), 3)
+        else:
+            return round(units * odds / 100, 3)
+    except:
+        return round(units * 0.909, 3)  # default -110 payout
+
+def fetch_final_scores(date_str):
+    """Fetch all final scores for a given date from MLB Stats API."""
+    data = mlb_api("/schedule", {
+        "sportId":"1","date":date_str,
+        "hydrate":"linescore,team","gameType":"R",
+    })
+    scores = {}
+    for de in data.get("dates",[]):
+        for g in de.get("games",[]):
+            status = g.get("status",{}).get("abstractGameState","")
+            if status != "Final":
+                continue
+            home = g["teams"]["home"]["team"]["name"]
+            away = g["teams"]["away"]["team"]["name"]
+            home_score = g["teams"]["home"].get("score",0) or 0
+            away_score = g["teams"]["away"].get("score",0) or 0
+            # F5 score from linescore
+            linescore = g.get("linescore",{})
+            innings = linescore.get("innings",[])
+            home_f5 = sum(int(inn.get("home",{}).get("runs",0) or 0) for inn in innings[:5])
+            away_f5 = sum(int(inn.get("away",{}).get("runs",0) or 0) for inn in innings[:5])
+            total_runs = home_score + away_score
+            f5_total = home_f5 + away_f5
+            key = away+"@"+home
+            scores[key] = {
+                "home": home,
+                "away": away,
+                "home_score": home_score,
+                "away_score": away_score,
+                "total_runs": total_runs,
+                "f5_home": home_f5,
+                "f5_away": away_f5,
+                "f5_total": f5_total,
+                "winner": home if home_score > away_score else away,
+                "run_diff": abs(home_score - away_score),
+            }
+    return scores
+
+def settle_pick(pick, scores):
+    """
+    Determine W/L/P for a pick based on final scores.
+    Returns updated pick dict or None if game not found/not final.
+    """
+    game_str = pick.get("game","")
+    # Convert "AWAY @ HOME" to "AWAY@HOME" key
+    key = game_str.replace(" @ ","@")
+    score = scores.get(key)
+    if not score:
+        return None  # game not found or not final
+
+    bet_type = pick.get("bet_type","")
+    pick_str = pick.get("pick","").upper()
+    line_str = str(pick.get("line",""))
+    units    = float(pick.get("units",0) or 0)
+    result   = None
+
+    try:
+        # Parse total line from pick string e.g. "UNDER 8.5" or "OVER 7.0"
+        def parse_total(s):
+            parts = s.split()
+            for p in parts:
+                try: return float(p)
+                except: pass
+            return None
+
+        if bet_type in ("Total OVER","Total UNDER","F5 OVER","F5 UNDER"):
+            if "F5" in bet_type:
+                actual = score["f5_total"]
+            else:
+                actual = score["total_runs"]
+            line = parse_total(pick_str)
+            if line is None:
+                return None
+            if actual > line:
+                result = "W" if "OVER" in bet_type else "L"
+            elif actual < line:
+                result = "W" if "UNDER" in bet_type else "L"
+            else:
+                result = "P"  # push
+
+        elif bet_type == "ML":
+            # Determine which team we bet on
+            pick_team = None
+            for team in [score["home"], score["away"]]:
+                if team.upper() in pick_str or any(w in pick_str for w in team.upper().split()):
+                    pick_team = team
+                    break
+            if not pick_team:
+                return None
+            result = "W" if score["winner"] == pick_team else "L"
+
+        elif bet_type == "Run Line":
+            # e.g. "Dodgers -1.5" or "Guardians +1.5"
+            pick_team = None; spread = None
+            for team in [score["home"], score["away"]]:
+                if any(w in pick_str for w in team.upper().split()):
+                    pick_team = team
+                    break
+            if "-1.5" in pick_str: spread = -1.5
+            elif "+1.5" in pick_str: spread = 1.5
+            if not pick_team or spread is None:
+                return None
+            if pick_team == score["home"]:
+                adjusted = score["home_score"] - score["away_score"] + spread
+            else:
+                adjusted = score["away_score"] - score["home_score"] + spread
+            if adjusted > 0: result = "W"
+            elif adjusted < 0: result = "L"
+            else: result = "P"
+
+        elif bet_type in ("WATCH","SKIP") or not bet_type:
+            # For WATCH picks — still track if they would have won
+            if "OVER" in pick_str or "UNDER" in pick_str:
+                line = parse_total(pick_str)
+                actual = score["total_runs"]
+                if line:
+                    if actual > line: result = "W" if "OVER" in pick_str else "L"
+                    elif actual < line: result = "W" if "UNDER" in pick_str else "L"
+                    else: result = "P"
+            elif "ML" in pick_str or any(t.upper() in pick_str for t in [score["home"],score["away"]]):
+                for team in [score["home"],score["away"]]:
+                    if any(w in pick_str for w in team.upper().split()):
+                        result = "W" if score["winner"]==team else "L"
+                        break
+
+    except Exception as e:
+        print("Settlement error for "+game_str+": "+str(e))
+        return None
+
+    if result is None:
+        return None
+
+    # Calculate units won/lost
+    if result == "W":
+        units_result = american_odds_to_payout(line_str, units)
+    elif result == "L":
+        units_result = -units
+    else:  # Push
+        units_result = 0
+
+    pick = dict(pick)
+    pick["result"] = result
+    pick["units_result"] = round(units_result, 3)
+    pick["final_score"] = score["away"]+" "+str(score["away_score"])+" - "+score["home"]+" "+str(score["home_score"])
+    return pick
+
+def auto_settle_record(record):
+    """
+    Check all unsettled picks against final scores and auto-update results.
+    Runs every time the workflow fires.
+    """
+    unsettled = [p for p in record["picks"] if not p.get("result") and p.get("tier") != "SKIP"]
+    if not unsettled:
+        return record, 0
+
+    # Get unique dates we need scores for
+    dates_needed = set(p.get("date","") for p in unsettled if p.get("date"))
+    all_scores = {}
+    for d in dates_needed:
+        try:
+            day_scores = fetch_final_scores(d)
+            all_scores.update(day_scores)
+            print("Fetched "+str(len(day_scores))+" final scores for "+d)
+        except Exception as e:
+            print("Score fetch error for "+d+": "+str(e))
+
+    settled_count = 0
+    for i, pick in enumerate(record["picks"]):
+        if pick.get("result") or pick.get("tier") == "SKIP":
+            continue
+        updated = settle_pick(pick, all_scores)
+        if updated:
+            record["picks"][i] = updated
+            settled_count += 1
+            print("Auto-settled: "+updated.get("pick","")+" → "+updated["result"]
+                  +" ("+str(updated["units_result"])+"u) | "+updated.get("final_score",""))
+
+    return record, settled_count
+
+
 def load_record():
     if RECORD_FILE.exists():
         try: return json.loads(RECORD_FILE.read_text())
@@ -1518,8 +1710,12 @@ def main():
     picks, ai_model = call_ai(games_with_data)
     active = [p for p in picks if p.get("tier") in ("A","B","C")]
 
-    # Record tracker — store opening line for CLV tracking
+    # Auto-settle any previous picks that have final scores
     record = load_record()
+    record, settled = auto_settle_record(record)
+    if settled:
+        print("Auto-settled "+str(settled)+" picks")
+        save_record(record)
     existing_keys = {p["game"]+p.get("date","") for p in record["picks"]}
     for p in active:
         key = p.get("game","")+TODAY
