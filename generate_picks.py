@@ -248,7 +248,9 @@ def fetch_pitcher_recent_form(pid, season):
     data = mlb_api("/people/"+str(pid)+"/stats", {
         "stats":"gameLog","season":str(season),"group":"pitching","sportId":"1",
     })
-    splits = data.get("stats",[{}])[0].get("splits",[])
+    stats_list = data.get("stats",[])
+    if not stats_list: return {}
+    splits = stats_list[0].get("splits",[])
     # Filter to starts only, take last 3
     starts = [s for s in splits if int(s.get("stat",{}).get("gamesStarted",0) or 0) > 0]
     last3 = starts[-3:] if len(starts) >= 3 else starts
@@ -282,7 +284,9 @@ def fetch_pitcher_splits(pid, season):
         "stats":"statSplits","season":str(season),"group":"pitching",
         "sportId":"1","sitCodes":"h,a",
     })
-    for split in data.get("stats",[{}])[0].get("splits",[]):
+    stats_list = data.get("stats",[])
+    if not stats_list: return {}
+    for split in stats_list[0].get("splits",[]):
         sit = split.get("split",{}).get("code","")
         stat = split.get("stat",{})
         ip = safe_float(stat.get("inningsPitched","0"))
@@ -312,7 +316,9 @@ def fetch_pitcher_stats_by_id(pid, season):
     data = mlb_api("/people/"+str(pid)+"/stats", {
         "stats":"season","season":str(season),"group":"pitching","sportId":"1",
     })
-    splits = data.get("stats",[{}])[0].get("splits",[])
+    stats_list = data.get("stats",[])
+    if not stats_list: return {}
+    splits = stats_list[0].get("splits",[])
     if not splits: return {}
     stat = splits[0].get("stat",{})
     gs = int(stat.get("gamesStarted",0) or 0)
