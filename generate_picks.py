@@ -157,6 +157,11 @@ def get_pitcher_stats(name, stats):
     s25 = find_in(stats["sp_2025"], name)
     s26 = find_in(stats["sp_2026"], name)
     if not s25 and not s26:
+        # Try hardcoded fallback for known pitchers
+        fb = PITCHER_FALLBACK.get(name, {})
+        if fb:
+            fb["note"] = fb.get("note","") + " (fallback data)"
+            return fb
         return {"note":"No stats available — pitcher may be new or name mismatch"}
     if not s26 or s26.get("gs",0) == 0:
         s25["note"] = "2025 only (no 2026 starts yet)"
