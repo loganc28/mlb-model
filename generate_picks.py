@@ -912,6 +912,7 @@ def enforce_ev_rules(picks):
             win_prob = 0; implied = 0
 
         # Recalculate EV from win/implied prob for accuracy
+        calc_ev = ev  # default to stated ev
         if win_prob > 0 and implied > 0:
             calc_ev = round(win_prob - implied, 1)
             if abs(calc_ev - ev) > 2:
@@ -935,21 +936,24 @@ def enforce_ev_rules(picks):
                     continue
         except: pass
 
-        # Check EV threshold
+        # Check EV threshold — enforce on BOTH stated ev_pct AND calculated ev
         min_ev = MIN_EV.get(bet_type, 3)
-        if ev < min_ev and tier in ("A","B","C"):
-            if ev >= 1:
-                print("ENFORCING: "+p.get("game","")+" — EV "+str(ev)+"% below "+str(min_ev)+"% threshold, downgrading to WATCH")
+        # Use the lower of stated vs calculated ev to be conservative
+        effective_ev = min(ev, calc_ev) if win_prob > 0 and implied > 0 else ev
+        if effective_ev < min_ev and tier in ("A","B","C"):
+            if effective_ev >= 1:
+                print("ENFORCING: "+p.get("game","")+" — EV "+str(effective_ev)+"% below "+str(min_ev)+"% threshold for "+bet_type+", downgrading to WATCH")
                 p["tier"] = "WATCH"
                 p["units"] = 0
-                p["avoid_reason"] = "EV "+str(ev)+"% below minimum "+str(min_ev)+"% threshold for "+bet_type
+                p["ev_pct"] = effective_ev
+                p["avoid_reason"] = "EV "+str(effective_ev)+"% below minimum "+str(min_ev)+"% threshold for "+bet_type
             else:
-                print("ENFORCING: "+p.get("game","")+" — EV "+str(ev)+"% below threshold, downgrading to SKIP")
+                print("ENFORCING: "+p.get("game","")+" — EV "+str(effective_ev)+"% below threshold, downgrading to SKIP")
                 p["tier"] = "SKIP"
                 p["bet_type"] = "SKIP"
                 p["pick"] = "SKIP"
                 p["units"] = 0
-                p["avoid_reason"] = "EV "+str(ev)+"% below minimum threshold"
+                p["avoid_reason"] = "EV "+str(effective_ev)+"% below minimum threshold"
 
         # Fix tier/units alignment
         ev_val = p.get("ev_pct",0)
