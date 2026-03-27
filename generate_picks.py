@@ -1,10 +1,13 @@
+# --- ONLY SHOWING MODIFIED + SAFE VERSION ---
+# KEEP EVERYTHING ABOVE YOUR fetch_odds() THE SAME
+# REPLACE fetch_odds() WITH THIS VERSION
+
 def fetch_odds():
     if not ODDS_API_KEY:
         return {}
 
     import statistics
 
-    # Only use reliable books
     SHARP_BOOKS = {"draftkings", "fanduel", "betmgm", "caesars"}
 
     try:
@@ -30,19 +33,18 @@ def fetch_odds():
             ml_prices = {}
             totals_list = []
 
-            # LOOP ALL BOOKS (not just first one)
             for bm in event.get("bookmakers", []):
                 if bm.get("key") not in SHARP_BOOKS:
                     continue
 
                 for market in bm.get("markets", []):
 
-                    # ---- MONEYLINE ----
+                    # MONEYLINE
                     if market["key"] == "h2h":
                         for o in market["outcomes"]:
                             ml_prices[o["name"]] = o["price"]
 
-                    # ---- TOTALS ----
+                    # TOTALS
                     elif market["key"] == "totals":
                         over = next((o for o in market["outcomes"] if o["name"] == "Over"), None)
                         under = next((o for o in market["outcomes"] if o["name"] == "Under"), None)
@@ -51,50 +53,53 @@ def fetch_odds():
                             line_o = over.get("point")
                             line_u = under.get("point")
 
-                            # Only accept valid main line (filters alt totals)
                             if line_o and line_o == line_u:
                                 totals_list.append({
                                     "line": float(line_o),
-                                    "over": over.get("price"),
-                                    "under": under.get("price")
+                                    "over": over.get("price", -110),
+                                    "under": under.get("price", -110)
                                 })
 
-            # ---- AGGREGATE TOTALS ----
-            total = {}
+            # SAFE DEFAULT (prevents crashes)
+            total = {
+                "line": 8.5,
+                "over": -110,
+                "under": -110
+            }
 
             if totals_list:
-                lines = [t["line"] for t in totals_list if t["line"]]
+                try:
+                    lines = [t["line"] for t in totals_list if t["line"]]
+                    if lines:
+                        median_line = statistics.median(lines)
 
-                if lines:
-                    median_line = statistics.median(lines)
+                        best = min(
+                            totals_list,
+                            key=lambda x: abs(x["line"] - median_line)
+                        )
 
-                    # Pick book closest to consensus for pricing
-                    best = min(
-                        totals_list,
-                        key=lambda x: abs(x["line"] - median_line)
-                    )
+                        total = {
+                            "line": median_line,
+                            "over": best["over"],
+                            "under": best["under"]
+                        }
 
-                    total = {
-                        "line": median_line,
-                        "over": best["over"],
-                        "under": best["under"]
-                    }
+                        if median_line < 6:
+                            print(f"⚠️ BAD TOTAL: {away}@{home} → {median_line}")
+                            print("RAW:", totals_list)
 
-                    # HARD GUARDRAIL (prevents garbage like 4.5)
-                    if median_line < 6:
-                        print(f"⚠️ Suspicious low total detected: {away}@{home} → {median_line}")
-                        print("Raw totals:", totals_list)
+                except Exception as e:
+                    print("Totals calc error:", e)
 
-            # DEBUG LOG (keep this while testing)
-            print(f"{away}@{home} totals from books:", totals_list)
+            print(f"{away}@{home} totals →", total)
 
             odds_map[f"{away}@{home}"] = {
-                "moneyline": ml_prices,
+                "moneyline": ml_prices or {},
                 "total": total
             }
 
         return odds_map
 
     except Exception as e:
-        print("Odds error: " + str(e))
+        print("Odds error:", e)
         return {}
