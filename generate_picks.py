@@ -1,7 +1,7 @@
 """
 MLB Betting Model — Daily Picks Generator
 - Runs every 2 hours via GitHub Actions
-- Real 2025+2026 stats from MLB Stats API (cached daily)
+- Real 2025+2026 stats fetched by player ID (not name) — bulletproof lookup
 - Live scores update every 30s in browser
 - Groq free tier as AI engine
 """
@@ -14,8 +14,7 @@ WEATHER_API_KEY = os.environ.get("WEATHER_API_KEY", "")
 GROQ_KEY        = os.environ.get("GROQ_API_KEY", "")
 OUTPUT_DIR      = Path("output")
 OUTPUT_DIR.mkdir(exist_ok=True)
-TODAY      = datetime.date.today().isoformat()
-NOW_ET     = datetime.datetime.now().strftime("%I:%M %p ET")
+TODAY       = datetime.date.today().isoformat()
 STATS_CACHE = OUTPUT_DIR / "stats_cache.json"
 
 STADIUMS = {
@@ -51,73 +50,135 @@ def mlb_api(path, params=None):
         r.raise_for_status()
         return r.json()
     except Exception as e:
-        print("MLB API error: "+str(e))
+        print("MLB API error ("+path+"): "+str(e))
         return {}
 
-def fetch_sp_stats(season):
-    data = mlb_api("/stats", {"stats":"season","playerPool":"All",
-                               "sportId":"1","season":str(season),"group":"pitching","limit":"600"})
+# ── Player ID lookup ──────────────────────────────────────────────────────────
+
+def search_player_id(name):
+    """Search for a player by name and return their MLB ID."""
+    data = mlb_api("/people/search", {"names": name, "sportId": "1"})
+    people = data.get("people", [])
+    if not people:
+        # Try last name only
+        last = name.split()[-1] if name else ""
+        data = mlb_api("/people/search", {"names": last, "sportId": "1"})
+        people = data.get("people", [])
+    if people:
+        # Return the first active player match
+        for p in people:
+            if p.get("active", False):
+                return p.get("id")
+        return people[0].get("id")
+    return None
+
+def fetch_pitcher_stats_by_id(player_id, season):
+    """Fetch pitching stats for a specific player ID and season."""
+    data = mlb_api("/people/"+str(player_id)+"/stats", {
+        "stats": "season",
+        "season": str(season),
+        "group": "pitching",
+        "sportId": "1",
+    })
+    splits = data.get("stats", [{}])[0].get("splits", [])
+    if not splits:
+        return {}
+    stat = splits[0].get("stat", {})
+    gs = int(stat.get("gamesStarted", 0) or 0)
+    ip = safe_float(stat.get("inningsPitched", "0"))
+    so = int(stat.get("strikeOuts", 0) or 0)
+    bb = int(stat.get("baseOnBalls", 0) or 0)
+    return {
+        "season": season,
+        "gs": gs,
+        "ip": round(ip, 1),
+        "era": safe_float(stat.get("era")),
+        "whip": safe_float(stat.get("whip")),
+        "k9": round(so/ip*9, 2) if ip > 0 else 0,
+        "bb9": round(bb/ip*9, 2) if ip > 0 else 0,
+    }
+
+# ── Bulk stats fetching ───────────────────────────────────────────────────────
+
+def fetch_sp_stats_bulk(season):
+    """Fetch all SP stats for a season in bulk."""
+    data = mlb_api("/stats", {
+        "stats": "season",
+        "playerPool": "All",
+        "sportId": "1",
+        "season": str(season),
+        "group": "pitching",
+        "limit": "600",
+    })
     result = {}
-    for split in data.get("stats",[{}])[0].get("splits",[]):
-        name = split.get("player",{}).get("fullName","")
-        stat = split.get("stat",{})
-        gs = int(stat.get("gamesStarted",0) or 0)
-        if gs < 1: continue
-        ip = safe_float(stat.get("inningsPitched","0"))
-        so = int(stat.get("strikeOuts",0) or 0)
-        bb = int(stat.get("baseOnBalls",0) or 0)
+    for split in data.get("stats", [{}])[0].get("splits", []):
+        name = split.get("player", {}).get("fullName", "")
+        pid  = split.get("player", {}).get("id")
+        stat = split.get("stat", {})
+        gs = int(stat.get("gamesStarted", 0) or 0)
+        if gs < 1:
+            continue
+        ip = safe_float(stat.get("inningsPitched", "0"))
+        so = int(stat.get("strikeOuts", 0) or 0)
+        bb = int(stat.get("baseOnBalls", 0) or 0)
         result[name] = {
-            "season":season,"gs":gs,"ip":round(ip,1),
-            "era":safe_float(stat.get("era")),
-            "whip":safe_float(stat.get("whip")),
-            "k9":round(so/ip*9,2) if ip>0 else 0,
-            "bb9":round(bb/ip*9,2) if ip>0 else 0,
+            "player_id": pid,
+            "season": season,
+            "gs": gs,
+            "ip": round(ip, 1),
+            "era": safe_float(stat.get("era")),
+            "whip": safe_float(stat.get("whip")),
+            "k9": round(so/ip*9, 2) if ip > 0 else 0,
+            "bb9": round(bb/ip*9, 2) if ip > 0 else 0,
         }
     return result
 
 def fetch_team_pitching(season):
-    data = mlb_api("/stats", {"stats":"season","group":"pitching","gameType":"R",
-                               "season":str(season),"sportId":"1","playerPool":"All"})
+    data = mlb_api("/stats", {
+        "stats": "season", "group": "pitching", "gameType": "R",
+        "season": str(season), "sportId": "1", "playerPool": "All",
+    })
     result = {}
-    for split in data.get("stats",[{}])[0].get("splits",[]):
-        team = split.get("team",{}).get("name","")
-        stat = split.get("stat",{})
+    for split in data.get("stats", [{}])[0].get("splits", []):
+        team = split.get("team", {}).get("name", "")
+        stat = split.get("stat", {})
         if not team: continue
-        ip = safe_float(stat.get("inningsPitched","0"))
-        so = int(stat.get("strikeOuts",0) or 0)
+        ip = safe_float(stat.get("inningsPitched", "0"))
+        so = int(stat.get("strikeOuts", 0) or 0)
         result[team] = {
-            "season":season,
-            "team_era":safe_float(stat.get("era")),
-            "team_whip":safe_float(stat.get("whip")),
-            "team_k9":round(so/ip*9,2) if ip>0 else 0,
+            "season": season,
+            "team_era": safe_float(stat.get("era")),
+            "team_whip": safe_float(stat.get("whip")),
+            "team_k9": round(so/ip*9, 2) if ip > 0 else 0,
         }
     return result
 
 def fetch_team_batting(season):
-    data = mlb_api("/stats", {"stats":"season","group":"hitting","gameType":"R",
-                               "season":str(season),"sportId":"1","playerPool":"All"})
+    data = mlb_api("/stats", {
+        "stats": "season", "group": "hitting", "gameType": "R",
+        "season": str(season), "sportId": "1", "playerPool": "All",
+    })
     result = {}
-    for split in data.get("stats",[{}])[0].get("splits",[]):
-        team = split.get("team",{}).get("name","")
-        stat = split.get("stat",{})
+    for split in data.get("stats", [{}])[0].get("splits", []):
+        team = split.get("team", {}).get("name", "")
+        stat = split.get("stat", {})
         if not team: continue
-        g = int(stat.get("gamesPlayed",1) or 1)
-        runs = int(stat.get("runs",0) or 0)
-        # Skip early season noise — need at least 10 games for meaningful batting stats
+        g = int(stat.get("gamesPlayed", 1) or 1)
+        runs = int(stat.get("runs", 0) or 0)
+        # Skip early season noise
         if g < 10 and season == 2026:
             continue
         ops = safe_float(stat.get("ops"))
-        # Sanity check — OPS above 1.2 in small sample is noise, skip it
         if ops > 1.2:
             continue
         result[team] = {
-            "season":season,
-            "games_played":g,
-            "ops":ops,
-            "avg":safe_float(stat.get("avg")),
-            "obp":safe_float(stat.get("obp")),
-            "slg":safe_float(stat.get("slg")),
-            "runs_per_game":round(runs/g,2) if g>0 else 0,
+            "season": season,
+            "games_played": g,
+            "ops": ops,
+            "avg": safe_float(stat.get("avg")),
+            "obp": safe_float(stat.get("obp")),
+            "slg": safe_float(stat.get("slg")),
+            "runs_per_game": round(runs/g, 2) if g > 0 else 0,
         }
     return result
 
@@ -131,91 +192,113 @@ def fetch_and_cache_stats():
         except: pass
     print("Fetching fresh stats...")
     stats = {
-        "date":TODAY,
-        "sp_2025":fetch_sp_stats(2025),
-        "sp_2026":fetch_sp_stats(2026),
-        "team_pitching_2025":fetch_team_pitching(2025),
-        "team_pitching_2026":fetch_team_pitching(2026),
-        "team_batting_2025":fetch_team_batting(2025),
-        "team_batting_2026":fetch_team_batting(2026),
+        "date": TODAY,
+        "sp_2025": fetch_sp_stats_bulk(2025),
+        "sp_2026": fetch_sp_stats_bulk(2026),
+        "team_pitching_2025": fetch_team_pitching(2025),
+        "team_pitching_2026": fetch_team_pitching(2026),
+        "team_batting_2025": fetch_team_batting(2025),
+        "team_batting_2026": fetch_team_batting(2026),
+        "player_id_cache": {},  # populated on demand
     }
     print("SP stats: "+str(len(stats["sp_2025"]))+" in 2025, "+str(len(stats["sp_2026"]))+" in 2026")
     STATS_CACHE.write_text(json.dumps(stats))
     return stats
 
 def get_pitcher_stats(name, stats):
-    # Try exact match first, then fuzzy match on last name
+    """
+    Get pitcher stats using a 3-tier lookup:
+    1. Exact name match in bulk stats
+    2. Last-name fuzzy match in bulk stats
+    3. Live ID lookup via MLB people/search API (catches traded players, name mismatches)
+    """
     def find_in(pool, n):
         if n in pool:
             return pool[n]
-        # Try matching by last name only as fallback
         last = n.split()[-1].lower() if n else ""
         for k, v in pool.items():
             if k.split()[-1].lower() == last and last:
                 return v
         return {}
+
     s25 = find_in(stats["sp_2025"], name)
     s26 = find_in(stats["sp_2026"], name)
+
+    # Tier 3: live ID lookup if bulk failed
     if not s25 and not s26:
-        # Try hardcoded fallback for known pitchers
-        fb = PITCHER_FALLBACK.get(name, {})
-        if fb:
-            fb["note"] = fb.get("note","") + " (fallback data)"
-            return fb
-        return {"note":"No stats available — pitcher may be new or name mismatch"}
-    if not s26 or s26.get("gs",0) == 0:
-        s25["note"] = "2025 only (no 2026 starts yet)"
+        print("Doing live ID lookup for: " + name)
+        pid = stats.get("player_id_cache", {}).get(name)
+        if not pid:
+            pid = search_player_id(name)
+            if pid:
+                stats.setdefault("player_id_cache", {})[name] = pid
+        if pid:
+            s25 = fetch_pitcher_stats_by_id(pid, 2025)
+            s26 = fetch_pitcher_stats_by_id(pid, 2026)
+            if s25: s25["note"] = "2025 via ID lookup"
+            if s26: s26["note"] = "2026 via ID lookup"
+
+    if not s25 and not s26:
+        return {"note": "No stats found — pitcher may be making MLB debut"}
+
+    if not s26 or s26.get("gs", 0) == 0:
+        s25["note"] = s25.get("note", "") or "2025 only (no 2026 starts yet)"
         return s25
-    gs26 = s26.get("gs",0)
+
+    gs26 = s26.get("gs", 0)
     if gs26 >= 10:
         s26["note"] = "2026 primary ("+str(gs26)+" starts)"
         return s26
     elif gs26 >= 5:
         blended = {}
         for key in ["era","whip","k9","bb9"]:
-            v25 = s25.get(key,0); v26 = s26.get(key,0)
-            blended[key] = round(v26*0.6+v25*0.4,2) if v25 and v26 else (v26 or v25)
+            v25 = s25.get(key, 0); v26 = s26.get(key, 0)
+            blended[key] = round(v26*0.6 + v25*0.4, 2) if v25 and v26 else (v26 or v25)
         blended["gs_2026"] = gs26
-        blended["gs_2025"] = s25.get("gs",0)
+        blended["gs_2025"] = s25.get("gs", 0)
         blended["note"] = "Blended 60/40 ("+str(gs26)+" 2026 starts)"
         return blended
     else:
         s25["gs_2026"] = gs26
         s25["era_2026"] = s26.get("era")
-        s25["note"] = "Primarily 2025 (only "+str(gs26)+" 2026 starts)"
+        s25["note"] = s25.get("note","") or "Primarily 2025 (only "+str(gs26)+" 2026 starts)"
         return s25
 
 def get_team_stats(team, stats, stat_type):
-    s26 = stats.get(stat_type+"_2026",{}).get(team,{})
-    s25 = stats.get(stat_type+"_2025",{}).get(team,{})
-    if s26: s26["note"]="2026 YTD"; return s26
-    if s25: s25["note"]="2025 full season"; return s25
+    s26 = stats.get(stat_type+"_2026", {}).get(team, {})
+    s25 = stats.get(stat_type+"_2025", {}).get(team, {})
+    if s26: s26["note"] = "2026 YTD"; return s26
+    if s25: s25["note"] = "2025 full season"; return s25
     return {}
 
+# ── Game / odds / weather ─────────────────────────────────────────────────────
+
 def fetch_mlb_games():
-    url = "https://statsapi.mlb.com/api/v1/schedule?sportId=1&date="+TODAY+"&hydrate=probablePitcher,linescore,team"
+    url = ("https://statsapi.mlb.com/api/v1/schedule?sportId=1&date="+TODAY
+           +"&hydrate=probablePitcher,linescore,team")
     try:
         r = requests.get(url, timeout=10)
         r.raise_for_status()
         games = []
-        for de in r.json().get("dates",[]):
-            for g in de.get("games",[]):
+        for de in r.json().get("dates", []):
+            for g in de.get("games", []):
                 abstract = g.get("status",{}).get("abstractGameState","")
                 detailed = g.get("status",{}).get("detailedState","")
                 home = g["teams"]["home"]["team"]["name"]
                 away = g["teams"]["away"]["team"]["name"]
                 home_sp = g["teams"]["home"].get("probablePitcher",{}).get("fullName","TBD")
                 away_sp = g["teams"]["away"].get("probablePitcher",{}).get("fullName","TBD")
-                hs = g["teams"]["home"].get("score",None)
-                as_ = g["teams"]["away"].get("score",None)
-                live_score = away+" "+str(as_)+" - "+home+" "+str(hs) if hs is not None and as_ is not None else None
+                hs = g["teams"]["home"].get("score", None)
+                as_ = g["teams"]["away"].get("score", None)
+                live_score = (away+" "+str(as_)+" - "+home+" "+str(hs)
+                              if hs is not None and as_ is not None else None)
                 games.append({
-                    "home":home,"away":away,
-                    "game_time":g.get("gameDate",""),
-                    "home_sp":home_sp,"away_sp":away_sp,
-                    "venue":g.get("venue",{}).get("name",""),
-                    "status":detailed or abstract,
-                    "live_score":live_score,
+                    "home": home, "away": away,
+                    "game_time": g.get("gameDate",""),
+                    "home_sp": home_sp, "away_sp": away_sp,
+                    "venue": g.get("venue",{}).get("name",""),
+                    "status": detailed or abstract,
+                    "live_score": live_score,
                 })
         print("Fetched "+str(len(games))+" games")
         return games
@@ -239,13 +322,15 @@ def fetch_odds():
             ml = {}; total = {}
             for bm in event.get("bookmakers",[])[:1]:
                 for market in bm.get("markets",[]):
-                    if market["key"]=="h2h":
+                    if market["key"] == "h2h":
                         for o in market["outcomes"]: ml[o["name"]] = o["price"]
-                    elif market["key"]=="totals":
+                    elif market["key"] == "totals":
                         for o in market["outcomes"]:
-                            if o["name"]=="Over": total["line"]=o.get("point",""); total["over"]=o["price"]
-                            elif o["name"]=="Under": total["under"]=o["price"]
-            odds_map[away+"@"+home] = {"moneyline":ml,"total":total}
+                            if o["name"] == "Over":
+                                total["line"] = o.get("point",""); total["over"] = o["price"]
+                            elif o["name"] == "Under":
+                                total["under"] = o["price"]
+            odds_map[away+"@"+home] = {"moneyline": ml, "total": total}
         return odds_map
     except Exception as e:
         print("Odds error: "+str(e))
@@ -256,79 +341,88 @@ def fetch_weather(team_name):
     if not coords or not WEATHER_API_KEY:
         return {"temp_f":"N/A","wind_mph":"N/A","wind_dir":"N/A","precip_pct":"N/A"}
     try:
-        r = requests.get("https://api.openweathermap.org/data/2.5/forecast",
-            params={"lat":coords[0],"lon":coords[1],"appid":WEATHER_API_KEY,"units":"imperial","cnt":4},
-            timeout=10)
+        r = requests.get(
+            "https://api.openweathermap.org/data/2.5/forecast",
+            params={"lat":coords[0],"lon":coords[1],"appid":WEATHER_API_KEY,
+                    "units":"imperial","cnt":4},
+            timeout=10
+        )
         r.raise_for_status()
         e = r.json()["list"][0]
-        deg = e["wind"].get("deg",0)
+        deg = e["wind"].get("deg", 0)
         dirs = ["N","NE","E","SE","S","SW","W","NW"]
         return {
-            "temp_f":round(e["main"]["temp"]),
-            "wind_mph":round(e["wind"]["speed"]*2.237,1),
-            "wind_dir":dirs[round(deg/45)%8],
-            "precip_pct":round(e.get("pop",0)*100),
+            "temp_f": round(e["main"]["temp"]),
+            "wind_mph": round(e["wind"]["speed"]*2.237, 1),
+            "wind_dir": dirs[round(deg/45) % 8],
+            "precip_pct": round(e.get("pop",0)*100),
         }
     except:
         return {"temp_f":"N/A","wind_mph":"N/A","wind_dir":"N/A","precip_pct":"N/A"}
 
-SYSTEM_PROMPT = """You are a sharp MLB betting analyst. Find positive EV bets using the REAL stats provided.
-Never use memory for stats — only use the numbers in the data given to you.
+# ── Groq ──────────────────────────────────────────────────────────────────────
 
-STAT WEIGHTING (apply automatically based on note field):
-- "2026 primary": trust 2026 stats fully
-- "Blended": use the pre-calculated blended values
-- "Primarily 2025": use 2025, note small 2026 sample
-- "2025 only": baseline from 2025
+SYSTEM_PROMPT = """You are a sharp MLB betting analyst. Find positive EV bets using ONLY the real stats provided.
+Never use memory or assumptions — cite specific numbers from the data given.
+
+STAT WEIGHTING (based on note field in data):
+- "2026 primary" or "2026 via ID lookup": trust 2026 fully
+- "Blended": use blended values as given
+- "Primarily 2025" or "2025 only": use 2025 as baseline, flag small 2026 sample
+- "No stats found": SKIP this game unless park/weather edge is overwhelming
 
 ANALYSIS ORDER (most to least important):
-1. SP quality — cite ERA, K/9, BB/9, WHIP from stats provided
+1. SP quality — cite ERA, K/9, BB/9, WHIP. K/9 above 9.5 = elite swing-and-miss. ERA below 3.00 = ace.
 2. Bullpen — cite team ERA/K9. Elite: Dodgers/Rays/Braves/Phillies. Weak: Rockies/A's/Nationals/CWS
-3. Lineup/offense — cite OPS, runs/game. Injuries or missing starters = lower run expectation
-4. Park factors — Coors +1.5, GABP +0.7, Globe Life +0.4, Petco -0.7, Oracle -0.5, T-Mobile -0.4
-5. Weather — tiebreaker only, never sole reason. Dome = irrelevant.
-   Wind 12+ mph OUT = lean OVER. Wind 12+ mph IN = lean UNDER. >85F adds ~0.4r. <50F subtracts ~0.4r.
+3. Lineup/offense — cite OPS and runs/game. Below .700 OPS = weak offense. Above .800 = strong.
+4. Park factors — Coors +1.5r, GABP +0.7r, Globe Life +0.4r, Petco -0.7r, Oracle -0.5r, T-Mobile -0.4r
+5. Weather — tiebreaker only. Dome = irrelevant.
+   Wind 12+ mph OUT (toward CF/LCF/RCF) = lean OVER.
+   Wind 12+ mph IN (from CF) = lean UNDER.
+   Temp above 85F adds ~0.4r. Below 50F subtracts ~0.4r. Below 40F subtracts ~0.7r.
 
 BETTING RULES:
-- Min edge: 3% ML, 4% totals, 5% run line
-- Never ML worse than -200. Never total juice worse than -130
-- Tier A = 7%+ edge (1.5u). Tier B = 4-6% (1u). Tier C = 3% (0.5u). Max 5u/day
-- Prefer F5 totals — isolates SP, removes bullpen variance
-- SKIP if: SP is TBD, both starters unknown rookies, rain 50%+, or no clear edge
+- Only bet when estimated win probability exceeds implied odds by 3%+ (ML) or 4%+ (totals)
+- Never bet ML worse than -200. Never bet total juice worse than -130.
+- Tier A = 7%+ edge (1.5u). Tier B = 4-6% (1u). Tier C = 3% (0.5u). Max 5u/day total.
+- Prefer F5 totals — isolates SP quality, removes bullpen variance
+- SKIP if: SP is TBD, no stats available for either SP, rain 50%+, or no clear edge exists
 
-IMPORTANT — flag any of these as they affect picks:
-- SP scratch or change from what was listed
-- Lineup missing key players
-- Weather significantly different from forecast
+FLAG these situations in the flags field:
+- SP scratch or change from listed starter
+- Lineup missing 2+ key players
+- Rain probability 40%+ (flag but don't auto-skip unless 50%+)
+- Extreme weather shift since morning
 
-OUTPUT: Raw JSON array only. No markdown. No backticks. Every game must appear.
+OUTPUT: Raw JSON array only. No markdown. No backticks. No explanation outside the JSON.
+Every game must appear — either as a pick or SKIP.
 
-Each entry:
+Each entry must have ALL these fields:
 {
   "game": "AWAY @ HOME",
-  "venue": "stadium",
-  "game_time": "from input",
+  "venue": "stadium name",
+  "game_time": "time from input data",
   "status": "Scheduled or In Progress or Final",
-  "live_score": "score or null",
-  "away_sp": "name",
-  "home_sp": "name",
+  "live_score": "score string or null",
+  "away_sp": "pitcher name",
+  "home_sp": "pitcher name",
   "bet_type": "F5 OVER or F5 UNDER or Total OVER or Total UNDER or ML or Run Line or SKIP",
-  "pick": "e.g. OVER 8.5 or Cubs ML or SKIP",
-  "line": "e.g. -110 or N/A",
+  "pick": "e.g. UNDER 4.5 or Dodgers ML or SKIP",
+  "line": "e.g. -110 or N/A if skip",
   "tier": "A or B or C or SKIP",
   "units": 1.0,
   "win_prob_pct": 56,
   "implied_prob_pct": 52,
   "ev_pct": 4,
-  "sp_analysis": "cite specific ERA/K9/WHIP numbers from data",
-  "bullpen_note": "cite team ERA/K9 from data",
-  "lineup_note": "lineup quality or known injuries",
-  "park_note": "park factor impact",
-  "weather_impact": "specific weather effect or Dome - N/A",
-  "key_edge": "most important reason with specific stat cited",
-  "rationale": "3 sentences: SP edge with stats. Supporting factors. Why line has value.",
-  "avoid_reason": "if SKIP: specific reason. Empty string otherwise.",
-  "flags": "any SP changes, lineup news, or weather updates worth noting. Empty string if none."
+  "sp_analysis": "cite both pitchers ERA/K9/WHIP from data — e.g. Sale 2.58 ERA 11.86 K/9 vs Ragans 3.14 ERA 10.8 K/9",
+  "bullpen_note": "cite team ERA/K9 for both teams from data",
+  "lineup_note": "cite OPS and runs/game for both teams — note any known injuries",
+  "park_note": "park factor adjustment and impact on expected runs",
+  "weather_impact": "wind speed/direction and temp effect on scoring — or Dome N/A",
+  "key_edge": "the single most important reason for this bet with a specific number cited",
+  "rationale": "3 sentences. Sentence 1: SP edge with stats. Sentence 2: supporting factors. Sentence 3: why the line has value.",
+  "avoid_reason": "if SKIP: specific data-backed reason. Empty string if not a skip.",
+  "flags": "SP changes, lineup news, weather alerts. Empty string if none."
 }"""
 
 def call_groq(games_with_data):
@@ -337,21 +431,22 @@ def call_groq(games_with_data):
         return []
     n = len(games_with_data)
     user_msg = (
-        "Today is "+TODAY+". Analyze these "+str(n)+" MLB games using the real stats provided.\n"
-        "Return a JSON array with exactly "+str(n)+" entries. Raw JSON only.\n\n"
-        "GAMES:\n"+json.dumps(games_with_data, indent=2)
+        "Today is "+TODAY+". Analyze these "+str(n)+" MLB games using the real stats in the data.\n"
+        "Return a JSON array with exactly "+str(n)+" entries. Raw JSON only — no markdown, no backticks.\n\n"
+        "GAMES WITH STATS:\n"+json.dumps(games_with_data, indent=2)
     )
     try:
         r = requests.post(
             "https://api.groq.com/openai/v1/chat/completions",
             headers={"Authorization":"Bearer "+GROQ_KEY,"Content-Type":"application/json"},
             json={
-                "model":"llama-3.3-70b-versatile",
-                "messages":[
+                "model": "llama-3.3-70b-versatile",
+                "messages": [
                     {"role":"system","content":SYSTEM_PROMPT},
                     {"role":"user","content":user_msg},
                 ],
-                "temperature":0.1,"max_tokens":8000,
+                "temperature": 0.1,
+                "max_tokens": 8000,
             },
             timeout=90
         )
@@ -373,6 +468,8 @@ def call_groq(games_with_data):
     except Exception as e:
         print("Groq failed: "+str(e))
         return []
+
+# ── Archive ───────────────────────────────────────────────────────────────────
 
 def build_archive_index():
     dated_files = sorted([f for f in OUTPUT_DIR.glob("????-??-??.html")], reverse=True)
@@ -402,11 +499,13 @@ def build_archive_index():
             '<span style="font-size:12px">View &rarr;</span></a>'+rows+'</body></html>')
     (OUTPUT_DIR / "archive.html").write_text(html)
 
+# ── HTML builder ──────────────────────────────────────────────────────────────
+
 def build_html(data):
     all_picks = data.get("picks",[])
     active  = [p for p in all_picks if p.get("tier") != "SKIP"]
     skipped = [p for p in all_picks if p.get("tier") == "SKIP"]
-    total_u = round(sum(p.get("units",0) for p in active),1)
+    total_u = round(sum(p.get("units",0) for p in active), 1)
     gen     = data.get("generated_at","")[:16].replace("T"," ")
     date    = data["date"]
 
@@ -450,10 +549,12 @@ def build_html(data):
             +flag_row(p.get("flags",""))+
             '<div style="font-size:16px;font-weight:600;margin-bottom:2px">'+str(p.get("pick",""))+'</div>'
             '<div style="font-size:13px;color:#777;margin-bottom:10px">'
-            +game+' &nbsp;&middot;&nbsp; '+str(p.get("line","N/A"))+' &nbsp;&middot;&nbsp; '+str(p.get("units",0))+'u'
+            +game+' &nbsp;&middot;&nbsp; '+str(p.get("line","N/A"))
+            +' &nbsp;&middot;&nbsp; '+str(p.get("units",0))+'u'
             +score_span(game)+'</div>'
             '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'
-            +sp_box("Away SP",p.get("away_sp","TBD"))+sp_box("Home SP",p.get("home_sp","TBD"))+'</div>'
+            +sp_box("Away SP",p.get("away_sp","TBD"))
+            +sp_box("Home SP",p.get("home_sp","TBD"))+'</div>'
             '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">'
             '<span style="font-size:11px;background:#f0f0ee;padding:2px 9px;border-radius:20px;color:#555">'
             'Win '+str(p.get("win_prob_pct",0))+'% vs implied '+str(p.get("implied_prob_pct",0))+'%</span>'
@@ -486,7 +587,8 @@ def build_html(data):
             +game+score_span(game)+'</div>'
             '<div style="font-size:13px;color:#777;margin-bottom:10px">'+str(p.get("venue",""))+'</div>'
             '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'
-            +sp_box("Away SP",p.get("away_sp","TBD"))+sp_box("Home SP",p.get("home_sp","TBD"))+'</div>'
+            +sp_box("Away SP",p.get("away_sp","TBD"))
+            +sp_box("Home SP",p.get("home_sp","TBD"))+'</div>'
             '<div style="margin-bottom:10px">'
             +mrow("&#9918;",p.get("sp_analysis",""))
             +mrow("&#128101;",p.get("bullpen_note",""))
@@ -495,7 +597,7 @@ def build_html(data):
             +mrow("&#127748;",p.get("weather_impact",""))+'</div>'
             '<div style="border-top:0.5px solid #eee;padding-top:8px">'
             '<div style="font-size:12px;font-weight:600;color:#A32D2D;margin-bottom:3px">'
-            'Why skip: '+str(p.get("avoid_reason","No edge"))+'</div>'
+            'Why skip: '+str(p.get("avoid_reason","No clear edge"))+'</div>'
             '<div style="font-size:12px;color:#888;line-height:1.6">'+str(p.get("rationale",""))+'</div>'
             '</div></div>'
         )
@@ -504,20 +606,22 @@ def build_html(data):
     if not cards:
         cards = '<p style="color:#888;font-size:14px;padding:1.5rem 0;text-align:center">No games found today.</p>'
 
-    # Live score JS — runs in browser, updates every 30s
     live_js = (
         '<script>'
         'var D="'+date+'";'
         'function toET(iso){'
         'var d=new Date(iso);'
-        'return d.toLocaleTimeString("en-US",{timeZone:"America/New_York",hour:"numeric",minute:"2-digit"})+" ET";'
+        'return d.toLocaleTimeString("en-US",{timeZone:"America/New_York",'
+        'hour:"numeric",minute:"2-digit"})+" ET";'
         '}'
         'function upd(){'
         'fetch("https://statsapi.mlb.com/api/v1/schedule?sportId=1&date="+D+"&hydrate=linescore,team")'
         '.then(function(r){return r.json();})'
         '.then(function(data){'
         'var games=[];'
-        '(data.dates||[]).forEach(function(d){(d.games||[]).forEach(function(g){games.push(g);});});'
+        '(data.dates||[]).forEach(function(d){'
+        '(d.games||[]).forEach(function(g){games.push(g);});'
+        '});'
         'games.forEach(function(g){'
         'var away=g.teams.away.team.name;'
         'var home=g.teams.home.team.name;'
@@ -531,7 +635,8 @@ def build_html(data):
         'el.textContent="FINAL: "+away+" "+aS+" - "+home+" "+hS;'
         'el.style.background="#f0f0ee";el.style.color="#555";'
         '}else if(ab==="Live"){'
-        'var inn=(g.linescore&&g.linescore.currentInningOrdinal)?g.linescore.currentInningOrdinal:"";'
+        'var inn=(g.linescore&&g.linescore.currentInningOrdinal)'
+        '?g.linescore.currentInningOrdinal:"";'
         'el.textContent="LIVE "+inn+": "+away+" "+aS+" - "+home+" "+hS;'
         'el.style.background="#FAEEDA";el.style.color="#633806";'
         '}else{'
@@ -540,7 +645,9 @@ def build_html(data):
         '}'
         '});'
         'var lu=document.getElementById("last_update");'
-        'if(lu)lu.textContent="Scores updated "+new Date().toLocaleTimeString("en-US",{timeZone:"America/New_York",hour:"numeric",minute:"2-digit"})+" ET";'
+        'if(lu)lu.textContent="Scores updated "'
+        '+new Date().toLocaleTimeString("en-US",{timeZone:"America/New_York",'
+        'hour:"numeric",minute:"2-digit"})+" ET";'
         '}).catch(function(e){console.log("score err",e);});'
         '}'
         'upd();setInterval(upd,30000);'
@@ -569,22 +676,32 @@ def build_html(data):
         '<meta name="viewport" content="width=device-width,initial-scale=1">'
         '<title>MLB Picks - '+date+'</title>'+css+'</head><body>'
         '<h1>MLB Betting Model</h1>'
-        '<div class="meta">'+date+' &nbsp;&middot;&nbsp; '+str(data["total_games"])+' games'
-        ' &nbsp;&middot;&nbsp; <a href="archive.html" style="color:#378ADD;text-decoration:none">Archive &rarr;</a></div>'
-        '<div class="updated">Picks generated '+gen+' ET &nbsp;&middot;&nbsp; Updates every 2hrs'
-        ' &nbsp;&middot;&nbsp; <span id="last_update">Scores loading...</span></div>'
+        '<div class="meta">'+date
+        +' &nbsp;&middot;&nbsp; '+str(data["total_games"])+' games'
+        +' &nbsp;&middot;&nbsp; <a href="archive.html" style="color:#378ADD;text-decoration:none">'
+        'Archive &rarr;</a></div>'
+        '<div class="updated">Picks generated '+gen+' ET'
+        +' &nbsp;&middot;&nbsp; Updates every 2hrs'
+        +' &nbsp;&middot;&nbsp; <span id="last_update">Scores loading...</span></div>'
         '<div class="sum">'
-        '<div class="s"><div class="sn" style="color:#1D9E75">'+str(len(active))+'</div><div class="sl">Active picks</div></div>'
-        '<div class="s"><div class="sn">'+str(total_u)+'u</div><div class="sl">Total units</div></div>'
-        '<div class="s"><div class="sn">'+str(len(skipped))+'</div><div class="sl">No edge</div></div>'
-        '<div class="s"><div class="sn">5u</div><div class="sl">Daily max</div></div>'
+        '<div class="s"><div class="sn" style="color:#1D9E75">'+str(len(active))+'</div>'
+        '<div class="sl">Active picks</div></div>'
+        '<div class="s"><div class="sn">'+str(total_u)+'u</div>'
+        '<div class="sl">Total units</div></div>'
+        '<div class="s"><div class="sn">'+str(len(skipped))+'</div>'
+        '<div class="sl">No edge</div></div>'
+        '<div class="s"><div class="sn">5u</div>'
+        '<div class="sl">Daily max</div></div>'
         '</div>'
         '<div class="st">Full Slate &mdash; '+date+'</div>'
         +cards+
-        '<footer>EV model &nbsp;&middot;&nbsp; Real MLB stats 2025+2026 &nbsp;&middot;&nbsp; Never bet more than you can afford to lose</footer>'
+        '<footer>EV model &nbsp;&middot;&nbsp; Real MLB stats 2025+2026'
+        +' &nbsp;&middot;&nbsp; Never bet more than you can afford to lose</footer>'
         +live_js+
         '</body></html>'
     )
+
+# ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
     print("Running MLB picks generator for "+TODAY+"...")
@@ -596,7 +713,7 @@ def main():
     odds_map = fetch_odds()
     games_with_data = []
     for g in games:
-        odds = odds_map.get(g["away"]+"@"+g["home"],{})
+        odds    = odds_map.get(g["away"]+"@"+g["home"], {})
         weather = fetch_weather(g["home"])
         gd = dict(g)
         gd["odds"]               = odds
@@ -608,15 +725,19 @@ def main():
         gd["home_team_batting"]  = get_team_stats(g["home"], stats, "team_batting")
         gd["away_team_batting"]  = get_team_stats(g["away"], stats, "team_batting")
         games_with_data.append(gd)
-    picks = call_groq(games_with_data)
+
+    # Save updated stats cache (may have new player ID lookups)
+    STATS_CACHE.write_text(json.dumps(stats))
+
+    picks  = call_groq(games_with_data)
     active = [p for p in picks if p.get("tier") != "SKIP"]
     output = {
-        "date": TODAY,
+        "date":         TODAY,
         "generated_at": datetime.datetime.utcnow().isoformat()+"Z",
-        "stats_date": stats.get("date",""),
-        "total_games": len(games),
-        "total_picks": len(active),
-        "picks": picks,
+        "stats_date":   stats.get("date",""),
+        "total_games":  len(games),
+        "total_picks":  len(active),
+        "picks":        picks,
         "raw_games_data": games_with_data,
     }
     (OUTPUT_DIR/"picks.json").write_text(json.dumps(output, indent=2))
