@@ -621,6 +621,51 @@ def fetch_weather(team_name):
     except:
         return {"temp_f":"N/A","wind_mph":"N/A","wind_dir":"N/A","precip_pct":"N/A","wind_impact":"N/A"}
 
+# ── Games ────────────────────────────────────────────────────────────────────
+
+def fetch_mlb_games():
+    url = ("https://statsapi.mlb.com/api/v1/schedule?sportId=1&date="+TODAY
+           +"&hydrate=probablePitcher,linescore,team,officials")
+    try:
+        r = requests.get(url, timeout=10)
+        r.raise_for_status()
+        games = []
+        for de in r.json().get("dates",[]):
+            for g in de.get("games",[]):
+                abstract = g.get("status",{}).get("abstractGameState","")
+                detailed = g.get("status",{}).get("detailedState","")
+                home     = g["teams"]["home"]["team"]["name"]
+                away     = g["teams"]["away"]["team"]["name"]
+                home_id  = g["teams"]["home"]["team"]["id"]
+                away_id  = g["teams"]["away"]["team"]["id"]
+                home_sp  = g["teams"]["home"].get("probablePitcher",{}).get("fullName","TBD")
+                away_sp  = g["teams"]["away"].get("probablePitcher",{}).get("fullName","TBD")
+                hs  = g["teams"]["home"].get("score",None)
+                as_ = g["teams"]["away"].get("score",None)
+                live_score = (away+" "+str(as_)+" - "+home+" "+str(hs)
+                              if hs is not None and as_ is not None else None)
+                hp_ump = ""
+                for off in g.get("officials",[]):
+                    if off.get("officialType","") == "Home Plate":
+                        hp_ump = off.get("official",{}).get("fullName","")
+                        break
+                games.append({
+                    "game_pk": g.get("gamePk"),
+                    "home":home,"away":away,
+                    "home_id":home_id,"away_id":away_id,
+                    "game_time":g.get("gameDate",""),
+                    "home_sp":home_sp,"away_sp":away_sp,
+                    "venue":g.get("venue",{}).get("name",""),
+                    "status":detailed or abstract,
+                    "live_score":live_score,
+                    "hp_ump":hp_ump,
+                })
+        print("Fetched "+str(len(games))+" games")
+        return games
+    except Exception as e:
+        print("Games error: "+str(e))
+        return []
+
 # ── Odds ──────────────────────────────────────────────────────────────────────
 
 def best_book_value(bookmakers, market_key):
