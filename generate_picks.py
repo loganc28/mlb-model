@@ -55,8 +55,8 @@ def mlb_api(path, params=None):
         return {}
 
 def fetch_sp_stats(season):
-    data = mlb_api("/stats", {"stats":"season","playerPool":"All","position":"1",
-                               "sportId":"1","season":str(season),"group":"pitching","limit":"400"})
+    data = mlb_api("/stats", {"stats":"season","playerPool":"All",
+                               "sportId":"1","season":str(season),"group":"pitching","limit":"600"})
     result = {}
     for split in data.get("stats",[{}])[0].get("splits",[]):
         name = split.get("player",{}).get("fullName","")
@@ -103,9 +103,17 @@ def fetch_team_batting(season):
         if not team: continue
         g = int(stat.get("gamesPlayed",1) or 1)
         runs = int(stat.get("runs",0) or 0)
+        # Skip early season noise — need at least 10 games for meaningful batting stats
+        if g < 10 and season == 2026:
+            continue
+        ops = safe_float(stat.get("ops"))
+        # Sanity check — OPS above 1.2 in small sample is noise, skip it
+        if ops > 1.2:
+            continue
         result[team] = {
             "season":season,
-            "ops":safe_float(stat.get("ops")),
+            "games_played":g,
+            "ops":ops,
             "avg":safe_float(stat.get("avg")),
             "obp":safe_float(stat.get("obp")),
             "slg":safe_float(stat.get("slg")),
@@ -136,10 +144,20 @@ def fetch_and_cache_stats():
     return stats
 
 def get_pitcher_stats(name, stats):
-    s25 = stats["sp_2025"].get(name, {})
-    s26 = stats["sp_2026"].get(name, {})
+    # Try exact match first, then fuzzy match on last name
+    def find_in(pool, n):
+        if n in pool:
+            return pool[n]
+        # Try matching by last name only as fallback
+        last = n.split()[-1].lower() if n else ""
+        for k, v in pool.items():
+            if k.split()[-1].lower() == last and last:
+                return v
+        return {}
+    s25 = find_in(stats["sp_2025"], name)
+    s26 = find_in(stats["sp_2026"], name)
     if not s25 and not s26:
-        return {"note":"No stats available"}
+        return {"note":"No stats available — pitcher may be new or name mismatch"}
     if not s26 or s26.get("gs",0) == 0:
         s25["note"] = "2025 only (no 2026 starts yet)"
         return s25
