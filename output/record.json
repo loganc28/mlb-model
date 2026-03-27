@@ -1,0 +1,77 @@
+{
+  "picks": [
+    {
+      "date": "2026-03-27",
+      "game": "Colorado Rockies @ Miami Marlins",
+      "pick": "UNDER 7.5",
+      "bet_type": "UNDER 7.5",
+      "line": "-105",
+      "tier": "C",
+      "units": 0.5,
+      "ev_pct": 3,
+      "result": "",
+      "units_result": 0
+    },
+    {
+      "date": "2026-03-27",
+      "game": "Kansas City Royals @ Atlanta Braves",
+      "pick": "UNDER 8.5",
+      "bet_type": "UNDER 8.5",
+      "line": "-125",
+      "tier": "B",
+      "units": 1.0,
+      "ev_pct": 3,
+      "result": "",
+      "units_result": 0
+    },
+    {
+      "date": "2026-03-27",
+      "game": "Detroit Tigers @ San Diego Padres",
+      "pick": "UNDER 8.5",
+      "bet_type": "UNDER 8.5",
+      "line": "-120",
+      "tier": "B",
+      "units": 1.0,
+      "ev_pct": 3,
+      "result": "",
+      "units_result": 0
+    },
+    {
+      "date": "2026-03-27",
+      "game": "Cleveland Guardians @ Seattle Mariners",
+      "pick": "Guardians +1.5",
+      "bet_type": "Run Line +1.5",
+      "line": "-178 implied RL ~-105",
+      "tier": "B",
+      "units": 1.0,
+      "ev_pct": 2,
+      "result": "",
+      "units_result": 0
+    },
+    {
+      "date": "2026-03-27",
+      "game": "Arizona Diamondbacks @ Los Angeles Dodgers",
+      "pick": "UNDER 8.5",
+      "bet_type": "UNDER 8.5",
+      "line": "-110",
+      "tier": "B",
+      "units": 1.0,
+      "ev_pct": 5,
+      "result": "",
+      "units_result": 0
+    },
+    {
+      "date": "2026-03-27",
+      "game": "Los Angeles Angels @ Houston Astros",
+      "pick": "WATCH Angels ML +130 (WATCH)",
+      "bet_type": "WATCH",
+      "line": "+130",
+      "tier": "WATCH",
+      "units": 0,
+      "ev_pct": 2,
+      "result": "",
+      "units_result": 0
+    }
+  ],
+  "updated": "2026-03-27"
+}
