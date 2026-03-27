@@ -426,10 +426,12 @@ ANALYSIS FRAMEWORK:
 5. Weather — tiebreaker only. Wind 12+ mph OUT = lean OVER. IN = lean UNDER. Below 45F = scoring down.
 
 SIZING:
-- Tier A: 7%+ edge = 1.5 units
-- Tier B: 4-6% edge = 1.0 unit
-- Tier C: 3% edge = 0.5 units
-- Max 5 units total per day — if you exceed this, downgrade weakest picks to SKIP
+- Tier A: 7%+ edge = 1.5 units (BET THIS)
+- Tier B: 4-6% edge = 1.0 unit (BET THIS)
+- Tier C: 3% edge = 0.5 units (BET THIS)
+- Tier WATCH: 1-2.9% edge = 0 units (TRACK ONLY — do not bet, but analyze fully)
+- Max 5 units total per day on Tier A/B/C — if you exceed this, downgrade weakest picks to SKIP
+- WATCH picks do not count toward the 5 unit daily max
 
 OUTPUT: Raw JSON array only. No markdown. No backticks. Every game must appear.
 
@@ -442,10 +444,10 @@ Each entry:
   "live_score": "score or null",
   "away_sp": "name",
   "home_sp": "name",
-  "bet_type": "ML or Run Line or Total OVER or Total UNDER or F5 OVER or F5 UNDER or SKIP",
+  "bet_type": "ML or Run Line or Total OVER or Total UNDER or F5 OVER or F5 UNDER or WATCH or SKIP",
   "pick": "exact bet — e.g. Braves ML or Guardians +1.5 or UNDER 8.5 or SKIP",
   "line": "actual odds from data — e.g. -145 or N/A",
-  "tier": "A or B or C or SKIP",
+  "tier": "A or B or C or WATCH or SKIP",
   "units": 1.0,
   "win_prob_pct": 58,
   "implied_prob_pct": 52,
@@ -502,9 +504,7 @@ def _try_claude(user_msg):
         print("Claude returned "+str(len(picks))+" picks")
         return picks, "Claude Sonnet 4.6"
     except Exception as e:
-        import traceback
         print("Claude failed: "+str(e))
-        print(traceback.format_exc())
         return None, None
 
 def _try_groq(user_msg):
@@ -597,7 +597,8 @@ def build_archive_index():
 
 def build_html(data):
     all_picks = data.get("picks",[])
-    active  = [p for p in all_picks if p.get("tier") != "SKIP"]
+    active  = [p for p in all_picks if p.get("tier") in ("A","B","C")]
+    watched = [p for p in all_picks if p.get("tier") == "WATCH"]
     skipped = [p for p in all_picks if p.get("tier") == "SKIP"]
     total_u = round(sum(p.get("units",0) for p in active), 1)
     gen       = data.get("generated_at","")[:16].replace("T"," ")
@@ -611,10 +612,10 @@ def build_html(data):
                    'font-weight:600;padding:2px 9px;border-radius:20px;">'+model_icon+' '+ai_model+'</span>')
     date    = data["date"]
 
-    TBAR = {"A":"#1D9E75","B":"#378ADD","C":"#BA7517"}
-    TBG  = {"A":"#E1F5EE","B":"#E6F1FB","C":"#FAEEDA"}
-    TTC  = {"A":"#0F6E56","B":"#185FA5","C":"#854F0B"}
-    TLBL = {"A":"TIER A &mdash; PLAY","B":"TIER B &mdash; PLAY","C":"TIER C &mdash; LEAN"}
+    TBAR = {"A":"#1D9E75","B":"#378ADD","C":"#BA7517","WATCH":"#8B6F47"}
+    TBG  = {"A":"#E1F5EE","B":"#E6F1FB","C":"#FAEEDA","WATCH":"#F5F0E8"}
+    TTC  = {"A":"#0F6E56","B":"#185FA5","C":"#854F0B","WATCH":"#5C4A2A"}
+    TLBL = {"A":"TIER A &mdash; PLAY","B":"TIER B &mdash; PLAY","C":"TIER C &mdash; LEAN","WATCH":"WATCH &mdash; TRACK ONLY"}
 
     def sp_box(label, name):
         return ('<div style="background:#f7f7f5;border-radius:7px;padding:8px 10px">'
@@ -704,7 +705,7 @@ def build_html(data):
             '</div></div>'
         )
 
-    cards = "".join(pick_card(p) for p in active) + "".join(skip_card(p) for p in skipped)
+    cards = "".join(pick_card(p) for p in active) + "".join(pick_card(p) for p in watched) + "".join(skip_card(p) for p in skipped)
     if not cards:
         cards = '<p style="color:#888;font-size:14px;padding:1.5rem 0;text-align:center">No games found today.</p>'
 
@@ -790,10 +791,10 @@ def build_html(data):
         '<div class="sl">Active picks</div></div>'
         '<div class="s"><div class="sn">'+str(total_u)+'u</div>'
         '<div class="sl">Total units</div></div>'
+        '<div class="s"><div class="sn" style="color:#8B6FBA">'+str(len(watched))+'</div>'
+        '<div class="sl">Watching</div></div>'
         '<div class="s"><div class="sn">'+str(len(skipped))+'</div>'
         '<div class="sl">No edge</div></div>'
-        '<div class="s"><div class="sn">5u</div>'
-        '<div class="sl">Daily max</div></div>'
         '</div>'
         '<div class="st">Full Slate &mdash; '+date+'</div>'
         +cards+
