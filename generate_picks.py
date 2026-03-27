@@ -83,8 +83,10 @@ def fetch_sp_stats(season):
         ip = float(stat.get("inningsPitched", "0") or 0)
         so = int(stat.get("strikeOuts", 0) or 0)
         bb = int(stat.get("baseOnBalls", 0) or 0)
-        era = float(stat.get("era", "0") or 0)
-        whip = float(stat.get("whip", "0") or 0)
+        era_raw = stat.get("era", "0") or "0"
+        era = float(era_raw) if era_raw not in ("-.--", "", "-", "---") else 0.0
+        whip_raw = stat.get("whip", "0") or "0"
+        whip = float(whip_raw) if whip_raw not in ("-.--", "", "-", "---") else 0.0
         k9 = round((so / ip * 9), 2) if ip > 0 else 0
         bb9 = round((bb / ip * 9), 2) if ip > 0 else 0
         result[name] = {
@@ -119,8 +121,10 @@ def fetch_team_pitching(season):
         if team:
             ip = float(stat.get("inningsPitched", "0") or 0)
             so = int(stat.get("strikeOuts", 0) or 0)
-            era = float(stat.get("era", "0") or 0)
-            whip = float(stat.get("whip", "0") or 0)
+            era_raw = stat.get("era", "0") or "0"
+            era = float(era_raw) if era_raw not in ("-.--", "", "-", "---") else 0.0
+            whip_raw = stat.get("whip", "0") or "0"
+            whip = float(whip_raw) if whip_raw not in ("-.--", "", "-", "---") else 0.0
             k9 = round((so / ip * 9), 2) if ip > 0 else 0
             result[team] = {"season": season, "team_era": era, "team_whip": whip, "team_k9": k9}
     return result
