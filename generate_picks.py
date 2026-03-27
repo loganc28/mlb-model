@@ -502,7 +502,9 @@ def _try_claude(user_msg):
         print("Claude returned "+str(len(picks))+" picks")
         return picks, "Claude Sonnet 4.6"
     except Exception as e:
+        import traceback
         print("Claude failed: "+str(e))
+        print(traceback.format_exc())
         return None, None
 
 def _try_groq(user_msg):
