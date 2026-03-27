@@ -11,6 +11,7 @@ from pathlib import Path
 
 ODDS_API_KEY    = os.environ.get("ODDS_API_KEY", "")
 WEATHER_API_KEY = os.environ.get("WEATHER_API_KEY", "")
+ANTHROPIC_KEY   = os.environ.get("ANTHROPIC_API_KEY", "")
 GROQ_KEY        = os.environ.get("GROQ_API_KEY", "")
 OUTPUT_DIR      = Path("output")
 OUTPUT_DIR.mkdir(exist_ok=True)
@@ -375,103 +376,139 @@ def fetch_weather(team_name):
 
 # ── Groq ──────────────────────────────────────────────────────────────────────
 
-SYSTEM_PROMPT = """You are a sharp MLB betting analyst. Your job is to find the single best positive EV bet for each game — across ALL bet types including moneyline, run line, totals, and props.
-Use ONLY the real stats provided. Never invent lines or use memory.
+SYSTEM_PROMPT = """You are a sharp MLB betting analyst. Your job is to find the single highest-value bet for each game — or correctly identify when there is no bet worth making.
 
-CRITICAL LINE RULES:
-- NEVER invent or estimate a total line. Only use totals from the actual odds data provided.
-- Use actual moneyline and run line odds from the data.
-- If odds data is completely missing, SKIP the bet.
+ABSOLUTE RULES — these override everything else:
+1. If your estimated win probability does NOT exceed the implied odds probability by the minimum threshold, the answer is SKIP. No exceptions.
+   - Moneyline: need 3%+ edge
+   - Run line: need 5%+ edge  
+   - Totals: need 4%+ edge (AND actual line must exist in the odds data)
+2. NEVER recommend a bet at ML odds worse than -180. These require 64%+ win rate to profit. Skip them.
+3. NEVER invent a total line. If no total line number exists in the odds data, do not recommend a total.
+4. NEVER recommend a total if rain probability is 50%+.
+5. If your analysis says "the SP edge favors Team A" but you are recommending Team B ML, that is a contradiction. Fix it or SKIP.
 
-BET TYPE DECISION FRAMEWORK — for each game, evaluate all options and pick the best:
+HOW TO CALCULATE IMPLIED PROBABILITY:
+- Negative odds (e.g. -150): implied% = 150 / (150 + 100) = 60%
+- Positive odds (e.g. +130): implied% = 100 / (130 + 100) = 43.5%
+- Your edge = your win prob% MINUS implied prob%
+- If edge is negative or below threshold: SKIP
 
-MONEYLINE (ML):
-- Best when: One team has a clear multi-factor edge (SP + bullpen + lineup)
-- SP ERA gap of 1.0+ is a strong ML signal toward the better pitcher's team
-- Avoid ML worse than -200 (requires 67%+ to break even)
-- Sweet spot: -120 to -160 with a real edge behind it
+BET TYPE SELECTION — pick the ONE best bet for this game:
 
-RUN LINE (+1.5 or -1.5):
-- Best when: Favorite is overpriced on ML (-180 or worse) but has a real edge
-- Underdog +1.5 gives you insurance — team can lose by 1 and you still win
-- Strong SP going against a weak lineup = good -1.5 spot
-- Check: does the better team win by 2+ often enough to justify -1.5?
+Use MONEYLINE when:
+- Clear multi-factor edge: SP + lineup OR SP + bullpen
+- SP ERA gap of 1.5+ with the better pitcher's team having at least neutral lineup
+- ML odds are between -115 and -175 (reasonable juice for the edge)
 
-GAME TOTAL (OVER/UNDER):
-- Best when: Both SPs are similar quality but park/weather creates a strong lean
-- Also good when one team's offense is extreme (Coors OVER, Petco UNDER)
-- ONLY use if actual total line exists in the odds data
+Use RUN LINE +1.5 (underdog) when:
+- Favorite is -180 or worse but has a real edge — gives insurance if they lose by 1
+- Underdog has a quality SP but weaker lineup
 
-F5 TOTAL (first 5 innings):
-- Best when: Clear SP quality gap but bullpen data is uncertain or weak
-- Isolates the SP matchup, removes bullpen variance
-- ONLY use if F5 line exists in the odds data
+Use RUN LINE -1.5 (favorite) when:
+- Dominant favorite: SP edge 2.0+ ERA gap, elite bullpen, strong lineup
+- This is a high-confidence team covering -1.5
 
-AVOID defaulting to totals when a ML or run line is the cleaner bet.
-The goal is to match the bet type to the actual edge, not pick the same type every game.
+Use TOTAL (only if line exists in odds data) when:
+- Both SPs are similar quality so team edge is unclear
+- Strong park factor + weather alignment
+- Coors Field is almost always an OVER unless both SPs are elite and wind blows in
 
-STAT WEIGHTING (based on note field):
-- "2026 primary": trust 2026 fully
-- "Blended": use blended values as given
-- "Primarily 2025" or "2025 only": use 2025, flag small sample
-- "No stats found": SKIP unless overwhelming edge elsewhere
+Use F5 TOTAL (only if F5 line exists in odds data) when:
+- Clear SP quality gap but bullpen data unavailable or weak
+- Want to isolate the SP matchup specifically
 
-ANALYSIS ORDER:
-1. SP quality — ERA, K/9, BB/9, WHIP from data. ERA gap 1.0+ = meaningful edge. K/9 9.5+ = elite.
-2. Bullpen — team ERA/K9 from data. Elite: Dodgers/Rays/Braves/Phillies. Weak: Rockies/A's/Nationals/CWS
-3. Lineup/offense — OPS, runs/game from data. Under .700 OPS = weak. Over .800 = strong.
-4. Park factors — Coors +1.5r, GABP +0.7r, Globe Life +0.4r, Petco -0.7r, Oracle -0.5r, T-Mobile -0.4r
-5. Weather — tiebreaker only. Dome = irrelevant.
-   Wind 12+ mph OUT = lean OVER. Wind 12+ mph IN = lean UNDER.
-   Above 85F adds ~0.4r. Below 50F subtracts ~0.4r. Below 40F subtracts ~0.7r.
+ANALYSIS FRAMEWORK:
+1. SP quality — ERA, K/9, BB/9, WHIP from stats provided. ERA gap of 1.5+ = significant edge.
+2. Bullpen — team ERA/K9 from stats. Elite: Dodgers/Rays/Braves/Phillies. Weak: Rockies/A's/Nationals/CWS
+3. Lineup — OPS and runs/game from stats. Flag any OPS above 1.0 as unreliable small sample.
+4. Park — Coors +1.5r, GABP +0.7r, Petco -0.7r, Oracle -0.5r, T-Mobile -0.4r
+5. Weather — tiebreaker only. Wind 12+ mph OUT = lean OVER. IN = lean UNDER. Below 45F = scoring down.
 
-EV AND SIZING:
-- Min edge: 3% for ML/RL, 4% for totals
-- Tier A = 7%+ edge (1.5u). Tier B = 4-6% (1u). Tier C = 3% (0.5u). Max 5u/day.
-- SKIP if: SP is TBD, no stats for either SP, rain 50%+, or no real edge
-
-FLAG in flags field: SP scratches, lineup changes, rain 40%+, key injuries.
+SIZING:
+- Tier A: 7%+ edge = 1.5 units
+- Tier B: 4-6% edge = 1.0 unit
+- Tier C: 3% edge = 0.5 units
+- Max 5 units total per day — if you exceed this, downgrade weakest picks to SKIP
 
 OUTPUT: Raw JSON array only. No markdown. No backticks. Every game must appear.
 
 Each entry:
 {
   "game": "AWAY @ HOME",
-  "venue": "stadium name",
-  "game_time": "time from input",
+  "venue": "stadium",
+  "game_time": "from input",
   "status": "Scheduled or In Progress or Final",
   "live_score": "score or null",
   "away_sp": "name",
   "home_sp": "name",
-  "bet_type": "ML or Run Line or F5 OVER or F5 UNDER or Total OVER or Total UNDER or SKIP",
-  "pick": "exact bet — e.g. Braves ML or Dodgers -1.5 or UNDER 8.5 or SKIP",
-  "line": "actual odds from data — e.g. -145 or +125 or N/A",
+  "bet_type": "ML or Run Line or Total OVER or Total UNDER or F5 OVER or F5 UNDER or SKIP",
+  "pick": "exact bet — e.g. Braves ML or Guardians +1.5 or UNDER 8.5 or SKIP",
+  "line": "actual odds from data — e.g. -145 or N/A",
   "tier": "A or B or C or SKIP",
   "units": 1.0,
-  "win_prob_pct": 56,
+  "win_prob_pct": 58,
   "implied_prob_pct": 52,
-  "ev_pct": 4,
-  "sp_analysis": "both pitchers ERA/K9/WHIP with gap analysis — e.g. Sale 2.58 ERA 11.86 K/9 vs Ragans 4.67 ERA 14.41 K/9 — Sale has 2.09 ERA edge",
-  "bullpen_note": "team ERA/K9 for both teams",
-  "lineup_note": "OPS and runs/game both teams, note injuries",
-  "park_note": "park factor and run environment",
-  "weather_impact": "wind/temp effect or Dome N/A",
-  "key_edge": "most important reason with specific number",
-  "rationale": "3 sentences: SP edge with stats. Supporting factors. Why this specific bet type and line has value.",
-  "avoid_reason": "if SKIP: specific reason. Empty string otherwise.",
-  "flags": "SP changes, injuries, weather. Empty string if none."
+  "ev_pct": 6,
+  "sp_analysis": "both pitchers ERA/K9 with ERA gap — e.g. Sale 2.58/11.86 vs Ragans 4.67/14.41, Sale has 2.09 ERA edge",
+  "bullpen_note": "team ERA/K9 from data or note if unavailable",
+  "lineup_note": "OPS/runs per game both teams — flag if OPS above 1.0 as unreliable",
+  "park_note": "park factor impact on run environment",
+  "weather_impact": "wind and temp effect or Dome N/A",
+  "key_edge": "single most important reason — must cite a specific number",
+  "rationale": "3 sentences. Sentence 1: primary edge with stats. Sentence 2: supporting factors. Sentence 3: why this specific bet type at this line has positive EV.",
+  "avoid_reason": "if SKIP: specific reason citing numbers. Empty string if not a skip.",
+  "flags": "SP changes, rain 40%+, key injuries. Empty string if none."
 }"""
 
-def call_groq(games_with_data):
+def _parse_ai_response(raw):
+    """Parse JSON array from AI response text."""
+    raw = raw.strip()
+    if "```" in raw:
+        for part in raw.split("```"):
+            part = part.strip()
+            if part.startswith("json"): part = part[4:].strip()
+            if part.startswith("["): raw = part; break
+    start = raw.find("["); end = raw.rfind("]")+1
+    if start >= 0 and end > start: raw = raw[start:end]
+    return json.loads(raw.strip())
+
+def _try_claude(user_msg):
+    """Attempt to get picks from Claude. Returns (picks, model_name) or (None, None)."""
+    if not ANTHROPIC_KEY:
+        return None, None
+    try:
+        r = requests.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key": ANTHROPIC_KEY,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+            },
+            json={
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 8000,
+                "system": SYSTEM_PROMPT,
+                "messages": [{"role": "user", "content": user_msg}],
+            },
+            timeout=90
+        )
+        if not r.ok:
+            err = r.json().get("error", {}).get("message", r.text[:200])
+            print("Claude unavailable: "+str(err))
+            return None, None
+        raw = r.json()["content"][0]["text"]
+        picks = _parse_ai_response(raw)
+        print("Claude returned "+str(len(picks))+" picks")
+        return picks, "Claude Sonnet 4.6"
+    except Exception as e:
+        print("Claude failed: "+str(e))
+        return None, None
+
+def _try_groq(user_msg):
+    """Attempt to get picks from Groq. Returns (picks, model_name) or (None, None)."""
     if not GROQ_KEY:
-        print("No GROQ_API_KEY")
-        return []
-    n = len(games_with_data)
-    user_msg = (
-        "Today is "+TODAY+". Analyze these "+str(n)+" MLB games using the real stats in the data.\n"
-        "Return a JSON array with exactly "+str(n)+" entries. Raw JSON only — no markdown, no backticks.\n\n"
-        "GAMES WITH STATS:\n"+json.dumps(games_with_data, indent=2)
-    )
+        return None, None
     try:
         r = requests.post(
             "https://api.groq.com/openai/v1/chat/completions",
@@ -488,23 +525,41 @@ def call_groq(games_with_data):
             timeout=90
         )
         if not r.ok:
-            print("Groq error: "+r.text[:300])
-            return []
-        raw = r.json()["choices"][0]["message"]["content"].strip()
-        print("Groq response: "+str(len(raw))+" chars")
-        if "```" in raw:
-            for part in raw.split("```"):
-                part = part.strip()
-                if part.startswith("json"): part = part[4:].strip()
-                if part.startswith("["): raw = part; break
-        start = raw.find("["); end = raw.rfind("]")+1
-        if start >= 0 and end > start: raw = raw[start:end]
-        picks = json.loads(raw.strip())
+            print("Groq error: "+r.text[:200])
+            return None, None
+        raw = r.json()["choices"][0]["message"]["content"]
+        picks = _parse_ai_response(raw)
         print("Groq returned "+str(len(picks))+" picks")
-        return picks
+        return picks, "Groq Llama 3.3 70B"
     except Exception as e:
         print("Groq failed: "+str(e))
-        return []
+        return None, None
+
+def call_claude(games_with_data):
+    """
+    Try Claude first. If unavailable (out of credits, error), fall back to Groq.
+    Returns (picks, model_name).
+    """
+    n = len(games_with_data)
+    user_msg = (
+        "Today is "+TODAY+". Analyze these "+str(n)+" MLB games using the real stats in the data.\n"
+        "Return a JSON array with exactly "+str(n)+" entries. Raw JSON only — no markdown, no backticks.\n\n"
+        "GAMES WITH STATS:\n"+json.dumps(games_with_data, indent=2)
+    )
+
+    # Try Claude first
+    picks, model = _try_claude(user_msg)
+    if picks is not None:
+        return picks, model
+
+    # Fall back to Groq
+    print("Falling back to Groq...")
+    picks, model = _try_groq(user_msg)
+    if picks is not None:
+        return picks, model
+
+    print("Both AI engines failed")
+    return [], "None"
 
 # ── Archive ───────────────────────────────────────────────────────────────────
 
@@ -543,7 +598,15 @@ def build_html(data):
     active  = [p for p in all_picks if p.get("tier") != "SKIP"]
     skipped = [p for p in all_picks if p.get("tier") == "SKIP"]
     total_u = round(sum(p.get("units",0) for p in active), 1)
-    gen     = data.get("generated_at","")[:16].replace("T"," ")
+    gen       = data.get("generated_at","")[:16].replace("T"," ")
+    ai_model  = data.get("ai_model","Unknown")
+    # Style the model badge
+    if "Claude" in ai_model:
+        model_bg = "#E1F5EE"; model_tc = "#0F6E56"; model_icon = "&#129302;"
+    else:
+        model_bg = "#E6F1FB"; model_tc = "#185FA5"; model_icon = "&#129302;"
+    model_badge = ('<span style="background:'+model_bg+';color:'+model_tc+';font-size:11px;'
+                   'font-weight:600;padding:2px 9px;border-radius:20px;">'+model_icon+' '+ai_model+'</span>')
     date    = data["date"]
 
     TBAR = {"A":"#1D9E75","B":"#378ADD","C":"#BA7517"}
@@ -766,12 +829,14 @@ def main():
     # Save updated stats cache (may have new player ID lookups)
     STATS_CACHE.write_text(json.dumps(stats))
 
-    picks  = call_groq(games_with_data)
+    picks, ai_model = call_claude(games_with_data)
+    print("AI engine used: "+ai_model)
     active = [p for p in picks if p.get("tier") != "SKIP"]
     output = {
         "date":         TODAY,
         "generated_at": datetime.datetime.utcnow().isoformat()+"Z",
         "stats_date":   stats.get("date",""),
+        "ai_model":     ai_model,
         "total_games":  len(games),
         "total_picks":  len(active),
         "picks":        picks,
