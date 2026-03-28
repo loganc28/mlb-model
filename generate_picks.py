@@ -987,7 +987,7 @@ def enforce_ev_rules(picks):
     # Enforce 5u daily max — downgrade lowest EV picks if over
     active = [p for p in enforced if p.get("tier") in ("A","B","C")]
     total_u = sum(p.get("units",0) for p in active)
-    if total_u > 8:
+    if total_u > 7:
         active.sort(key=lambda x: x.get("ev_pct",0))
         while total_u > 5 and active:
             p = active.pop(0)
@@ -1863,8 +1863,12 @@ def main():
     # - Trigger conditions: SP scratch, rain 50%+, line moved 15+ cents
     # - Otherwise: keep locked picks, just update scores
 
+    # Only lock picks that were actually generated today (have home_sp/away_sp fields)
+    # Seeded picks from record.json manual entry don't have these fields
     today_picks = [p for p in record.get("picks",[])
-                   if p.get("date")==TODAY and p.get("tier") in ("A","B","C","WATCH")]
+                   if p.get("date")==TODAY 
+                   and p.get("tier") in ("A","B","C","WATCH")
+                   and p.get("home_sp")]  # home_sp only present on AI-generated picks
     picks_locked = len(today_picks) > 0
 
     # Check trigger conditions for regeneration
