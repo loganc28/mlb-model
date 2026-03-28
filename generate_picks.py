@@ -987,7 +987,7 @@ def enforce_ev_rules(picks):
     # Enforce 5u daily max — downgrade lowest EV picks if over
     active = [p for p in enforced if p.get("tier") in ("A","B","C")]
     total_u = sum(p.get("units",0) for p in active)
-    if total_u > 5:
+    if total_u > 8:
         active.sort(key=lambda x: x.get("ev_pct",0))
         while total_u > 5 and active:
             p = active.pop(0)
