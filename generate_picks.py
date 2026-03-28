@@ -1405,9 +1405,9 @@ def build_html(data):
     try:
         import datetime as _dt
         utc_dt = _dt.datetime.strptime(gen_utc[:19], "%Y-%m-%dT%H:%M:%S")
-        et_offset = -4  # EDT (use -5 for EST Nov-Mar)
+        et_offset = -4  # EDT
         et_dt = utc_dt + _dt.timedelta(hours=et_offset)
-        gen = et_dt.strftime("%-I:%M %p ET")
+        gen = et_dt.strftime("%-I:%M %p")
     except:
         gen = gen_utc[:16].replace("T"," ")
     date     = data["date"]
@@ -1606,7 +1606,7 @@ def build_html(data):
         '<div class="meta">'+date+' &nbsp;&middot;&nbsp; '+str(data["total_games"])+' games'
         ' &nbsp;&middot;&nbsp; <a href="archive.html" style="color:#378ADD;text-decoration:none">Archive &rarr;</a>'
         ' &nbsp;&middot;&nbsp; <a href="record.html" style="color:#8B6FBA;text-decoration:none">&#128200; Record</a></div>'
-        '<div class="updated">Picks generated '+gen+' ET &nbsp;&middot;&nbsp; '+model_badge
+        '<div class="updated">Picks generated '+gen+' ET &nbsp;&middot;&nbsp; Locked picks &nbsp;&middot;&nbsp; '+model_badge
         +' &nbsp;&middot;&nbsp; <span id="last_update">Scores loading...</span></div>'
         '<div class="sum">'
         '<div class="s"><div class="sn" style="color:#1D9E75">'+str(len(active))+'</div><div class="sl">Active picks</div></div>'
@@ -1715,15 +1715,80 @@ def main():
     # Save updated stats cache (may have new player ID lookups)
     STATS_CACHE.write_text(json.dumps(stats))
 
-    picks, ai_model = call_ai(games_with_data)
-    active = [p for p in picks if p.get("tier") in ("A","B","C")]
-
-    # Auto-settle any previous picks that have final scores
+    # Auto-settle any previous picks that have final scores first
     record = load_record()
     record, settled = auto_settle_record(record)
     if settled:
         print("Auto-settled "+str(settled)+" picks")
         save_record(record)
+
+    # Smart regeneration logic:
+    # - First run of the day: always generate fresh picks
+    # - Subsequent runs: only regenerate if a trigger condition is met
+    # - Trigger conditions: SP scratch, rain 50%+, line moved 15+ cents
+    # - Otherwise: keep locked picks, just update scores
+
+    today_picks = [p for p in record.get("picks",[])
+                   if p.get("date")==TODAY and p.get("tier") in ("A","B","C","WATCH")]
+    picks_locked = len(today_picks) > 0
+
+    # Check trigger conditions for regeneration
+    def should_regenerate(locked_picks, new_game_data, old_odds):
+        triggers = []
+        for gd in new_game_data:
+            game_key = gd["away"]+"@"+gd["home"]
+            # Check rain 50%+
+            precip = gd.get("weather",{}).get("precip_pct",0)
+            if precip and int(precip) >= 50:
+                triggers.append("Rain 50%+ at "+gd["home"])
+            # Check SP scratch — SP changed from what was in locked picks
+            for lp in locked_picks:
+                if gd["away"]+" @ "+gd["home"] == lp.get("game",""):
+                    old_home_sp = lp.get("home_sp","")
+                    old_away_sp = lp.get("away_sp","")
+                    if old_home_sp and old_home_sp != gd["home_sp"] and gd["home_sp"] != "TBD":
+                        triggers.append("SP scratch: "+old_home_sp+" → "+gd["home_sp"])
+                    if old_away_sp and old_away_sp != gd["away_sp"] and gd["away_sp"] != "TBD":
+                        triggers.append("SP scratch: "+old_away_sp+" → "+gd["away_sp"])
+            # Check line movement 15+ cents
+            new_odds = gd.get("odds",{})
+            for lp in locked_picks:
+                if gd["away"]+" @ "+gd["home"] == lp.get("game",""):
+                    try:
+                        old_line = float(str(lp.get("open_line","0")).replace("+",""))
+                        new_ml = new_odds.get("moneyline",{})
+                        for team, price in new_ml.items():
+                            if abs(float(price) - old_line) >= 15:
+                                triggers.append("Line moved 15+ cents on "+team)
+                    except: pass
+        return triggers
+
+    force_regen = False
+    regen_reasons = []
+    if picks_locked:
+        regen_reasons = should_regenerate(today_picks, games_with_data, odds_map)
+        force_regen = len(regen_reasons) > 0
+        if force_regen:
+            print("REGENERATING picks — triggers: "+", ".join(regen_reasons))
+        else:
+            print("Picks locked for "+TODAY+" ("+str(len(today_picks))+" picks). No triggers. Keeping locked picks.")
+
+    if not picks_locked or force_regen:
+        if force_regen:
+            # Remove today's unsettled picks before regenerating
+            record["picks"] = [p for p in record["picks"]
+                               if not (p.get("date")==TODAY and not p.get("result"))]
+        picks, ai_model = call_ai(games_with_data)
+        active = [p for p in picks if p.get("tier") in ("A","B","C")]
+        record["ai_model"] = ai_model
+        if regen_reasons:
+            record["regen_reasons"] = record.get("regen_reasons",[]) + regen_reasons
+    else:
+        ai_model = record.get("ai_model", "Claude Sonnet 4.5")
+        picks = [p for p in record.get("picks",[]) if p.get("date")==TODAY]
+        active = [p for p in picks if p.get("tier") in ("A","B","C")]
+
+    # Save new picks to record (only when fresh or regenerated)
     existing_keys = {p["game"]+p.get("date","") for p in record["picks"]}
     for p in active:
         key = p.get("game","")+TODAY
@@ -1733,9 +1798,11 @@ def main():
                 "game":     p.get("game",""),
                 "pick":     p.get("pick",""),
                 "bet_type": p.get("bet_type",""),
+                "home_sp":  p.get("home_sp",""),
+                "away_sp":  p.get("away_sp",""),
                 "line":     p.get("line",""),
-                "open_line":p.get("line",""),   # store opening line for CLV
-                "close_line":"",                 # filled in manually or via future script
+                "open_line":p.get("line",""),
+                "close_line":"",
                 "tier":     p.get("tier",""),
                 "units":    p.get("units",0),
                 "ev_pct":   p.get("ev_pct",0),
@@ -1750,6 +1817,8 @@ def main():
                 "game":     p.get("game",""),
                 "pick":     p.get("pick","")+" (WATCH)",
                 "bet_type": p.get("bet_type",""),
+                "home_sp":  p.get("home_sp",""),
+                "away_sp":  p.get("away_sp",""),
                 "line":     p.get("line",""),
                 "open_line":p.get("line",""),
                 "close_line":"",
