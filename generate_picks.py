@@ -973,14 +973,17 @@ def enforce_ev_rules(picks):
                 p["units"] = 0
                 p["avoid_reason"] = "EV "+str(effective_ev)+"% below minimum threshold"
 
-        # Fix tier/units alignment
+        # Fix tier/units alignment — enforce standard unit sizes
         ev_val = p.get("ev_pct",0)
         try: ev_val = float(ev_val)
         except: ev_val = 0
         if p["tier"] == "A" and ev_val < 7:
             p["tier"] = "B" if ev_val >= 4 else ("C" if ev_val >= 3 else "WATCH")
-        if p["tier"] in ("A","B","C") and p.get("units",0) == 0:
-            p["units"] = 1.5 if p["tier"]=="A" else (1.0 if p["tier"]=="B" else 0.5)
+        # Always enforce correct unit size regardless of what Claude said
+        if p["tier"] == "A": p["units"] = 1.5
+        elif p["tier"] == "B": p["units"] = 1.0
+        elif p["tier"] == "C": p["units"] = 0.5
+        elif p["tier"] in ("WATCH","SKIP"): p["units"] = 0
 
         enforced.append(p)
 
@@ -996,6 +999,14 @@ def enforce_ev_rules(picks):
             p["units"] = 0
             p["avoid_reason"] = p.get("avoid_reason","") + " [Daily 5u cap reached]"
             total_u = sum(x.get("units",0) for x in active)
+
+    # Clean up stale cap messages from avoid_reason
+    for p in enforced:
+        ar = p.get("avoid_reason","")
+        if "[Daily 5u cap reached]" in str(ar):
+            p["avoid_reason"] = str(ar).replace(" [Daily 5u cap reached]","").strip()
+        if p.get("avoid_reason","") == "":
+            p["avoid_reason"] = ""
 
     return enforced
 
