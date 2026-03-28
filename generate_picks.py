@@ -1084,26 +1084,40 @@ def summarize_game(g):
 
 def call_ai(games_with_data):
     n = len(games_with_data)
-    # Summarize games to keep prompt size manageable
     summarized = [summarize_game(g) for g in games_with_data]
-    user_msg = (
-        "Today is "+TODAY+". Analyze these "+str(n)+" MLB games.\n"
-        "Use ALL provided data: SP season stats, recent form, home/away splits, "
-        "platoon matchups, bullpen fatigue, injuries, umpire tendencies, park factors, wind impact, odds.\n"
-        "Return exactly "+str(n)+" entries. Raw JSON array only.\n\n"
-        "GAMES:\n"+json.dumps(summarized, indent=2)
-    )
-    picks, model = _try_claude(user_msg)
-    if picks is not None:
-        picks = enforce_ev_rules(picks)
-        return picks, model
-    print("Falling back to Groq...")
-    picks, model = _try_groq(user_msg)
-    if picks is not None:
-        picks = enforce_ev_rules(picks)
-        return picks, model
-    print("Both AI engines failed")
-    return [], "None"
+
+    # Split into batches of 8 to stay within token limits
+    BATCH_SIZE = 8
+    all_picks = []
+    model_used = "None"
+
+    for i in range(0, n, BATCH_SIZE):
+        batch = summarized[i:i+BATCH_SIZE]
+        b_n = len(batch)
+        print("Processing batch "+str(i//BATCH_SIZE+1)+"/"+str((n+BATCH_SIZE-1)//BATCH_SIZE)+" ("+str(b_n)+" games)...")
+
+        user_msg = (
+            "Today is "+TODAY+". Analyze these "+str(b_n)+" MLB games.\n"
+            "Use ALL provided data: SP season stats, recent form, home/away splits, "
+            "platoon matchups, bullpen fatigue, injuries, umpire tendencies, park factors, wind impact, odds.\n"
+            "Return exactly "+str(b_n)+" entries. Raw JSON array only.\n\n"
+            "GAMES:\n"+json.dumps(batch, indent=2)
+        )
+
+        picks, model = _try_claude(user_msg)
+        if picks is None:
+            print("Claude failed batch, trying Groq...")
+            picks, model = _try_groq(user_msg)
+        if picks is None:
+            print("Both failed for batch "+str(i//BATCH_SIZE+1))
+            picks = []
+        
+        model_used = model or model_used
+        all_picks.extend(picks)
+
+    if all_picks:
+        all_picks = enforce_ev_rules(all_picks)
+    return all_picks, model_used
 
 # ── Record tracker with CLV ───────────────────────────────────────────────────
 
