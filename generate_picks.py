@@ -377,8 +377,13 @@ def fetch_team_batting(season):
         }
     return result
 
+_SPLITS_CACHE = {}
+
 def fetch_team_home_away_splits(team_id, season):
     """Fetch home vs away batting splits for a team."""
+    cache_key = str(team_id)+"-"+str(season)
+    if cache_key in _SPLITS_CACHE:
+        return _SPLITS_CACHE[cache_key]
     result = {}
     for sit_code, label in [("h","home"),("a","away")]:
         data = mlb_api("/teams/"+str(team_id)+"/stats", {
@@ -397,6 +402,7 @@ def fetch_team_home_away_splits(team_id, season):
                 "runs_per_game":round(runs/g,2) if g>0 else 0,
                 "games":g,
             }
+    _SPLITS_CACHE[cache_key] = result
     return result
 
 def fetch_and_cache_stats():
@@ -553,9 +559,14 @@ def analyze_lineup_handedness(batters, sp_throws):
 
 # ── Bullpen fatigue ───────────────────────────────────────────────────────────
 
+# Module-level bullpen cache to avoid redundant API calls
+_BULLPEN_CACHE = {}
+
 def fetch_bullpen_fatigue(team_id):
+    if team_id in _BULLPEN_CACHE:
+        return _BULLPEN_CACHE[team_id]
     fatigued = []
-    for days_ago in range(1, 4):
+    for days_ago in range(1, 3):  # Only check last 2 days — day 3 is rarely relevant
         date = (datetime.date.today() - datetime.timedelta(days=days_ago)).isoformat()
         data = mlb_api("/schedule", {
             "sportId":"1","date":date,"teamId":str(team_id),
@@ -580,16 +591,22 @@ def fetch_bullpen_fatigue(team_id):
                             name = pdata.get("person",{}).get("fullName","")
                             fatigued.append({"name":name,"pitches":pc,"ip":ip,"days_ago":days_ago})
     high_usage = [p for p in fatigued if p["pitches"] >= 20 and p["days_ago"] <= 2]
-    return {
+    result = {
         "recent_usage": fatigued[:10],
         "high_usage_count": len(high_usage),
         "fatigued_arms": [p["name"] for p in high_usage],
         "fatigue_level": "SEVERE" if len(high_usage) >= 2 else "MODERATE" if len(high_usage) == 1 else "FRESH",
     }
+    _BULLPEN_CACHE[team_id] = result
+    return result
 
 # ── Injuries ──────────────────────────────────────────────────────────────────
 
+_INJURY_CACHE = {}
+
 def fetch_injuries(team_id):
+    if team_id in _INJURY_CACHE:
+        return _INJURY_CACHE[team_id]
     data = mlb_api("/teams/"+str(team_id)+"/roster", {"rosterType":"injuries"})
     injured = []
     for p in data.get("roster",[]):
@@ -597,6 +614,7 @@ def fetch_injuries(team_id):
         status = p.get("status",{}).get("description","")
         pos = p.get("position",{}).get("abbreviation","")
         injured.append({"name":name,"status":status,"pos":pos})
+    _INJURY_CACHE[team_id] = injured
     return injured
 
 # ── Weather ───────────────────────────────────────────────────────────────────
