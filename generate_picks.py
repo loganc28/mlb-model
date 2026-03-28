@@ -768,7 +768,7 @@ ABSOLUTE RULES — violating these means the pick is wrong:
 2. Tier assignment: A = 7%+, B = 4-6%, C = exactly 3%, WATCH = 1-2%, SKIP = below 1% or no edge.
 3. NEVER bet ML worse than -180. This is automatic SKIP regardless of edge.
 4. NEVER use a total line you invented. Only use actual lines from the odds data.
-5. Max 5 units per day across Tier A/B/C only. WATCH = 0 units always.
+5. No daily unit cap. EV threshold and scoring rubric are the only filters. WATCH = 0 units always.
 6. If SP edge favors Team A but you pick Team B ML, that is a contradiction. Fix it.
 7. SKIP any game with status In Progress, Live, or Final.
 
@@ -804,6 +804,42 @@ BULLPEN FATIGUE LEVELS:
 - MODERATE (1 arm fatigued): Note it but don't overweight.
 - FRESH: Supports UNDER or ML for that team.
 
+INJURIES — STRICT RULES (hallucinating injuries is worse than ignoring them):
+- ONLY reference players listed in home_team.injuries or away_team.injuries in the data provided.
+- If those arrays are empty, write "None" in injury_flags — never invent absences.
+- NEVER mention a player as out, injured, or missing based on memory or training data.
+- Never mention a player as absent unless their name appears in the injury data provided.
+- A player not in the injury list is assumed to be in the starting lineup.
+
+CONFIDENCE SCORING RUBRIC — assign tier based on points, not gut feel:
+Award points ONLY when a factor STRONGLY confirms the pick direction:
++3 pts: SP ERA gap 2.0+ clearly favoring one side
++2 pts: Recent form (last 3 starts ERA) confirms AND differs from season ERA by 1.0+
++2 pts: Relevant home/away split confirms by 0.75+ ERA gap
++2 pts: Opposing bullpen SEVERELY fatigued (2+ arms 20+ pitches in last 2 days)
++1 pt:  Park runs factor below 0.92 for UNDER or above 1.08 for OVER
++1 pt:  Umpire RPG below 8.5 for UNDER or above 9.2 for OVER
++1 pt:  Wind blowing IN 12+ mph AND temp below 55F for UNDER (must have BOTH)
++1 pt:  Wind blowing OUT 12+ mph AND temp above 75F for OVER (must have BOTH)
++1 pt:  Lineup OPS gap of 0.100+ between teams AND aligns with pick
++1 pt:  Odds offer genuine line value (plus money or better than -110 on strong play)
+
+TIER ASSIGNMENT — be conservative, most games should be SKIP or WATCH:
+- Tier MAX (3.0u): 10+ points AND EV 10%+ AND all simultaneously true:
+    SP ERA gap 2.0+ confirmed by recent form AND home/away split,
+    opposing bullpen SEVERE fatigue, park+weather+umpire all aligned,
+    odds no worse than -170. Expect 0-1 per WEEK maximum.
+- Tier A (1.5u): 8-9 points AND EV 7%+ — expect 0-1 per slate
+- Tier B (1.0u): 6-7 points AND EV 4%+ — expect 1-3 per slate
+- Tier C (0.5u): 4-5 points AND EV 3%+ — expect 1-3 per slate
+- WATCH (0u):   2-3 points OR EV 1-2% — track only, no bet
+- SKIP:         1 point or less, contradictory factors, or missing data
+
+CRITICAL: EV threshold is the PRIMARY gate. If EV meets threshold AND points meet threshold,
+it MUST be an active pick. Do NOT downgrade to WATCH if both gates are cleared.
+MAX tier requires ALL conditions simultaneously — if even one is missing, drop to Tier A.
+Sizing: MAX=3.0u, A=1.5u, B=1.0u, C=0.5u, WATCH=0u. No daily unit cap.
+
 BET TYPE DECISION:
 - ML: Multi-factor edge (SP + lineup or SP + bullpen). Odds range -115 to -175.
 - Run Line -1.5: Dominant team — ERA gap 2.0+, elite bullpen, strong lineup. Comfortable favorite.
@@ -825,10 +861,10 @@ OUTPUT: Raw JSON array only. No markdown. No backticks. Every game must appear.
   "away_sp": "name",
   "home_sp": "name",
   "hp_ump": "umpire name",
-  "bet_type": "ML or Run Line or Total OVER or Total UNDER or F5 OVER or F5 UNDER or WATCH or SKIP",
+  "bet_type": "ML or Run Line or Total OVER or Total UNDER or F5 OVER or F5 UNDER or WATCH or SKIP",  // MAX tier uses same bet types
   "pick": "exact bet e.g. Braves ML or Guardians +1.5 or UNDER 8.5 or SKIP",
   "line": "actual odds from data or N/A",
-  "tier": "A or B or C or WATCH or SKIP",
+  "tier": "MAX or A or B or C or WATCH or SKIP",
   "units": 1.0,
   "win_prob_pct": 58,
   "implied_prob_pct": 52,
@@ -836,7 +872,7 @@ OUTPUT: Raw JSON array only. No markdown. No backticks. Every game must appear.
   "sp_analysis": "season ERA/K9 + recent form ERA + relevant split (home or away ERA)",
   "lineup_analysis": "platoon note + key hitters OPS + any absences",
   "bullpen_note": "fatigue level + team ERA/K9 for both teams",
-  "injury_flags": "key IL players affecting this game or None",
+  "injury_flags": "ONLY players from home_team.injuries or away_team.injuries fields. If those fields are empty, write None",
   "umpire_note": "rpg + k_pct + lean direction",
   "park_note": "runs factor + HR factor + note",
   "weather_impact": "wind_impact field value + temp effect",
@@ -937,6 +973,11 @@ def enforce_ev_rules(picks):
                 print("EV mismatch for "+p.get("game","")+" — Claude said "+str(ev)+"%, calc: "+str(calc_ev)+"%. Using calculated.")
                 p["ev_pct"] = calc_ev
                 ev = calc_ev
+        # Sanity cap: no pick should ever show more than 15% EV — above that is almost certainly hallucinated
+        if ev > 15:
+            print("EV sanity cap: "+p.get("game","")+" claimed "+str(ev)+"% EV — capping at 15%")
+            ev = 15.0
+            p["ev_pct"] = 15.0
 
         # Check ML odds cap
         line_str = str(p.get("line",""))
@@ -977,28 +1018,22 @@ def enforce_ev_rules(picks):
         ev_val = p.get("ev_pct",0)
         try: ev_val = float(ev_val)
         except: ev_val = 0
+        # Validate MAX tier — must have 10%+ EV to keep MAX status
+        if p["tier"] == "MAX" and ev_val < 10:
+            print("MAX tier requires 10%+ EV — downgrading "+p.get("pick","")+" to A")
+            p["tier"] = "A"
         if p["tier"] == "A" and ev_val < 7:
             p["tier"] = "B" if ev_val >= 4 else ("C" if ev_val >= 3 else "WATCH")
         # Always enforce correct unit size regardless of what Claude said
-        if p["tier"] == "A": p["units"] = 1.5
+        if p["tier"] == "MAX": p["units"] = 3.0
+        elif p["tier"] == "A": p["units"] = 1.5
         elif p["tier"] == "B": p["units"] = 1.0
         elif p["tier"] == "C": p["units"] = 0.5
         elif p["tier"] in ("WATCH","SKIP"): p["units"] = 0
 
         enforced.append(p)
 
-    # Enforce 5u daily max — downgrade lowest EV picks if over
-    active = [p for p in enforced if p.get("tier") in ("A","B","C")]
-    total_u = sum(p.get("units",0) for p in active)
-    if total_u > 7:
-        active.sort(key=lambda x: x.get("ev_pct",0))
-        while total_u > 5 and active:
-            p = active.pop(0)
-            print("ENFORCING daily cap: downgrading "+p.get("pick","")+" to WATCH")
-            p["tier"] = "WATCH"
-            p["units"] = 0
-            p["avoid_reason"] = p.get("avoid_reason","") + " [Daily 5u cap reached]"
-            total_u = sum(x.get("units",0) for x in active)
+    # No daily unit cap — EV and scoring rubric are the only filters
 
     # Clean up stale cap messages from avoid_reason
     for p in enforced:
@@ -1543,7 +1578,7 @@ def build_archive_index():
 
 def build_html(data):
     all_picks = data.get("picks",[])
-    active  = [p for p in all_picks if p.get("tier") in ("A","B","C")]
+    active  = [p for p in all_picks if p.get("tier") in ("MAX","A","B","C")]
     watched = [p for p in all_picks if p.get("tier") == "WATCH"]
     skipped = [p for p in all_picks if p.get("tier") == "SKIP"]
     total_u = round(sum(p.get("units",0) for p in active),1)
@@ -1566,10 +1601,10 @@ def build_html(data):
     model_badge = ('<span style="background:'+mb_bg+';color:'+mb_tc+';font-size:11px;'
                    'font-weight:600;padding:2px 9px;border-radius:20px;">&#129302; '+ai_model+'</span>')
 
-    TBAR={"A":"#1D9E75","B":"#378ADD","C":"#BA7517","WATCH":"#8B6FBA"}
-    TBG ={"A":"#E1F5EE","B":"#E6F1FB","C":"#FAEEDA","WATCH":"#F0ECFB"}
-    TTC ={"A":"#0F6E56","B":"#185FA5","C":"#854F0B","WATCH":"#4A2D8F"}
-    TLBL={"A":"TIER A &mdash; PLAY","B":"TIER B &mdash; PLAY","C":"TIER C &mdash; LEAN","WATCH":"WATCH &mdash; TRACK ONLY"}
+    TBAR={"MAX":"#0A0A0A","A":"#1D9E75","B":"#378ADD","C":"#BA7517","WATCH":"#8B6FBA"}
+    TBG ={"MAX":"#1a1a1a","A":"#E1F5EE","B":"#E6F1FB","C":"#FAEEDA","WATCH":"#F0ECFB"}
+    TTC ={"MAX":"#FFD700","A":"#0F6E56","B":"#185FA5","C":"#854F0B","WATCH":"#4A2D8F"}
+    TLBL={"MAX":"&#9733; MAX BET &mdash; HIGHEST CONFIDENCE","A":"TIER A &mdash; PLAY","B":"TIER B &mdash; PLAY","C":"TIER C &mdash; LEAN","WATCH":"WATCH &mdash; TRACK ONLY"}
 
     def sp_box(label, name):
         return ('<div style="background:#f7f7f5;border-radius:7px;padding:8px 10px">'
@@ -1755,7 +1790,7 @@ def build_html(data):
         '<div class="updated">Picks generated '+gen+' ET &nbsp;&middot;&nbsp; Locked picks &nbsp;&middot;&nbsp; '+model_badge
         +' &nbsp;&middot;&nbsp; <span id="last_update">Scores loading...</span></div>'
         '<div class="sum">'
-        '<div class="s"><div class="sn" style="color:#1D9E75">'+str(len(active))+'</div><div class="sl">Active picks</div></div>'
+        '<div class="s">'+'<div class="sn" style="color:'+('#FFD700' if any(p.get("tier")=="MAX" for p in active) else "#1D9E75")+'">'+str(len(active))+'</div>'+'<div class="sl">Active picks</div></div>'
         '<div class="s"><div class="sn">'+str(total_u)+'u</div><div class="sl">Total units</div></div>'
         '<div class="s"><div class="sn" style="color:#8B6FBA">'+str(len(watched))+'</div><div class="sl">Watching</div></div>'
         '<div class="s"><div class="sn">'+str(len(skipped))+'</div><div class="sl">No edge</div></div>'
@@ -1878,7 +1913,7 @@ def main():
     # Seeded picks from record.json manual entry don't have these fields
     today_picks = [p for p in record.get("picks",[])
                    if p.get("date")==TODAY 
-                   and p.get("tier") in ("A","B","C","WATCH")
+                   and p.get("tier") in ("MAX","A","B","C","WATCH")
                    and p.get("home_sp")]  # home_sp only present on AI-generated picks
     picks_locked = len(today_picks) > 0
 
@@ -1929,14 +1964,14 @@ def main():
             record["picks"] = [p for p in record["picks"]
                                if not (p.get("date")==TODAY and not p.get("result"))]
         picks, ai_model = call_ai(games_with_data)
-        active = [p for p in picks if p.get("tier") in ("A","B","C")]
+        active = [p for p in picks if p.get("tier") in ("MAX","A","B","C")]
         record["ai_model"] = ai_model
         if regen_reasons:
             record["regen_reasons"] = record.get("regen_reasons",[]) + regen_reasons
     else:
         ai_model = record.get("ai_model", "Claude Sonnet 4.5")
         picks = [p for p in record.get("picks",[]) if p.get("date")==TODAY]
-        active = [p for p in picks if p.get("tier") in ("A","B","C")]
+        active = [p for p in picks if p.get("tier") in ("MAX","A","B","C")]
 
     # Save new picks to record (only when fresh or regenerated)
     existing_keys = {p["game"]+p.get("date","") for p in record["picks"]}
