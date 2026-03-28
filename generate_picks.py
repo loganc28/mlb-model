@@ -849,7 +849,7 @@ def _try_claude(user_msg):
             json={"model":"claude-sonnet-4-5","max_tokens":8000,
                   "system":SYSTEM_PROMPT,
                   "messages":[{"role":"user","content":user_msg}]},
-            timeout=120
+            timeout=180
         )
         if not r.ok:
             print("Claude error: "+r.text[:300])
@@ -981,14 +981,117 @@ def enforce_ev_rules(picks):
 
     return enforced
 
+def summarize_game(g):
+    """Compress game data to key numbers only — keeps prompt size manageable."""
+    home_sp = g.get("home_sp_stats",{})
+    away_sp = g.get("away_sp_stats",{})
+    home_bp = g.get("home_bullpen_fatigue",{})
+    away_bp = g.get("away_bullpen_fatigue",{})
+    home_bat = g.get("home_team_batting",{})
+    away_bat = g.get("away_team_batting",{})
+    home_pit = g.get("home_team_pitching",{})
+    away_pit = g.get("away_team_pitching",{})
+    ump = g.get("ump_stats",{})
+    park = g.get("park_factor",{})
+    weather = g.get("weather",{})
+    odds = g.get("odds",{})
+    home_rec = home_sp.get("recent_form",{})
+    away_rec = away_sp.get("recent_form",{})
+
+    return {
+        "game": g["away"]+" @ "+g["home"],
+        "venue": g.get("venue",""),
+        "game_time": g.get("game_time",""),
+        "status": g.get("status",""),
+        "live_score": g.get("live_score"),
+        "hp_ump": g.get("hp_ump",""),
+        "away_sp": g["away_sp"],
+        "home_sp": g["home_sp"],
+        "away_sp_stats": {
+            "era": away_sp.get("era",0),
+            "k9": away_sp.get("k9",0),
+            "bb9": away_sp.get("bb9",0),
+            "whip": away_sp.get("whip",0),
+            "note": away_sp.get("note",""),
+            "form_flag": away_sp.get("form_flag",""),
+            "relevant_split": away_sp.get("relevant_split",""),
+            "recent_era": away_rec.get("era_last3",0),
+            "recent_k9": away_rec.get("k9_last3",0),
+            "recent_starts": away_rec.get("starts",0),
+        },
+        "home_sp_stats": {
+            "era": home_sp.get("era",0),
+            "k9": home_sp.get("k9",0),
+            "bb9": home_sp.get("bb9",0),
+            "whip": home_sp.get("whip",0),
+            "note": home_sp.get("note",""),
+            "form_flag": home_sp.get("form_flag",""),
+            "relevant_split": home_sp.get("relevant_split",""),
+            "recent_era": home_rec.get("era_last3",0),
+            "recent_k9": home_rec.get("k9_last3",0),
+            "recent_starts": home_rec.get("starts",0),
+        },
+        "away_team": {
+            "ops": away_bat.get("ops",0),
+            "runs_pg": away_bat.get("runs_per_game",0),
+            "bullpen_era": away_pit.get("team_era",0),
+            "bullpen_fatigue": away_bp.get("fatigue_level","UNKNOWN"),
+            "fatigued_arms": away_bp.get("fatigued_arms",[]),
+            "injuries": [i["name"]+" ("+i["pos"]+")" for i in g.get("away_injuries",[])[:3]],
+        },
+        "home_team": {
+            "ops": home_bat.get("ops",0),
+            "runs_pg": home_bat.get("runs_per_game",0),
+            "bullpen_era": home_pit.get("team_era",0),
+            "bullpen_fatigue": home_bp.get("fatigue_level","UNKNOWN"),
+            "fatigued_arms": home_bp.get("fatigued_arms",[]),
+            "injuries": [i["name"]+" ("+i["pos"]+")" for i in g.get("home_injuries",[])[:3]],
+        },
+        "umpire": {
+            "name": ump.get("name",""),
+            "rpg": ump.get("rpg",8.8),
+            "k_pct": ump.get("k_pct",0.22),
+            "note": ump.get("note",""),
+        },
+        "park": {
+            "runs": park.get("runs",1.0),
+            "hr": park.get("hr",1.0),
+            "note": park.get("note",""),
+        },
+        "weather": {
+            "temp_f": weather.get("temp_f",""),
+            "wind_mph": weather.get("wind_mph",""),
+            "wind_dir": weather.get("wind_dir",""),
+            "precip_pct": weather.get("precip_pct",0),
+            "wind_impact": weather.get("wind_impact",""),
+        },
+        "odds": {
+            "ml_away": odds.get("moneyline",{}).get(g["away"],""),
+            "ml_home": odds.get("moneyline",{}).get(g["home"],""),
+            "total_line": odds.get("total",{}).get("line",""),
+            "total_over": odds.get("total",{}).get("over",""),
+            "total_under": odds.get("total",{}).get("under",""),
+            "rl_away": odds.get("runline",{}).get(g["away"],{}).get("price",""),
+            "rl_away_pt": odds.get("runline",{}).get(g["away"],{}).get("point",""),
+            "rl_home": odds.get("runline",{}).get(g["home"],{}).get("price",""),
+            "rl_home_pt": odds.get("runline",{}).get(g["home"],{}).get("point",""),
+        },
+        "platoon": {
+            "home": g.get("home_platoon",{}).get("platoon_note",""),
+            "away": g.get("away_platoon",{}).get("platoon_note",""),
+        },
+    }
+
 def call_ai(games_with_data):
     n = len(games_with_data)
+    # Summarize games to keep prompt size manageable
+    summarized = [summarize_game(g) for g in games_with_data]
     user_msg = (
         "Today is "+TODAY+". Analyze these "+str(n)+" MLB games.\n"
-        "Use ALL provided data: SP season stats, recent form (last 3 starts), home/away splits, "
+        "Use ALL provided data: SP season stats, recent form, home/away splits, "
         "platoon matchups, bullpen fatigue, injuries, umpire tendencies, park factors, wind impact, odds.\n"
         "Return exactly "+str(n)+" entries. Raw JSON array only.\n\n"
-        "GAMES:\n"+json.dumps(games_with_data, indent=2)
+        "GAMES:\n"+json.dumps(summarized, indent=2)
     )
     picks, model = _try_claude(user_msg)
     if picks is not None:
