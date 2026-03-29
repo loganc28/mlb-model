@@ -24,6 +24,7 @@ ANTHROPIC_KEY   = os.environ.get("ANTHROPIC_API_KEY", "")
 GROQ_KEY        = os.environ.get("GROQ_API_KEY", "")
 ODDS_API_KEY    = os.environ.get("ODDS_API_KEY", "")
 WEATHER_API_KEY = os.environ.get("WEATHER_API_KEY", "")
+FORCE_REGEN     = os.environ.get("FORCE_REGENERATE", "no").lower() == "yes"
 OUTPUT_DIR      = Path("output")
 OUTPUT_DIR.mkdir(exist_ok=True)
 TODAY           = datetime.date.today().isoformat()
@@ -2674,14 +2675,19 @@ def main():
     force_regen = False
     regen_reasons = []
     if picks_locked:
-        regen_reasons = should_regenerate(today_picks, games_with_data, odds_map)
-        force_regen = len(regen_reasons) > 0
-        if force_regen:
-            print("REGENERATING picks — triggers: "+", ".join(regen_reasons))
+        if FORCE_REGEN:
+            print("FORCE_REGENERATE flag set — regenerating picks for "+TODAY)
+            force_regen = True
+            regen_reasons = ["Manual force regeneration"]
         else:
-            print("Picks locked for "+TODAY+" ("+str(len(today_picks))+" picks). No triggers. Keeping locked picks.")
+            regen_reasons = should_regenerate(today_picks, games_with_data, odds_map)
+            force_regen = len(regen_reasons) > 0
+            if force_regen:
+                print("REGENERATING picks — triggers: "+", ".join(regen_reasons))
+            else:
+                print("Picks locked for "+TODAY+" ("+str(len(today_picks))+" picks). No triggers. Keeping locked picks.")
 
-    if not picks_locked or force_regen:
+    if not picks_locked or force_regen or FORCE_REGEN:
         if force_regen:
             # Only remove picks for games affected by triggers
             affected_games = set()
