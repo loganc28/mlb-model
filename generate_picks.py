@@ -194,10 +194,55 @@ def wind_impact(team_name, wind_dir_str, wind_mph):
         impact = "minimal scoring impact"
         lean = ""
 
+    # Temperature modifier — cold kills wind OUT benefit for OVER
+    temp_note = ""
+    if lean == "OVER lean":
+        # Below 50F: wind OUT loses all OVER value (cold = dead ball)
+        # 50-60F: partial value
+        # Above 60F: full value
+        pass  # temp is passed via weather dict; note added in summarize_game
+
     result = str(wind_mph)+" mph "+wind_dir_str+" — "+direction
     if lean:
         result += " ("+lean+")"
     return result
+
+def effective_wind_lean(wind_impact_str, temp_f):
+    """
+    Calculate wind's directional contribution to scoring environment.
+    Returns a string describing the wind factor — NOT a pick recommendation.
+    Wind is ONE factor among many. Claude weighs it alongside SP quality,
+    bullpen fatigue, park factor, and lineup data.
+    """
+    if not wind_impact_str or "Dome" in wind_impact_str:
+        return "Dome or no wind — weather not a factor"
+    try:
+        temp = float(temp_f) if temp_f not in ("N/A","Dome","") else 72.0
+    except:
+        temp = 72.0
+
+    is_out = "blowing OUT" in wind_impact_str and "OVER lean" in wind_impact_str
+    is_in  = "blowing IN" in wind_impact_str and "UNDER lean" in wind_impact_str
+    is_cross = "crosswind" in wind_impact_str
+
+    if is_cross or "minimal" in wind_impact_str:
+        return "Crosswind or minimal — no directional scoring impact"
+
+    if is_out:
+        if temp < 50:
+            return "Wind OUT but below 50F — cold air neutralizes carry, minimal scoring impact"
+        elif temp < 60:
+            return "Wind OUT with cool temps ("+str(int(temp))+"F) — partial OVER lean, weight other factors more"
+        else:
+            return "Wind OUT at "+str(int(temp))+"F — meaningful OVER lean, ball carries well"
+
+    if is_in:
+        if temp < 50:
+            return "Wind IN at "+str(int(temp))+"F — strong UNDER lean, cold+wind IN suppresses offense"
+        else:
+            return "Wind IN at "+str(int(temp))+"F — moderate UNDER lean, factor alongside SP/bullpen data"
+
+    return "Wind direction unclear — treat as neutral"
 
 def get_park_factor(venue):
     if venue in PARK_FACTORS:
@@ -808,6 +853,27 @@ def fetch_mlb_games():
         print("Games error: "+str(e))
         return []
 
+def fetch_team_streak(team_id):
+    """Fetch recent form — last 10 games W/L record for momentum."""
+    try:
+        data = mlb_api("/teams/"+str(team_id)+"/records", {
+            "leagueId":"103,104","season":"2026"
+        })
+        records = data.get("records",[])
+        if not records: return {}
+        rec = records[0]
+        streak = rec.get("streak",{})
+        return {
+            "wins": rec.get("wins",0),
+            "losses": rec.get("losses",0),
+            "streak_type": streak.get("streakType",""),
+            "streak_number": streak.get("streakNumber",0),
+            "last10_wins": rec.get("lastTen","").split("-")[0] if rec.get("lastTen") else "",
+            "last10_losses": rec.get("lastTen","").split("-")[1] if rec.get("lastTen") and "-" in rec.get("lastTen","") else "",
+        }
+    except:
+        return {}
+
 # ── Odds ──────────────────────────────────────────────────────────────────────
 
 def best_book_value(bookmakers, market_key):
@@ -921,6 +987,13 @@ USING WIND IMPACT:
 - Cold weather below 50F suppresses scoring regardless of wind direction.
 - Crosswind = no meaningful impact on totals.
 
+USING TEAM MOMENTUM (new):
+- home_streak and away_streak show current W/L record and winning/losing streak.
+- A team on a 5+ game winning streak is playing with confidence — slight edge to their ML.
+- A team on a 5+ game losing streak has momentum against them — factor into ML picks.
+- Early season (under 10 games): streaks are too small to be meaningful, ignore.
+- Last 10 games record is more useful than overall record early in season.
+
 USING BULLPEN FATIGUE:
 - SEVERE (2+ arms 20+ pitches last 2 days): +2 points toward OVER or away from that team's ML.
 - MODERATE (1 arm): +0 points — note it but do not factor into tier.
@@ -944,8 +1017,13 @@ CONFIDENCE SCORING RUBRIC:
 +2 pts: Opposing bullpen SEVERE fatigue (2+ arms)
 +1 pt:  Park runs factor below 0.92 for UNDER or above 1.08 for OVER
 +1 pt:  Umpire RPG below 8.5 for UNDER or above 9.2 for OVER
-+1 pt:  Wind blowing OUT 12+ mph for OVER (only if temp above 60F for full point)
-+1 pt:  Wind blowing IN 12+ mph AND temp below 55F for UNDER
++1 pt:  Wind is a meaningful OVER factor: wind OUT 12+ mph AND temp above 60F
++1 pt:  Wind is a meaningful UNDER factor: wind IN 12+ mph AND temp below 55F
+        Use effective_wind_lean field for context but apply judgment:
+        - Wind is ONE factor. It does not override SP quality or bullpen data.
+        - Wind OUT + cold (below 50F) = largely neutralized, give 0 points.
+        - Wind IN + warm temps = weaker UNDER factor, give 0 points.
+        - Always combine wind with at least one other confirming factor before counting it.
 +1 pt:  Lineup OPS gap 0.100+ aligned with pick direction
 +1 pt:  Plus money odds or better than -108
 
@@ -1248,6 +1326,10 @@ def summarize_game(g):
             "wind_dir": weather.get("wind_dir",""),
             "precip_pct": weather.get("precip_pct",0),
             "wind_impact": weather.get("wind_impact",""),
+            "effective_wind_lean": effective_wind_lean(
+                weather.get("wind_impact",""),
+                weather.get("temp_f","72")
+            ),
         },
         "odds": {
             "ml_away": odds.get("moneyline",{}).get(g["away"],""),
@@ -1264,6 +1346,8 @@ def summarize_game(g):
             "home": g.get("home_platoon",{}).get("platoon_note",""),
             "away": g.get("away_platoon",{}).get("platoon_note",""),
         },
+        "home_streak": g.get("home_streak",{}),
+        "away_streak": g.get("away_streak",{}),
     }
 
 def call_ai(games_with_data):
@@ -1463,6 +1547,38 @@ def settle_pick(pick, scores):
     pick["final_score"] = score["away"]+" "+str(score["away_score"])+" - "+score["home"]+" "+str(score["home_score"])
     return pick
 
+def fetch_closing_lines():
+    """Fetch current odds to use as closing lines for settled games."""
+    if not ODDS_API_KEY: return {}
+    try:
+        r = requests.get(
+            "https://api.the-odds-api.com/v4/sports/baseball_mlb/odds/",
+            params={
+                "apiKey":ODDS_API_KEY,"regions":"us",
+                "markets":"h2h,totals","oddsFormat":"american","dateFormat":"iso",
+                "bookmakers":"draftkings,fanduel",
+            },
+            timeout=10
+        )
+        if not r.ok: return {}
+        lines = {}
+        for event in r.json():
+            home = normalize_team(event.get("home_team",""))
+            away = normalize_team(event.get("away_team",""))
+            key = away+" @ "+home
+            bms = event.get("bookmakers",[])
+            for bm in bms:
+                for market in bm.get("markets",[]):
+                    if market["key"] == "h2h":
+                        for o in market.get("outcomes",[]):
+                            lines[key+"_ML_"+o["name"]] = o["price"]
+                    elif market["key"] == "totals":
+                        for o in market.get("outcomes",[]):
+                            lines[key+"_"+o["name"]+"_"+str(o.get("point",""))] = o["price"]
+        return lines
+    except:
+        return {}
+
 def auto_settle_record(record):
     """
     Check all unsettled picks against final scores and auto-update results.
@@ -1484,9 +1600,37 @@ def auto_settle_record(record):
             print("Score fetch error for "+d+": "+str(e))
 
     settled_count = 0
+    # Fetch current odds as closing lines before settling
+    closing_lines = fetch_closing_lines()
+
     for i, pick in enumerate(record["picks"]):
         if pick.get("result") or pick.get("tier") == "SKIP":
             continue
+
+        # Auto-fill closing line if not already set
+        if not pick.get("close_line") and closing_lines:
+            game = pick.get("game","")
+            bet_type = pick.get("bet_type","")
+            pick_str = pick.get("pick","").upper()
+            cl = ""
+            if "OVER" in bet_type or "UNDER" in bet_type:
+                direction = "Over" if "OVER" in bet_type else "Under"
+                # Find total line from pick string
+                import re
+                nums = re.findall(r"[0-9]+\.?[0-9]*", pick_str)
+                if nums:
+                    cl_key = game+"_"+direction+"_"+nums[-1]
+                    if cl_key in closing_lines:
+                        cl = str(closing_lines[cl_key])
+            elif "ML" in bet_type:
+                for team in game.split(" @ "):
+                    cl_key = game+"_ML_"+team
+                    if cl_key in closing_lines:
+                        cl = str(closing_lines[cl_key])
+                        break
+            if cl:
+                record["picks"][i]["close_line"] = cl
+
         updated = settle_pick(pick, all_scores)
         if updated:
             record["picks"][i] = updated
@@ -2236,6 +2380,13 @@ def main():
         gd["away_injuries"]         = away_injuries[:5]
         gd["home_team_splits"]      = home_splits
         gd["away_team_splits"]      = away_splits
+
+        # Team momentum/streak
+        try: gd["home_streak"] = fetch_team_streak(g["home_id"])
+        except: gd["home_streak"] = {}
+        try: gd["away_streak"] = fetch_team_streak(g["away_id"])
+        except: gd["away_streak"] = {}
+
         games_with_data.append(gd)
 
     # Save updated stats cache (may have new player ID lookups)
