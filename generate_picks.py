@@ -2023,6 +2023,231 @@ def build_record_html(record):
 
 # ── Archive ───────────────────────────────────────────────────────────────────
 
+
+def fetch_all_teams_data():
+    """Fetch standings, stats, and schedule for all 30 MLB teams."""
+    teams_data = {}
+
+    # Fetch standings from both leagues
+    for league_id in ["103", "104"]:  # AL=103, AL=104
+        data = mlb_api("/standings", {
+            "leagueId": league_id,
+            "season": "2026",
+            "standingsTypes": "regularSeason",
+            "hydrate": "team,record",
+        })
+        for rec in data.get("records", []):
+            division = rec.get("division", {}).get("name", "")
+            for tr in rec.get("teamRecords", []):
+                team = tr.get("team", {})
+                tid = team.get("id")
+                name = team.get("name", "")
+                streak = tr.get("streak", {})
+                last10 = tr.get("records", {}).get("splitRecords", [])
+                l10_rec = next((s for s in last10 if s.get("type") == "lastTen"), {})
+                teams_data[tid] = {
+                    "id": tid,
+                    "name": name,
+                    "division": division,
+                    "wins": tr.get("wins", 0),
+                    "losses": tr.get("losses", 0),
+                    "pct": tr.get("winningPercentage", ".000"),
+                    "gb": tr.get("gamesBack", "-"),
+                    "streak_type": streak.get("streakType", ""),
+                    "streak_number": streak.get("streakNumber", 0),
+                    "last10_w": l10_rec.get("wins", 0),
+                    "last10_l": l10_rec.get("losses", 0),
+                    "runs_scored": tr.get("runsScored", 0),
+                    "runs_allowed": tr.get("runsAllowed", 0),
+                    "games_played": tr.get("wins", 0) + tr.get("losses", 0),
+                }
+
+    # Fetch team batting stats
+    bat_data = mlb_api("/stats", {
+        "stats": "season", "group": "hitting", "gameType": "R",
+        "season": "2026", "sportId": "1", "playerPool": "All",
+    })
+    for split in bat_data.get("stats", [{}])[0].get("splits", []):
+        tid = split.get("team", {}).get("id")
+        stat = split.get("stat", {})
+        if tid and tid in teams_data:
+            teams_data[tid]["ops"] = safe_float(stat.get("ops"))
+            teams_data[tid]["avg"] = safe_float(stat.get("avg"))
+            teams_data[tid]["obp"] = safe_float(stat.get("obp"))
+            teams_data[tid]["slg"] = safe_float(stat.get("slg"))
+
+    # Fetch team pitching stats
+    pit_data = mlb_api("/stats", {
+        "stats": "season", "group": "pitching", "gameType": "R",
+        "season": "2026", "sportId": "1", "playerPool": "All",
+    })
+    for split in pit_data.get("stats", [{}])[0].get("splits", []):
+        tid = split.get("team", {}).get("id")
+        stat = split.get("stat", {})
+        if tid and tid in teams_data:
+            ip = safe_float(stat.get("inningsPitched", "0"))
+            so = int(stat.get("strikeOuts", 0) or 0)
+            teams_data[tid]["team_era"] = safe_float(stat.get("era"))
+            teams_data[tid]["team_whip"] = safe_float(stat.get("whip"))
+            teams_data[tid]["team_k9"] = round(so / ip * 9, 2) if ip > 0 else 0.0
+
+    # Fetch next 3 games for each team
+    tomorrow = (datetime.date.today() + datetime.timedelta(days=1)).isoformat()
+    in3days  = (datetime.date.today() + datetime.timedelta(days=3)).isoformat()
+    sched = mlb_api("/schedule", {
+        "sportId": "1", "startDate": TODAY, "endDate": in3days,
+        "hydrate": "probablePitcher,team",
+    })
+    # Build upcoming games per team
+    upcoming = {}
+    for de in sched.get("dates", []):
+        for g in de.get("games", []):
+            home_id = g["teams"]["home"]["team"]["id"]
+            away_id = g["teams"]["away"]["team"]["id"]
+            home_name = g["teams"]["home"]["team"]["name"]
+            away_name = g["teams"]["away"]["team"]["name"]
+            home_sp = g["teams"]["home"].get("probablePitcher", {}).get("fullName", "TBD")
+            away_sp = g["teams"]["away"].get("probablePitcher", {}).get("fullName", "TBD")
+            game_date = de.get("date", "")
+            game_time = g.get("gameDate", "")
+            entry = {
+                "date": game_date,
+                "home": home_name,
+                "away": away_name,
+                "home_sp": home_sp,
+                "away_sp": away_sp,
+            }
+            for tid in [home_id, away_id]:
+                if tid not in upcoming:
+                    upcoming[tid] = []
+                if len(upcoming[tid]) < 3:
+                    upcoming[tid].append(entry)
+
+    for tid, td in teams_data.items():
+        td["upcoming"] = upcoming.get(tid, [])
+
+    return teams_data
+
+
+def build_teams_html(teams_data):
+    """Build the team overview page sorted alphabetically."""
+    if not teams_data:
+        return ""
+
+    # Sort alphabetically by team name
+    sorted_teams = sorted(teams_data.values(), key=lambda x: x["name"])
+
+    def streak_badge(stype, snum):
+        if not stype or not snum: return ""
+        color = "#1D9E75" if stype == "W" else "#A32D2D"
+        label = stype + str(snum)
+        return ('<span style="background:'+color+'22;color:'+color+';font-size:11px;'
+                'font-weight:700;padding:2px 8px;border-radius:4px">'+label+'</span>')
+
+    def ops_color(ops):
+        if ops >= 0.800: return "#1D9E75"
+        if ops >= 0.720: return "#BA7517"
+        return "#A32D2D"
+
+    def era_color(era):
+        if era <= 3.50: return "#1D9E75"
+        if era <= 4.50: return "#BA7517"
+        return "#A32D2D"
+
+    def team_card(t):
+        gp = t.get("games_played", 0)
+        w = t.get("wins", 0)
+        l = t.get("losses", 0)
+        ops = t.get("ops", 0)
+        era = t.get("team_era", 0)
+        whip = t.get("team_whip", 0)
+        k9  = t.get("team_k9", 0)
+        rsg = round(t.get("runs_scored", 0) / gp, 2) if gp > 0 else 0
+        rag = round(t.get("runs_allowed", 0) / gp, 2) if gp > 0 else 0
+        l10w = t.get("last10_w", 0)
+        l10l = t.get("last10_l", 0)
+        streak = streak_badge(t.get("streak_type",""), t.get("streak_number",0))
+        upcoming = t.get("upcoming", [])
+
+        upcoming_html = ""
+        for g in upcoming:
+            is_home = g["home"] == t["name"]
+            opp = g["away"] if is_home else g["home"]
+            sp  = g["home_sp"] if is_home else g["away_sp"]
+            loc = "vs" if is_home else "@"
+            upcoming_html += ('<div style="font-size:11px;color:#666;padding:3px 0;border-bottom:0.5px solid #f5f5f3">'
+                              +g["date"]+" "+loc+" "+opp+" — SP: "+sp+'</div>')
+
+        return (
+            '<div style="background:#fff;border:0.5px solid #e8e8e5;border-radius:10px;'
+            'padding:1rem 1.25rem;margin-bottom:10px">'
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+            '<div>'
+            '<div style="font-size:16px;font-weight:700">'+t["name"]+'</div>'
+            '<div style="font-size:12px;color:#888;margin-top:2px">'+t.get("division","")+'</div>'
+            '</div>'
+            '<div style="text-align:right">'
+            '<div style="font-size:18px;font-weight:700">'+str(w)+'-'+str(l)+'</div>'
+            '<div style="font-size:11px;color:#888;margin-top:2px">'+str(l10w)+'-'+str(l10l)+' L10 &nbsp; '+streak+'</div>'
+            '</div>'
+            '</div>'
+            '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:10px">'
+            '<div style="background:#f9f9f7;border-radius:7px;padding:6px 8px;text-align:center">'
+            '<div style="font-size:13px;font-weight:700;color:'+ops_color(ops)+'">'+str(ops)+'</div>'
+            '<div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.04em">OPS</div></div>'
+            '<div style="background:#f9f9f7;border-radius:7px;padding:6px 8px;text-align:center">'
+            '<div style="font-size:13px;font-weight:700">'+str(rsg)+'</div>'
+            '<div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.04em">R/G</div></div>'
+            '<div style="background:#f9f9f7;border-radius:7px;padding:6px 8px;text-align:center">'
+            '<div style="font-size:13px;font-weight:700;color:'+era_color(era)+'">'+str(era)+'</div>'
+            '<div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.04em">ERA</div></div>'
+            '<div style="background:#f9f9f7;border-radius:7px;padding:6px 8px;text-align:center">'
+            '<div style="font-size:13px;font-weight:700">'+str(whip)+'</div>'
+            '<div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.04em">WHIP</div></div>'
+            '<div style="background:#f9f9f7;border-radius:7px;padding:6px 8px;text-align:center">'
+            '<div style="font-size:13px;font-weight:700">'+str(k9)+'</div>'
+            '<div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.04em">K/9</div></div>'
+            '<div style="background:#f9f9f7;border-radius:7px;padding:6px 8px;text-align:center">'
+            '<div style="font-size:13px;font-weight:700">'+str(rag)+'</div>'
+            '<div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.04em">RA/G</div></div>'
+            '</div>'
+            +(('<div style="border-top:0.5px solid #f0f0ee;padding-top:8px">'
+               '<div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Upcoming</div>'
+               +upcoming_html+'</div>') if upcoming else '')
+            +'</div>'
+        )
+
+    cards = "".join(team_card(t) for t in sorted_teams)
+
+    css = (
+        '<style>*{box-sizing:border-box;margin:0;padding:0}'
+        'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;'
+        'background:#f9f9f7;color:#1a1a1a;padding:1.25rem;max-width:700px;margin:0 auto}'
+        'h1{font-size:20px;font-weight:700;margin-bottom:3px}'
+        '.meta{font-size:13px;color:#888;margin-bottom:1.5rem}'
+        'footer{font-size:11px;color:#bbb;margin-top:1.5rem;text-align:center;padding-bottom:1rem}'
+        '</style>'
+    )
+
+    return (
+        '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">'
+        '<meta name="viewport" content="width=device-width,initial-scale=1">'
+        '<title>MLB Team Overview</title>'+css+'</head><body>'
+        '<h1>MLB Team Overview</h1>'
+        '<div class="meta">Updated '+TODAY+' &nbsp;&middot;&nbsp; '
+        '<a href="index.html" style="color:#378ADD;text-decoration:none">Today&#39;s picks &rarr;</a>'
+        ' &nbsp;&middot;&nbsp; <a href="record.html" style="color:#8B6FBA;text-decoration:none">&#128200; Record &rarr;</a>'
+        ' &nbsp;&middot;&nbsp; <a href="archive.html" style="color:#378ADD;text-decoration:none">Archive &rarr;</a>'
+        ' &nbsp;&middot;&nbsp; <span style="font-size:11px;color:#1D9E75">&#9679; Live data</span></div>'
+        '<div style="font-size:12px;color:#888;margin-bottom:1rem">'
+        'Green OPS = .800+ &nbsp; Yellow = .720-.799 &nbsp; Red = below .720 &nbsp;&middot;&nbsp; '
+        'ERA: Green = 3.50 or below &nbsp; Yellow = 3.51-4.50 &nbsp; Red = above 4.50</div>'
+        +cards+
+        '<footer>2026 season stats &nbsp;&middot;&nbsp; Updates every workflow run</footer>'
+        '</body></html>'
+    )
+
+
 def build_archive_index():
     dated_files = sorted([f for f in OUTPUT_DIR.glob("????-??-??.html")], reverse=True)
     if not dated_files: return
@@ -2268,7 +2493,7 @@ def build_html(data):
         '<h1>MLB Betting Model</h1>'
         '<div class="meta">'+date+' &nbsp;&middot;&nbsp; '+str(data["total_games"])+' games'
         ' &nbsp;&middot;&nbsp; <a href="archive.html" style="color:#378ADD;text-decoration:none">Archive &rarr;</a>'
-        ' &nbsp;&middot;&nbsp; <a href="record.html" style="color:#8B6FBA;text-decoration:none">&#128200; Record</a></div>'
+        ' &nbsp;&middot;&nbsp; <a href="record.html" style="color:#8B6FBA;text-decoration:none">&#128200; Record</a> &nbsp;&middot;&nbsp; <a href="teams.html" style="color:#BA7517;text-decoration:none">&#127942; Teams</a></div>'
         '<div class="updated">Picks generated '+gen+' ET &nbsp;&middot;&nbsp; Locked picks &nbsp;&middot;&nbsp; '+model_badge
         +' &nbsp;&middot;&nbsp; <span id="last_update">Scores loading...</span></div>'
         '<div class="sum">'
@@ -2551,6 +2776,17 @@ def main():
     (OUTPUT_DIR/"index.html").write_text(html)
     (OUTPUT_DIR/"record.html").write_text(build_record_html(record))
     build_archive_index()
+
+    # Build team overview page
+    try:
+        print("Building team overview page...")
+        teams_data = fetch_all_teams_data()
+        if teams_data:
+            (OUTPUT_DIR/"teams.html").write_text(build_teams_html(teams_data))
+            print("Team overview: "+str(len(teams_data))+" teams")
+    except Exception as e:
+        print("Teams page error: "+str(e))
+
     print("Done. "+str(len(active))+" active picks across "+str(len(games))+" games.")
     print("AI engine: "+ai_model)
 
