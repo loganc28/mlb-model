@@ -1796,8 +1796,8 @@ function parsePicksFromPage() {
         var game = cells[2] ? cells[2].textContent.trim() : "";
         var tier = cells[3] ? cells[3].textContent.trim() : "";
         var line = cells[4] ? cells[4].textContent.trim() : "";
-        var resultCell = cells[7];
-        var unitsCell = cells[8];
+        var resultCell = cells[8];
+        var unitsCell = cells[9];
         var resultSpan = resultCell ? resultCell.querySelector("span") : null;
         if (resultSpan && resultSpan.textContent.trim() === "PENDING") {
             PICK_DATA.push({
