@@ -2028,39 +2028,41 @@ def fetch_all_teams_data():
     """Fetch standings, stats, and schedule for all 30 MLB teams."""
     teams_data = {}
 
-    # Fetch standings from both leagues
-    for league_id in ["103", "104"]:  # AL=103, AL=104
-        data = mlb_api("/standings", {
-            "leagueId": league_id,
-            "season": "2026",
-            "standingsTypes": "regularSeason",
-            "hydrate": "team,record",
-        })
-        for rec in data.get("records", []):
-            division = rec.get("division", {}).get("name", "")
-            for tr in rec.get("teamRecords", []):
-                team = tr.get("team", {})
-                tid = team.get("id")
-                name = team.get("name", "")
-                streak = tr.get("streak", {})
-                last10 = tr.get("records", {}).get("splitRecords", [])
-                l10_rec = next((s for s in last10 if s.get("type") == "lastTen"), {})
-                teams_data[tid] = {
-                    "id": tid,
-                    "name": name,
-                    "division": division,
-                    "wins": tr.get("wins", 0),
-                    "losses": tr.get("losses", 0),
-                    "pct": tr.get("winningPercentage", ".000"),
-                    "gb": tr.get("gamesBack", "-"),
-                    "streak_type": streak.get("streakType", ""),
-                    "streak_number": streak.get("streakNumber", 0),
-                    "last10_w": l10_rec.get("wins", 0),
-                    "last10_l": l10_rec.get("losses", 0),
-                    "runs_scored": tr.get("runsScored", 0),
-                    "runs_allowed": tr.get("runsAllowed", 0),
-                    "games_played": tr.get("wins", 0) + tr.get("losses", 0),
-                }
+    # Fetch standings for both leagues in one call
+    data = mlb_api("/standings", {
+        "leagueId": "103,104",
+        "season": "2026",
+        "standingsTypes": "regularSeason",
+        "hydrate": "team,record,streak,records",
+    })
+    print("Standings records: "+str(len(data.get("records",[]))))
+    for rec in data.get("records", []):
+        division = rec.get("division", {}).get("name", "")
+        for tr in rec.get("teamRecords", []):
+            team = tr.get("team", {})
+            tid = team.get("id")
+            name = team.get("name", "")
+            streak = tr.get("streak", {})
+            split_records = tr.get("records", {}).get("splitRecords", [])
+            l10_rec = next((s for s in split_records if s.get("type") == "lastTen"), {})
+            gp = tr.get("gamesPlayed", 0) or (tr.get("wins",0) + tr.get("losses",0))
+            teams_data[tid] = {
+                "id": tid,
+                "name": name,
+                "division": division,
+                "wins": tr.get("wins", 0),
+                "losses": tr.get("losses", 0),
+                "pct": tr.get("winningPercentage", ".000"),
+                "gb": tr.get("gamesBack", "-"),
+                "streak_type": streak.get("streakType", ""),
+                "streak_number": streak.get("streakNumber", 0),
+                "last10_w": l10_rec.get("wins", 0),
+                "last10_l": l10_rec.get("losses", 0),
+                "runs_scored": tr.get("runsScored", 0),
+                "runs_allowed": tr.get("runsAllowed", 0),
+                "games_played": gp,
+            }
+    print("Teams loaded from standings: "+str(len(teams_data)))
 
     # Fetch team batting stats
     bat_data = mlb_api("/stats", {
@@ -2779,13 +2781,19 @@ def main():
 
     # Build team overview page
     try:
+        import traceback
         print("Building team overview page...")
         teams_data = fetch_all_teams_data()
+        print("Teams fetched: "+str(len(teams_data)))
         if teams_data:
-            (OUTPUT_DIR/"teams.html").write_text(build_teams_html(teams_data))
-            print("Team overview: "+str(len(teams_data))+" teams")
+            html_out = build_teams_html(teams_data)
+            (OUTPUT_DIR/"teams.html").write_text(html_out)
+            print("Team overview written: "+str(len(teams_data))+" teams, "+str(len(html_out))+" chars")
+        else:
+            print("No teams data returned — teams.html not written")
     except Exception as e:
         print("Teams page error: "+str(e))
+        traceback.print_exc()
 
     print("Done. "+str(len(active))+" active picks across "+str(len(games))+" games.")
     print("AI engine: "+ai_model)
