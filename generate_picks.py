@@ -691,6 +691,7 @@ def fetch_espn_injuries():
                 }
 
         # Also try parsing the injuries API endpoint ESPN uses
+        # ESPN API returns team context — store by team name
         if not injuries:
             api_r = requests.get(
                 "https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/injuries",
@@ -699,6 +700,7 @@ def fetch_espn_injuries():
             if api_r.ok:
                 data = api_r.json()
                 for team_data in data.get("injuries", []):
+                    team_name = team_data.get("team", {}).get("displayName", "")
                     for player in team_data.get("injuries", []):
                         athlete = player.get("athlete", {})
                         name = athlete.get("displayName", "")
@@ -708,7 +710,8 @@ def fetch_espn_injuries():
                             injuries[name] = {
                                 "status": status,
                                 "detail": detail,
-                                "source": "ESPN API"
+                                "source": "ESPN API",
+                                "team": team_name,
                             }
 
         print("ESPN injuries loaded: "+str(len(injuries))+" players")
@@ -759,18 +762,24 @@ def fetch_injuries(team_id):
 def get_team_injuries_with_espn(team_name, ml_injuries, espn_injuries):
     """
     Merge MLB IL injuries with ESPN injuries for a specific team.
-    Only includes players confirmed injured — no hallucination possible.
+    Only adds ESPN injuries that match this team — no cross-team contamination.
     """
-    # Start with official IL
     combined = list(ml_injuries)
     existing_names = {p["name"] for p in combined}
 
-    # Add ESPN injuries not already in IL
-    # ESPN injuries are global so we check if player name contains team context
-    # For now just add any ESPN injury not in IL
-    # In practice ESPN data will have team context in future enhancement
+    # Normalize team name for matching
+    team_lower = team_name.lower()
+
     for name, data in espn_injuries.items():
-        if name not in existing_names:
+        if name in existing_names:
+            continue
+        # Only add if ESPN data has team context matching this team
+        espn_team = data.get("team", "").lower()
+        if not espn_team:
+            continue  # No team context — skip to avoid cross-team contamination
+        # Check if ESPN team name matches — handle common variations
+        if (espn_team in team_lower or team_lower in espn_team or
+            any(word in espn_team for word in team_lower.split() if len(word) > 3)):
             combined.append({
                 "name": name,
                 "status": data.get("status",""),
@@ -779,7 +788,7 @@ def get_team_injuries_with_espn(team_name, ml_injuries, espn_injuries):
                 "detail": data.get("detail","")
             })
 
-    return combined[:8]  # Cap at 8 to keep prompt size reasonable
+    return combined[:8]
 
 # ── Weather ───────────────────────────────────────────────────────────────────
 
@@ -878,15 +887,24 @@ def fetch_team_streak(team_id):
 # ── Odds ──────────────────────────────────────────────────────────────────────
 
 def best_book_value(bookmakers, market_key):
-    book_map = {bm["key"]: bm for bm in bookmakers}
-    ordered = [book_map[b] for b in BOOK_PRIORITY if b in book_map]
+    """Return outcomes with best price for each side across all books."""
+    best_prices = {}  # outcome_name -> best price
+    best_outcomes = {}  # outcome_name -> full outcome dict at best price
+
     for bm in bookmakers:
-        if bm not in ordered: ordered.append(bm)
-    for bm in ordered:
         for market in bm.get("markets",[]):
-            if market["key"] == market_key and market.get("outcomes"):
-                return market["outcomes"]
-    return []
+            if market["key"] != market_key:
+                continue
+            for o in market.get("outcomes",[]):
+                name = o["name"]
+                price = o.get("price", -999)
+                # Higher price is always better for the bettor
+                if name not in best_prices or price > best_prices[name]:
+                    best_prices[name] = price
+                    best_outcomes[name] = dict(o)
+                    best_outcomes[name]["_book"] = bm.get("key","")
+
+    return list(best_outcomes.values())
 
 def fetch_odds():
     if not ODDS_API_KEY: return {}
@@ -909,11 +927,31 @@ def fetch_odds():
             bms  = event.get("bookmakers",[])
             ml   = {}; total = {}; runline = {}
 
-            for o in best_book_value(bms,"h2h"):
-                ml[o["name"]] = o["price"]
-            for o in best_book_value(bms,"totals"):
-                if o["name"]=="Over": total["line"]=o.get("point",""); total["over"]=o["price"]
-                elif o["name"]=="Under": total["under"]=o["price"]
+            # ML — best price across ALL books for each team
+            for bm in bms:
+                for market in bm.get("markets",[]):
+                    if market["key"] == "h2h":
+                        for o in market.get("outcomes",[]):
+                            nm = o["name"]; pr = o["price"]
+                            if nm not in ml or pr > ml[nm]:
+                                ml[nm] = pr
+
+            # Totals — best over AND under price across all books
+            best_over = None; best_under = None; total_line = ""
+            for bm in bms:
+                for market in bm.get("markets",[]):
+                    if market["key"] == "totals":
+                        for o in market.get("outcomes",[]):
+                            if o["name"] == "Over":
+                                if not total_line: total_line = str(o.get("point",""))
+                                if best_over is None or o["price"] > best_over:
+                                    best_over = o["price"]
+                            elif o["name"] == "Under":
+                                if best_under is None or o["price"] > best_under:
+                                    best_under = o["price"]
+            if best_over: total["over"] = best_over
+            if best_under: total["under"] = best_under
+            if total_line: total["line"] = total_line
 
             # Run line — scan ALL books, take best price per side
             for bm in bms:
@@ -951,6 +989,14 @@ ABSOLUTE RULES — violating these means the pick is wrong:
 1. win_prob_pct MINUS implied_prob_pct = ev_pct. If ev_pct < threshold, tier MUST be WATCH or SKIP.
    Thresholds: ML = 3%, Run Line = 3%, Totals = 4%. NO EXCEPTIONS.
 2. Tier assignment: MAX = 10%+, A = 7%+, B = 4-6%, C = exactly 3%, WATCH = 1-2%, SKIP = below 1%.
+   BASELINE WIN PROBABILITY: Each game includes baseline_home_win_prob calculated from a
+   Pythagorean run estimator using SP ERA, team OPS, and park factor. Use this as your starting
+   point for win_prob_pct. Adjust UP or DOWN by maximum 7% based on:
+   - Recent form (HOT/DECLINING flags): ±3-5%
+   - Bullpen fatigue differential: ±2-3%
+   - Confirmed injuries to key players: ±1-2%
+   Do NOT invent win_prob from scratch. Start from baseline_home_win_prob and adjust.
+   For away team win prob: 100 - baseline_home_win_prob (then adjust).
 3. NEVER bet ML worse than -180. Automatic SKIP regardless of edge.
 4. NEVER use a total line you invented. Only use actual lines from the odds data provided.
 5. No daily unit cap. EV threshold and scoring rubric are the only filters.
@@ -1244,6 +1290,37 @@ def enforce_ev_rules(picks):
 
     return enforced
 
+def estimate_win_prob(home_sp_era, away_sp_era, home_ops, away_ops,
+                      park_runs, home_recent_era=None, away_recent_era=None):
+    """
+    Estimate home team win probability using Pythagorean run expectation.
+    Uses recent ERA when available as it's more predictive than season ERA.
+    Claude adjusts this baseline by max ±7% based on qualitative factors.
+    """
+    lg_era = 4.20; lg_ops = 0.720; lg_runs_pg = 4.5
+
+    # Use recent ERA if available and meaningful (not zero)
+    h_era = home_recent_era if home_recent_era and home_recent_era > 0 else home_sp_era
+    a_era = away_recent_era if away_recent_era and away_recent_era > 0 else away_sp_era
+
+    # Cap ERAs to prevent extreme distortion from tiny samples
+    h_era = min(max(h_era, 1.0), 9.0)
+    a_era = min(max(a_era, 1.0), 9.0)
+    h_ops = min(max(home_ops, 0.550), 1.000) if home_ops > 0 else lg_ops
+    a_ops = min(max(away_ops, 0.550), 1.000) if away_ops > 0 else lg_ops
+    pf = min(max(park_runs, 0.80), 1.30)
+
+    # Expected runs per game for each team
+    home_runs = lg_runs_pg * (a_era / lg_era) * (h_ops / lg_ops) * pf * 1.03  # home advantage
+    away_runs = lg_runs_pg * (h_era / lg_era) * (a_ops / lg_ops) * pf
+
+    # Pythagorean expectation (Davenport exponent 1.83)
+    exp = 1.83
+    if home_runs <= 0 or away_runs <= 0:
+        return 54.0  # fallback to slight home advantage
+    home_win_pct = home_runs**exp / (home_runs**exp + away_runs**exp)
+    return round(home_win_pct * 100, 1)
+
 def summarize_game(g):
     """Compress game data to key numbers only — keeps prompt size manageable."""
     home_sp = g.get("home_sp_stats",{})
@@ -1350,6 +1427,15 @@ def summarize_game(g):
         },
         "home_streak": g.get("home_streak",{}),
         "away_streak": g.get("away_streak",{}),
+        "baseline_home_win_prob": estimate_win_prob(
+            home_sp.get("era", 4.20),
+            away_sp.get("era", 4.20),
+            g.get("home_team_batting",{}).get("ops", 0.720),
+            g.get("away_team_batting",{}).get("ops", 0.720),
+            g.get("park_factor",{}).get("runs", 1.0),
+            home_rec.get("era_last3", 0),
+            away_rec.get("era_last3", 0),
+        ),
     }
 
 def call_ai(games_with_data):
