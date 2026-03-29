@@ -1506,6 +1506,223 @@ def load_record():
 def save_record(record):
     RECORD_FILE.write_text(json.dumps(record, indent=2))
 
+RECORD_LIVE_JS = """
+<script>
+// Live record settlement — updates W/L display when games go Final
+// Reads pick data embedded in the page and checks MLB API for final scores
+
+var PICK_DATA = [];
+
+function parsePicksFromPage() {
+    // Extract pick data from table rows
+    var rows = document.querySelectorAll("tbody tr");
+    rows.forEach(function(row, idx) {
+        var cells = row.querySelectorAll("td");
+        if (cells.length < 9) return;
+        var pick = cells[1] ? cells[1].textContent.trim() : "";
+        var game = cells[2] ? cells[2].textContent.trim() : "";
+        var tier = cells[3] ? cells[3].textContent.trim() : "";
+        var line = cells[4] ? cells[4].textContent.trim() : "";
+        var resultCell = cells[7];
+        var unitsCell = cells[8];
+        var resultSpan = resultCell ? resultCell.querySelector("span") : null;
+        if (resultSpan && resultSpan.textContent.trim() === "PENDING") {
+            PICK_DATA.push({
+                idx: idx,
+                pick: pick,
+                game: game,
+                tier: tier,
+                line: line,
+                resultSpan: resultSpan,
+                unitsCell: unitsCell,
+                row: row
+            });
+        }
+    });
+}
+
+function americanToDecimal(odds) {
+    odds = parseFloat(odds);
+    if (isNaN(odds)) return 1.909; // default -110
+    if (odds < 0) return 1 + (100 / Math.abs(odds));
+    return 1 + (odds / 100);
+}
+
+function calcUnitsResult(result, line, units) {
+    units = parseFloat(units) || 1.0;
+    if (result === "W") {
+        var dec = americanToDecimal(line);
+        return Math.round((units * (dec - 1)) * 100) / 100;
+    } else if (result === "L") {
+        return -units;
+    }
+    return 0;
+}
+
+function settlePick(pick, game, line, scores) {
+    // Parse game string "AWAY @ HOME"
+    var parts = game.split(" @ ");
+    if (parts.length !== 2) return null;
+    var away = parts[0].trim();
+    var home = parts[1].trim();
+    
+    // Find score
+    var score = null;
+    for (var key in scores) {
+        if (key.indexOf(away) >= 0 && key.indexOf(home) >= 0) {
+            score = scores[key];
+            break;
+        }
+    }
+    if (!score) return null;
+    
+    var awayScore = score.away_score;
+    var homeScore = score.home_score;
+    var total = awayScore + homeScore;
+    var pickUp = pick.toUpperCase();
+    
+    // Total OVER/UNDER
+    if (pickUp.indexOf("OVER") >= 0 || pickUp.indexOf("UNDER") >= 0) {
+        var lineMatch = pick.match(/[0-9.]+/);
+        if (!lineMatch) return null;
+        var lineNum = parseFloat(lineMatch[0]);
+        if (total > lineNum) return pickUp.indexOf("OVER") >= 0 ? "W" : "L";
+        if (total < lineNum) return pickUp.indexOf("UNDER") >= 0 ? "W" : "L";
+        return "P";
+    }
+    
+    // ML
+    if (pickUp.indexOf("ML") >= 0) {
+        var winner = homeScore > awayScore ? home : away;
+        for (var team of [away, home]) {
+            if (pickUp.indexOf(team.toUpperCase().split(" ").pop()) >= 0) {
+                return winner === team ? "W" : "L";
+            }
+        }
+    }
+    
+    // Run Line +1.5 / -1.5
+    if (pickUp.indexOf("+1.5") >= 0 || pickUp.indexOf("-1.5") >= 0) {
+        var spread = pickUp.indexOf("+1.5") >= 0 ? 1.5 : -1.5;
+        for (var team of [away, home]) {
+            if (pickUp.indexOf(team.toUpperCase().split(" ").pop()) >= 0) {
+                var teamScore = team === home ? homeScore : awayScore;
+                var oppScore = team === home ? awayScore : homeScore;
+                var adjusted = teamScore - oppScore + spread;
+                if (adjusted > 0) return "W";
+                if (adjusted < 0) return "L";
+                return "P";
+            }
+        }
+    }
+    
+    return null;
+}
+
+function updateRecordDisplay(scores) {
+    var wins = 0, losses = 0, pushes = 0, totalUnits = 0;
+    
+    PICK_DATA.forEach(function(pd) {
+        var result = settlePick(pd.pick, pd.game, pd.line, scores);
+        if (!result) return;
+        
+        var units = parseFloat(pd.tier === "A" ? 1.5 : pd.tier === "MAX" ? 3.0 : pd.tier === "C" ? 0.5 : 1.0);
+        var unitsResult = calcUnitsResult(result, pd.line, units);
+        
+        // Update result cell
+        var color = result === "W" ? "#1D9E75" : result === "L" ? "#A32D2D" : "#888";
+        pd.resultSpan.textContent = result === "W" ? "WIN" : result === "L" ? "LOSS" : "PUSH";
+        pd.resultSpan.style.background = color + "22";
+        pd.resultSpan.style.color = color;
+        
+        // Update units cell
+        if (pd.unitsCell) {
+            pd.unitsCell.textContent = (unitsResult >= 0 ? "+" : "") + unitsResult + "u";
+            pd.unitsCell.style.color = color;
+        }
+        
+        // Count
+        if (result === "W") { wins++; totalUnits += unitsResult; }
+        else if (result === "L") { losses++; totalUnits += unitsResult; }
+        else pushes++;
+        
+        // Highlight row
+        pd.row.style.background = result === "W" ? "#f0fff8" : result === "L" ? "#fff0f0" : "";
+    });
+    
+    // Update summary stats
+    var total = wins + losses + pushes;
+    if (total > 0) {
+        var wrEl = document.querySelector(".sn[data-stat=winrate]");
+        var wlEl = document.querySelector(".sn[data-stat=wl]");
+        var uEl  = document.querySelector(".sn[data-stat=units]");
+        if (wrEl) wrEl.textContent = Math.round(wins/total*100) + "%";
+        if (wlEl) wlEl.textContent = wins + "-" + losses;
+        if (uEl) {
+            uEl.textContent = (totalUnits >= 0 ? "+" : "") + Math.round(totalUnits*100)/100 + "u";
+            uEl.style.color = totalUnits >= 0 ? "#1D9E75" : "#A32D2D";
+        }
+    }
+    
+    // Update last refreshed
+    var lu = document.getElementById("live_update");
+    if (lu) lu.textContent = "Live results updated " + new Date().toLocaleTimeString("en-US", {timeZone:"America/New_York",hour:"numeric",minute:"2-digit"}) + " ET";
+}
+
+function fetchScoresForRecord() {
+    // Get unique dates from picks
+    var dates = new Set();
+    PICK_DATA.forEach(function(pd) {
+        // Extract date from row
+        var dateCell = pd.row.querySelector("td:first-child");
+        if (dateCell) dates.add(dateCell.textContent.trim());
+    });
+    
+    // Also always check today
+    dates.add(new Date().toLocaleDateString("en-CA", {timeZone:"America/New_York"}));
+    
+    var allScores = {};
+    var promises = [];
+    
+    dates.forEach(function(date) {
+        if (!date || date.length < 8) return;
+        var p = fetch("https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=" + date + "&hydrate=linescore,team")
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                (data.dates || []).forEach(function(d) {
+                    (d.games || []).forEach(function(g) {
+                        if (g.status.abstractGameState !== "Final") return;
+                        var away = g.teams.away.team.name;
+                        var home = g.teams.home.team.name;
+                        allScores[away + " @ " + home] = {
+                            away_score: g.teams.away.score || 0,
+                            home_score: g.teams.home.score || 0,
+                        };
+                    });
+                });
+            }).catch(function() {});
+        promises.push(p);
+    });
+    
+    Promise.all(promises).then(function() {
+        if (Object.keys(allScores).length > 0) {
+            updateRecordDisplay(allScores);
+        }
+    });
+}
+
+// Initialize on page load
+document.addEventListener("DOMContentLoaded", function() {
+    parsePicksFromPage();
+    if (PICK_DATA.length > 0) {
+        fetchScoresForRecord();
+        // Refresh every 2 minutes
+        setInterval(fetchScoresForRecord, 120000);
+    }
+});
+</script>
+"""
+
 def build_record_html(record):
     picks = record.get("picks",[])
     settled = [p for p in picks if p.get("result") in ("W","L","P")]
@@ -1632,13 +1849,13 @@ def build_record_html(record):
             'footer{font-size:11px;color:#bbb;margin-top:1.5rem;text-align:center;padding-bottom:1rem}'
             '</style></head><body>'
             '<h1>MLB Model Record</h1>'
-            '<div class="meta">Updated '+TODAY+' &nbsp;&middot;&nbsp; '
+            '<div class="meta">Updated '+TODAY+' &nbsp;&middot;&nbsp; <span id="live_update" style="color:#1D9E75">Live results active</span> &nbsp;&middot;&nbsp; '
             '<a href="index.html" style="color:#378ADD;text-decoration:none">Today\'s picks &rarr;</a>'
             ' &nbsp;&middot;&nbsp; <a href="archive.html" style="color:#378ADD;text-decoration:none">Archive &rarr;</a></div>'
             '<div class="sum">'
-            '<div class="s"><div class="sn">'+str(len(wins))+'-'+str(len(losses))+'</div><div class="sl">W-L Record</div></div>'
-            '<div class="s"><div class="sn">'+str(win_rate)+'%</div><div class="sl">Win rate</div></div>'
-            '<div class="s"><div class="sn" style="color:'+u_color+'">'+u_str+'</div><div class="sl">Units P&L</div></div>'
+            '<div class="s"><div class="sn" data-stat="wl">'+str(len(wins))+'-'+str(len(losses))+'</div><div class="sl">W-L Record</div></div>'
+            '<div class="s"><div class="sn" data-stat="winrate">'+str(win_rate)+'%</div><div class="sl">Win rate</div></div>'
+            '<div class="s"><div class="sn" data-stat="units" style="color:'+u_color+'">'+u_str+'</div><div class="sl">Units P&L</div></div>'
             '<div class="s"><div class="sn" style="color:'+clv_color+'">'+('+'if avg_clv>=0 else '')+str(avg_clv)+'</div><div class="sl">Avg CLV</div></div>'
             '<div class="s"><div class="sn" style="color:#8B6FBA">'+str(watch_rate)+'%</div><div class="sl">Watch hit %</div></div>'
             '</div>'
@@ -1657,7 +1874,8 @@ def build_record_html(record):
             '<th>Date</th><th>Pick</th><th>Game</th><th>Tier</th><th>Open</th><th>Close</th><th>CLV</th><th>Result</th><th>Units</th>'
             '</tr></thead><tbody>'+pick_rows+'</tbody></table>'
             '<footer>EV model &nbsp;&middot;&nbsp; Track CLV to measure long-term edge &nbsp;&middot;&nbsp; Paper trading until 50+ picks verified</footer>'
-            '</body></html>')
+            + RECORD_LIVE_JS
+            + '</body></html>')
 
 # ── Archive ───────────────────────────────────────────────────────────────────
 
@@ -2087,9 +2305,31 @@ def main():
 
     if not picks_locked or force_regen:
         if force_regen:
-            # Remove today's unsettled picks before regenerating
-            record["picks"] = [p for p in record["picks"]
-                               if not (p.get("date")==TODAY and not p.get("result"))]
+            # Only remove picks for games affected by triggers
+            affected_games = set()
+            for reason in regen_reasons:
+                if "SP SCRATCH:" in reason:
+                    # Extract game from trigger — format "SP SCRATCH: OldSP → NewSP (Team)"
+                    for gd in games_with_data:
+                        team_name = reason.split("(")[-1].replace(")","").strip()
+                        if team_name in [gd["home"], gd["away"]]:
+                            affected_games.add(gd["away"]+" @ "+gd["home"])
+                else:
+                    # For rain/line movement — regenerate all
+                    affected_games = {gd["away"]+" @ "+gd["home"] for gd in games_with_data}
+                    break
+
+            if affected_games:
+                print("Removing picks for affected games: "+", ".join(affected_games))
+                record["picks"] = [p for p in record["picks"]
+                                   if not (p.get("date")==TODAY
+                                           and not p.get("result")
+                                           and p.get("game","") in affected_games)]
+            else:
+                # Fallback — remove all unsettled today picks
+                record["picks"] = [p for p in record["picks"]
+                                   if not (p.get("date")==TODAY and not p.get("result"))]
+
         picks, ai_model = call_ai(games_with_data)
         active = [p for p in picks if p.get("tier") in ("MAX","A","B","C")]
         record["ai_model"] = ai_model
