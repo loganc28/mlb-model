@@ -896,7 +896,7 @@ def fetch_odds():
             params={
                 "apiKey":ODDS_API_KEY,"regions":"us",
                 "markets":"h2h,spreads,totals","oddsFormat":"american","dateFormat":"iso",
-                "bookmakers":"draftkings,fanduel,betmgm,caesars,williamhill_us,betonlineag,bovada",
+                "bookmakers":"draftkings,fanduel,betmgm,caesars,williamhill_us,betonlineag,bovada,betrivers,unibet,pointsbetus",
             },
             timeout=10
         )
@@ -1342,6 +1342,7 @@ def summarize_game(g):
             "rl_away_pt": odds.get("runline",{}).get(g["away"],{}).get("point",""),
             "rl_home": odds.get("runline",{}).get(g["home"],{}).get("price",""),
             "rl_home_pt": odds.get("runline",{}).get(g["home"],{}).get("point",""),
+            "has_odds": bool(odds.get("moneyline") or odds.get("total")),
         },
         "platoon": {
             "home": g.get("home_platoon",{}).get("platoon_note",""),
@@ -1352,8 +1353,15 @@ def summarize_game(g):
     }
 
 def call_ai(games_with_data):
-    n = len(games_with_data)
-    summarized = [summarize_game(g) for g in games_with_data]
+    # Filter out games with no odds — nothing to bet on
+    bettable = [g for g in games_with_data if g.get("odds",{}).get("moneyline") or g.get("odds",{}).get("total")]
+    no_odds = [g for g in games_with_data if g not in bettable]
+    if no_odds:
+        print("Skipping "+str(len(no_odds))+" games with no odds: "+", ".join(g["away"]+" @ "+g["home"] for g in no_odds))
+    n = len(bettable)
+    if n == 0:
+        return [], "None"
+    summarized = [summarize_game(g) for g in bettable]
 
     # Split into batches of 8 to stay within token limits
     BATCH_SIZE = 8
@@ -1386,6 +1394,40 @@ def call_ai(games_with_data):
 
     if all_picks:
         all_picks = enforce_ev_rules(all_picks)
+
+    # Add silent SKIPs for no-odds games (don't show on page)
+    for g in no_odds:
+        all_picks.append({
+            "game": g["away"]+" @ "+g["home"],
+            "venue": g.get("venue",""),
+            "game_time": g.get("game_time",""),
+            "status": g.get("status",""),
+            "live_score": g.get("live_score"),
+            "away_sp": g.get("away_sp",""),
+            "home_sp": g.get("home_sp",""),
+            "hp_ump": g.get("hp_ump",""),
+            "bet_type": "SKIP",
+            "pick": "SKIP",
+            "line": "N/A",
+            "tier": "SKIP",
+            "units": 0,
+            "win_prob_pct": 0,
+            "implied_prob_pct": 0,
+            "ev_pct": 0,
+            "sp_analysis": "",
+            "lineup_analysis": "",
+            "bullpen_note": "",
+            "injury_flags": "None",
+            "umpire_note": "",
+            "park_note": "",
+            "weather_impact": "",
+            "key_edge": "",
+            "rationale": "",
+            "avoid_reason": "No odds data available",
+            "flags": "",
+            "no_display": True,  # flag to hide from page
+        })
+
     return all_picks, model_used
 
 # ── Record tracker with CLV ───────────────────────────────────────────────────
@@ -2290,7 +2332,7 @@ def build_html(data):
     all_picks = data.get("picks",[])
     active  = [p for p in all_picks if p.get("tier") in ("MAX","A","B","C")]
     watched = [p for p in all_picks if p.get("tier") == "WATCH"]
-    skipped = [p for p in all_picks if p.get("tier") == "SKIP"]
+    skipped = [p for p in all_picks if p.get("tier") == "SKIP" and not p.get("no_display")]
     total_u = round(sum(p.get("units",0) for p in active),1)
     gen_utc  = data.get("generated_at","")
     try:
