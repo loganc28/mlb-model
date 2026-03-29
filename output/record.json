@@ -13,8 +13,9 @@
       "tier": "B",
       "units": 1.0,
       "ev_pct": 4,
-      "result": "",
-      "units_result": 0
+      "result": "L",
+      "units_result": -1.0,
+      "final_score": "Washington Nationals 2 - Chicago Cubs 10"
     },
     {
       "date": "2026-03-28",
@@ -29,8 +30,9 @@
       "tier": "A",
       "units": 1.5,
       "ev_pct": 10,
-      "result": "",
-      "units_result": 0
+      "result": "W",
+      "units_result": 1.389,
+      "final_score": "Minnesota Twins 4 - Baltimore Orioles 1"
     },
     {
       "date": "2026-03-28",
@@ -45,8 +47,9 @@
       "tier": "C",
       "units": 0.5,
       "ev_pct": 4,
-      "result": "",
-      "units_result": 0
+      "result": "L",
+      "units_result": -0.5,
+      "final_score": "Texas Rangers 5 - Philadelphia Phillies 4"
     },
     {
       "date": "2026-03-28",
@@ -61,8 +64,9 @@
       "tier": "B",
       "units": 1.0,
       "ev_pct": 5,
-      "result": "",
-      "units_result": 0
+      "result": "L",
+      "units_result": -1.0,
+      "final_score": "Boston Red Sox 5 - Cincinnati Reds 6"
     },
     {
       "date": "2026-03-28",
@@ -77,8 +81,9 @@
       "tier": "A",
       "units": 1.5,
       "ev_pct": 12,
-      "result": "",
-      "units_result": 0
+      "result": "L",
+      "units_result": -1.5,
+      "final_score": "Pittsburgh Pirates 2 - New York Mets 4"
     },
     {
       "date": "2026-03-28",
@@ -93,8 +98,9 @@
       "tier": "B",
       "units": 1.0,
       "ev_pct": 4,
-      "result": "",
-      "units_result": 0
+      "result": "W",
+      "units_result": 0.99,
+      "final_score": "Los Angeles Angels 9 - Houston Astros 11"
     },
     {
       "date": "2026-03-28",
@@ -109,8 +115,9 @@
       "tier": "A",
       "units": 1.5,
       "ev_pct": 7,
-      "result": "",
-      "units_result": 0
+      "result": "L",
+      "units_result": -1.5,
+      "final_score": "Kansas City Royals 2 - Atlanta Braves 6"
     },
     {
       "date": "2026-03-28",
@@ -125,8 +132,9 @@
       "tier": "B",
       "units": 1.0,
       "ev_pct": 6,
-      "result": "",
-      "units_result": 0
+      "result": "W",
+      "units_result": 0.926,
+      "final_score": "New York Yankees 3 - San Francisco Giants 1"
     },
     {
       "date": "2026-03-28",
@@ -141,8 +149,9 @@
       "tier": "MAX",
       "units": 3.0,
       "ev_pct": 11,
-      "result": "",
-      "units_result": 0
+      "result": "W",
+      "units_result": 2.885,
+      "final_score": "Detroit Tigers 0 - San Diego Padres 3"
     },
     {
       "date": "2026-03-28",
@@ -157,8 +166,9 @@
       "tier": "C",
       "units": 0.5,
       "ev_pct": 4,
-      "result": "",
-      "units_result": 0
+      "result": "W",
+      "units_result": 0.476,
+      "final_score": "Arizona Diamondbacks 2 - Los Angeles Dodgers 3"
     },
     {
       "date": "2026-03-28",
@@ -173,8 +183,9 @@
       "tier": "B",
       "units": 1.0,
       "ev_pct": 6,
-      "result": "",
-      "units_result": 0
+      "result": "L",
+      "units_result": -1.0,
+      "final_score": "Cleveland Guardians 6 - Seattle Mariners 5"
     },
     {
       "date": "2026-03-28",
@@ -189,10 +200,107 @@
       "tier": "WATCH",
       "units": 0,
       "ev_pct": 2,
+      "result": "W",
+      "units_result": 0.0,
+      "final_score": "Colorado Rockies 3 - Miami Marlins 4"
+    },
+    {
+      "date": "2026-03-29",
+      "game": "Texas Rangers @ Philadelphia Phillies",
+      "pick": "OVER 8.0",
+      "bet_type": "Total OVER",
+      "home_sp": "Jesus Luzardo",
+      "away_sp": "MacKenzie Gore",
+      "line": "-105",
+      "open_line": "-105",
+      "close_line": "",
+      "tier": "B",
+      "units": 1.0,
+      "ev_pct": 5,
+      "result": "",
+      "units_result": 0
+    },
+    {
+      "date": "2026-03-29",
+      "game": "Kansas City Royals @ Atlanta Braves",
+      "pick": "OVER 8.0",
+      "bet_type": "Total OVER",
+      "home_sp": "Grant Holmes",
+      "away_sp": "Seth Lugo",
+      "line": "-112",
+      "open_line": "-112",
+      "close_line": "",
+      "tier": "A",
+      "units": 1.5,
+      "ev_pct": 7,
+      "result": "",
+      "units_result": 0
+    },
+    {
+      "date": "2026-03-29",
+      "game": "Tampa Bay Rays @ St. Louis Cardinals",
+      "pick": "Rays ML",
+      "bet_type": "ML",
+      "home_sp": "Dustin May",
+      "away_sp": "Steven Matz",
+      "line": "-120",
+      "open_line": "-120",
+      "close_line": "",
+      "tier": "A",
+      "units": 1.5,
+      "ev_pct": 7,
+      "result": "",
+      "units_result": 0
+    },
+    {
+      "date": "2026-03-29",
+      "game": "Cleveland Guardians @ Seattle Mariners",
+      "pick": "UNDER 7.5",
+      "bet_type": "Total UNDER",
+      "home_sp": "Emerson Hancock",
+      "away_sp": "Slade Cecconi",
+      "line": "-108",
+      "open_line": "-108",
+      "close_line": "",
+      "tier": "A",
+      "units": 1.5,
+      "ev_pct": 9,
+      "result": "",
+      "units_result": 0
+    },
+    {
+      "date": "2026-03-29",
+      "game": "Minnesota Twins @ Baltimore Orioles",
+      "pick": "OVER 9.0",
+      "bet_type": "Total OVER",
+      "home_sp": "Shane Baz",
+      "away_sp": "Bailey Ober",
+      "line": "-102",
+      "open_line": "-102",
+      "close_line": "",
+      "tier": "B",
+      "units": 1.0,
+      "ev_pct": 6,
+      "result": "",
+      "units_result": 0
+    },
+    {
+      "date": "2026-03-29",
+      "game": "Washington Nationals @ Chicago Cubs",
+      "pick": "Nationals +1.5",
+      "bet_type": "Run Line",
+      "home_sp": "Shota Imanaga",
+      "away_sp": "Jake Irvin",
+      "line": "+105",
+      "open_line": "+105",
+      "close_line": "",
+      "tier": "C",
+      "units": 0.5,
+      "ev_pct": 3,
       "result": "",
       "units_result": 0
     }
   ],
-  "updated": "2026-03-28",
+  "updated": "2026-03-29",
   "ai_model": "Claude Sonnet 4.5"
 }
