@@ -5,6 +5,11 @@ on:
     - cron: '0 12 * * *'   # 8 AM ET
     - cron: '0 19 * * *'   # 3 PM ET
   workflow_dispatch:
+    inputs:
+      force_regenerate:
+        description: 'Force regenerate picks? (yes/no)'
+        required: false
+        default: 'no'
 
 jobs:
   generate-picks:
@@ -31,6 +36,7 @@ jobs:
           WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          FORCE_REGENERATE: ${{ github.event.inputs.force_regenerate || 'no' }}
           TZ: America/New_York
         run: python generate_picks.py
 
