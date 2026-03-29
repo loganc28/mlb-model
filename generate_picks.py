@@ -1894,35 +1894,64 @@ function settlePick(pick, game, line, scores) {
 
 function updateRecordDisplay(scores) {
     var wins = 0, losses = 0, pushes = 0, totalUnits = 0;
-    
+
+    // First count already-settled picks from server (non-WATCH, non-PENDING)
+    document.querySelectorAll("tbody tr").forEach(function(row) {
+        var cells = row.querySelectorAll("td");
+        if (cells.length < 10) return;
+        var tier = cells[3] ? cells[3].textContent.trim() : "";
+        var resultSpan = cells[8] ? cells[8].querySelector("span") : null;
+        var unitsCell = cells[9];
+        if (!resultSpan) return;
+        var existingResult = resultSpan.textContent.trim();
+        if (existingResult !== "WIN" && existingResult !== "LOSS" && existingResult !== "PUSH") return;
+        if (tier === "WATCH") return; // WATCH picks don't count
+        var unitsText = unitsCell ? unitsCell.textContent.trim() : "0u";
+        var unitsVal = parseFloat(unitsText.replace("u","")) || 0;
+        if (existingResult === "WIN") { wins++; totalUnits += unitsVal; }
+        else if (existingResult === "LOSS") { losses++; totalUnits += unitsVal; }
+        else pushes++;
+    });
+
     PICK_DATA.forEach(function(pd) {
         var result = settlePick(pd.pick, pd.game, pd.line, scores);
         if (!result) return;
-        
-        var units = parseFloat(pd.tier === "A" ? 1.5 : pd.tier === "MAX" ? 3.0 : pd.tier === "C" ? 0.5 : 1.0);
-        var unitsResult = calcUnitsResult(result, pd.line, units);
-        
+
+        var isWatch = pd.tier === "WATCH";
+        var units = isWatch ? 0 : parseFloat(pd.tier === "A" ? 1.5 : pd.tier === "MAX" ? 3.0 : pd.tier === "C" ? 0.5 : 1.0);
+        var unitsResult = isWatch ? 0 : calcUnitsResult(result, pd.line, units);
+
         // Update result cell
         var color = result === "W" ? "#1D9E75" : result === "L" ? "#A32D2D" : "#888";
         pd.resultSpan.textContent = result === "W" ? "WIN" : result === "L" ? "LOSS" : "PUSH";
         pd.resultSpan.style.background = color + "22";
         pd.resultSpan.style.color = color;
-        
+
         // Update units cell
         if (pd.unitsCell) {
             pd.unitsCell.textContent = (unitsResult >= 0 ? "+" : "") + unitsResult + "u";
             pd.unitsCell.style.color = color;
         }
-        
-        // Count
-        if (result === "W") { wins++; totalUnits += unitsResult; }
-        else if (result === "L") { losses++; totalUnits += unitsResult; }
-        else pushes++;
-        
+
+        // Update score cell if available
+        var scoreCell = pd.row.querySelector("td:nth-child(8)");
+        if (scoreCell && scores[pd.game]) {
+            var s = scores[pd.game];
+            var parts = pd.game.split(" @ ");
+            scoreCell.textContent = parts[0] + " " + s.away_score + " - " + parts[1] + " " + s.home_score;
+        }
+
+        // Count (non-WATCH only, not already counted from server)
+        if (!isWatch) {
+            if (result === "W") { wins++; totalUnits += unitsResult; }
+            else if (result === "L") { losses++; totalUnits += unitsResult; }
+            else pushes++;
+        }
+
         // Highlight row
         pd.row.style.background = result === "W" ? "#f0fff8" : result === "L" ? "#fff0f0" : "";
     });
-    
+
     // Update summary stats
     var total = wins + losses + pushes;
     if (total > 0) {
@@ -2074,6 +2103,12 @@ def build_record_html(record):
                 clv = round(ol-cl if ol<0 else cl-ol, 0)
                 clv_str = ("+" if clv>0 else "")+str(int(clv))
             except: pass
+        final_score = p.get("final_score","")
+        # WATCH picks always show 0u
+        if t == "WATCH":
+            ur = 0
+            if res == "W": rc = "#1D9E75"; rl = "WIN"
+            elif res == "L": rc = "#A32D2D"; rl = "LOSS"
         return ('<tr style="border-bottom:0.5px solid #f0f0ee">'
                 '<td style="padding:8px 12px;font-size:12px;color:#888">'+p.get("date","")+'</td>'
                 '<td style="padding:8px 12px;font-size:13px;font-weight:500">'+p.get("pick","")+'</td>'
@@ -2084,6 +2119,7 @@ def build_record_html(record):
                 '<td style="padding:8px 12px;text-align:center;font-size:11px;'
                 +('color:#1D9E75' if clv_str.startswith('+') else 'color:#A32D2D' if clv_str.startswith('-') else '')
                 +'">'+clv_str+'</td>'
+                '<td style="padding:8px 12px;font-size:11px;color:#666;text-align:center">'+str(final_score)+'</td>'
                 '<td style="padding:8px 12px;text-align:center"><span style="background:'+rc+'22;color:'+rc+';font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px">'+rl+'</span></td>'
                 '<td style="padding:8px 12px;text-align:center;font-weight:600;color:'+rc+'">'
                 +('+'if ur>=0 else '')+str(round(ur,2))+'u</td></tr>')
@@ -2144,7 +2180,7 @@ def build_record_html(record):
             '<div class="section">Pick History</div>'
             '<div style="font-size:12px;color:#888;margin-bottom:8px">Update result and close_line in record.json after each game settles. CLV = opening line vs closing line.</div>'
             '<table style="font-size:12px"><thead><tr>'
-            '<th>Date</th><th>Pick</th><th>Game</th><th>Tier</th><th>Open</th><th>Close</th><th>CLV</th><th>Result</th><th>Units</th>'
+            '<th>Date</th><th>Pick</th><th>Game</th><th>Tier</th><th>Open</th><th>Close</th><th>CLV</th><th>Score</th><th>Result</th><th>Units</th>'
             '</tr></thead><tbody>'+pick_rows+'</tbody></table>'
             '<footer>EV model &nbsp;&middot;&nbsp; Track CLV to measure long-term edge &nbsp;&middot;&nbsp; Paper trading until 50+ picks verified</footer>'
             + RECORD_LIVE_JS
