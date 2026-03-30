@@ -534,12 +534,17 @@ def get_pitcher_stats(name, stats, is_home=False):
             # Flag if recent ERA diverges significantly from season ERA
             season_era = primary.get("era", 0)
             recent_era = recent.get("era_last3", 0)
+            num_starts = recent.get("starts", 0)
             if season_era > 0 and recent_era > 0:
                 diff = recent_era - season_era
-                if diff > 1.5:
-                    primary["form_flag"] = "DECLINING — last 3 starts ERA "+str(recent_era)+" vs season "+str(season_era)
-                elif diff < -1.5:
-                    primary["form_flag"] = "HOT — last 3 starts ERA "+str(recent_era)+" vs season "+str(season_era)
+                # Require minimum 4 starts before form flags fire — early season noise suppression
+                if num_starts >= 4:
+                    if diff > 1.5:
+                        primary["form_flag"] = "DECLINING — last 3 starts ERA "+str(recent_era)+" vs season "+str(season_era)
+                    elif diff < -1.5:
+                        primary["form_flag"] = "HOT — last 3 starts ERA "+str(recent_era)+" vs season "+str(season_era)
+                else:
+                    primary["form_flag"] = "SMALL SAMPLE ("+str(num_starts)+" starts) — recent form not reliable"
 
         # Add home/away splits
         splits = fetch_pitcher_splits(pid, 2026)
@@ -913,7 +918,7 @@ def fetch_odds():
             "https://api.the-odds-api.com/v4/sports/baseball_mlb/odds/",
             params={
                 "apiKey":ODDS_API_KEY,"regions":"us",
-                "markets":"h2h,spreads,totals","oddsFormat":"american","dateFormat":"iso",
+                "markets":"h2h,spreads,totals,h2h_h1,totals_h1","oddsFormat":"american","dateFormat":"iso",
                 "bookmakers":"draftkings,fanduel,betmgm,caesars,williamhill_us,betonlineag,bovada,betrivers,unibet,pointsbetus",
             },
             timeout=10
@@ -1021,6 +1026,9 @@ USING RECENT FORM (most predictive factor):
 - If recent ERA is 2+ runs higher than season ERA: DECLINING — reduce win prob significantly.
 - If recent ERA is 2+ runs lower than season ERA: HOT — increase win prob.
 - Always cite the specific recent ERA number, not just "declining" or "hot".
+- SMALL SAMPLE flag means fewer than 4 starts — do NOT use recent form as a confirming factor.
+  Early season (first 3 weeks), most pitchers will have SMALL SAMPLE. Do not award +2 points for
+  recent form confirmation when the flag is present. Season ERA and splits are more reliable.
 
 USING HOME/AWAY SPLITS:
 - relevant_split shows the pitcher's ERA specifically for home or away — always use this.
@@ -1079,6 +1087,9 @@ TIER ASSIGNMENT:
   SEVERE opposing bullpen, park+weather+umpire all aligned, odds no worse than -170.
   Expect 0-1 per WEEK. If even one condition missing, drop to Tier A.
 - Tier A (1.5u): 8-9 points AND EV 7%+. Expect 0-1 per slate.
+  TIER A REQUIRES: SP edge must be confirmed by AT LEAST TWO of: season ERA gap, recent form, home/away split.
+  If only one SP factor supports the pick, maximum tier is B regardless of point total.
+  If either SP has SMALL SAMPLE flag on recent form, do not count recent form as a confirming factor.
 - Tier B (1.0u): 6-7 points AND EV 4%+. Expect 1-3 per slate.
 - Tier C (0.5u): 4-5 points AND EV 3%+. Expect 1-3 per slate.
 - WATCH (0u): 2-3 points OR EV 1-2%. Track only.
@@ -1093,8 +1104,11 @@ BET TYPE:
 - Run Line +1.5: Overpriced favorite (-180+) with real underlying edge.
 - Total OVER: Fatigued bullpens + hitter park OR out-blowing wind + warm temp.
 - Total UNDER: Elite dual SPs + pitcher park + fresh pens. Wind IN adds to edge.
-- F5 Total: SP quality is primary edge, bullpen situation unclear.
+- F5 Total OVER/UNDER: Use when SP quality gap is strong but bullpen fatigue on one side creates uncertainty for full game. F5 isolates the SP edge.
+- NRFI (No Run First Inning): Use when BOTH SPs are dominant (ERA under 3.00, HOT recent form, low BB9). High K rate umpire adds edge. Odds typically -130 to -160.
+- YRFI (Yes Run First Inning): Use when at least one SP is very hittable (ERA above 5.00, DECLINING form) facing a strong lineup. Hitter park adds edge.
 - Never skip solely because run line unavailable — use ML instead.
+- F5 and NRFI/YRFI should be considered on EVERY game — they are often higher EV than full game bets.
 
 OUTPUT: Raw JSON array only. No markdown. No backticks. Every game must appear.
 {
@@ -1415,6 +1429,9 @@ def summarize_game(g):
             "total_line": odds.get("total",{}).get("line",""),
             "total_over": odds.get("total",{}).get("over",""),
             "total_under": odds.get("total",{}).get("under",""),
+            "f5_line": odds.get("f5_total",{}).get("line",""),
+            "f5_over": odds.get("f5_total",{}).get("over",""),
+            "f5_under": odds.get("f5_total",{}).get("under",""),
             "rl_away": odds.get("runline",{}).get(g["away"],{}).get("price",""),
             "rl_away_pt": odds.get("runline",{}).get(g["away"],{}).get("point",""),
             "rl_home": odds.get("runline",{}).get(g["home"],{}).get("price",""),
@@ -2660,7 +2677,7 @@ def build_html(data):
         '<h1>MLB Betting Model</h1>'
         '<div class="meta">'+date+' &nbsp;&middot;&nbsp; '+str(data["total_games"])+' games'
         ' &nbsp;&middot;&nbsp; <a href="archive.html" style="color:#378ADD;text-decoration:none">Archive &rarr;</a>'
-        ' &nbsp;&middot;&nbsp; <a href="record.html" style="color:#8B6FBA;text-decoration:none">&#128200; Record</a> &nbsp;&middot;&nbsp; <a href="teams.html" style="color:#BA7517;text-decoration:none">&#127942; Teams</a></div>'
+        ' &nbsp;&middot;&nbsp; <a href="record.html" style="color:#8B6FBA;text-decoration:none">&#128200; Record</a></div>'
         '<div class="updated">Picks generated '+gen+' ET &nbsp;&middot;&nbsp; Locked picks &nbsp;&middot;&nbsp; '+model_badge
         +' &nbsp;&middot;&nbsp; <span id="last_update">Scores loading...</span></div>'
         '<div class="sum">'
@@ -2948,22 +2965,6 @@ def main():
     (OUTPUT_DIR/"index.html").write_text(html)
     (OUTPUT_DIR/"record.html").write_text(build_record_html(record))
     build_archive_index()
-
-    # Build team overview page
-    try:
-        import traceback
-        print("Building team overview page...")
-        teams_data = fetch_all_teams_data()
-        print("Teams fetched: "+str(len(teams_data)))
-        if teams_data:
-            html_out = build_teams_html(teams_data)
-            (OUTPUT_DIR/"teams.html").write_text(html_out)
-            print("Team overview written: "+str(len(teams_data))+" teams, "+str(len(html_out))+" chars")
-        else:
-            print("No teams data returned — teams.html not written")
-    except Exception as e:
-        print("Teams page error: "+str(e))
-        traceback.print_exc()
 
     print("Done. "+str(len(active))+" active picks across "+str(len(games))+" games.")
     print("AI engine: "+ai_model)
