@@ -1390,10 +1390,22 @@ def enforce_ev_rules(picks):
         ev_val = p.get("ev_pct",0)
         try: ev_val = float(ev_val)
         except: ev_val = 0
-        # Validate MAX tier — must have 10%+ EV to keep MAX status
-        if p["tier"] == "MAX" and ev_val < 10:
-            print("MAX tier requires 10%+ EV — downgrading "+p.get("pick","")+" to A")
-            p["tier"] = "A"
+        # Validate MAX tier — strict data quality requirements
+        if p["tier"] == "MAX":
+            reasons = []
+            if ev_val < 10:
+                reasons.append("EV "+str(ev_val)+"% below 10%")
+            sp = p.get("sp_analysis","").lower()
+            if "no stats" in sp or "0.00 era placeholder" in sp:
+                reasons.append("SP missing stats")
+            lineup = p.get("lineup_analysis","").lower()
+            if "0.000" in lineup or "missing data" in lineup or "unavailable" in lineup:
+                reasons.append("OPS data missing")
+            if sp.count("small sample") >= 2:
+                reasons.append("both SPs SMALL SAMPLE")
+            if reasons:
+                print("MAX downgrade ("+p.get("game","")+") — "+", ".join(reasons))
+                p["tier"] = "A"
         if p["tier"] == "A" and ev_val < 7:
             p["tier"] = "B" if ev_val >= 4 else ("C" if ev_val >= 3 else "WATCH")
         # Always enforce correct unit size regardless of what Claude said
