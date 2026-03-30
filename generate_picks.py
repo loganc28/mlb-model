@@ -918,7 +918,7 @@ def fetch_odds():
             "https://api.the-odds-api.com/v4/sports/baseball_mlb/odds/",
             params={
                 "apiKey":ODDS_API_KEY,"regions":"us",
-                "markets":"h2h,spreads,totals,h2h_h1,totals_h1","oddsFormat":"american","dateFormat":"iso",
+                "markets":"h2h,spreads,totals","oddsFormat":"american","dateFormat":"iso",
                 "bookmakers":"draftkings,fanduel,betmgm,caesars,williamhill_us,betonlineag,bovada,betrivers,unibet,pointsbetus",
             },
             timeout=10
@@ -1105,8 +1105,10 @@ BET TYPE:
 - Total OVER: Fatigued bullpens + hitter park OR out-blowing wind + warm temp.
 - Total UNDER: Elite dual SPs + pitcher park + fresh pens. Wind IN adds to edge.
 - F5 Total OVER/UNDER: Use when SP quality gap is strong but bullpen fatigue on one side creates uncertainty for full game. F5 isolates the SP edge.
-- NRFI (No Run First Inning): Use when BOTH SPs are dominant (ERA under 3.00, HOT recent form, low BB9). High K rate umpire adds edge. Odds typically -130 to -160.
-- YRFI (Yes Run First Inning): Use when at least one SP is very hittable (ERA above 5.00, DECLINING form) facing a strong lineup. Hitter park adds edge.
+- NRFI (No Run First Inning): Use when nrfi_data shows nrfi_prob above 65%. Both SPs must have K/9 above 8.5 AND BB/9 below 3.0. Park factor below 1.05. Pitcher-friendly ump. The nrfi_fair_price in the data is your baseline — if the book offers NRFI at a price that implies lower probability than our model, that is positive EV.
+- YRFI (Yes Run First Inning): Use when nrfi_data shows yrfi_prob above 50% AND at least one SP has ERA above 5.0 OR BB/9 above 4.0. Hitter-friendly park adds edge. The yrfi_fair_price is your baseline.
+- For NRFI/YRFI: use nrfi_fair_price as the "line" field and estimate EV by comparing to typical book price (-130 NRFI / -110 YRFI for average games). Only recommend when your model price shows 5%+ EV vs typical book pricing.
+- NRFI/YRFI resolves in about 15 minutes — highest confidence picks only.
 - Never skip solely because run line unavailable — use ML instead.
 - F5 and NRFI/YRFI should be considered on EVERY game — they are often higher EV than full game bets.
 
@@ -1135,6 +1137,7 @@ OUTPUT: Raw JSON array only. No markdown. No backticks. Every game must appear.
   "umpire_note": "rpg + k_pct + lean direction or Neutral if near 8.8 rpg",
   "park_note": "runs factor + HR factor + note",
   "weather_impact": "exact wind_impact field value + temp",
+  "nrfi_analysis": "nrfi_prob% vs yrfi_prob% — cite specific K/9, BB/9, park factor. Only include if recommending NRFI/YRFI.",
   "key_edge": "single most important reason with specific numbers",
   "rationale": "3 sentences: primary edge with stats. Supporting factors. Why this bet type.",
   "avoid_reason": "if SKIP/WATCH: specific reason. Empty string otherwise.",
@@ -1335,6 +1338,75 @@ def estimate_win_prob(home_sp_era, away_sp_era, home_ops, away_ops,
     home_win_pct = home_runs**exp / (home_runs**exp + away_runs**exp)
     return round(home_win_pct * 100, 1)
 
+def estimate_nrfi_odds(away_sp_stats, home_sp_stats, park_factor, game_total):
+    """
+    Estimate fair NRFI/YRFI odds from SP stats and game total.
+    
+    Key factors:
+    - Both SP K/9 (higher = fewer baserunners = more NRFI lean)
+    - Both SP BB/9 (higher = more baserunners = YRFI lean)  
+    - Both SP ERA (lower = fewer runs = NRFI lean)
+    - Park factor (above 1.05 = hitter friendly = YRFI lean)
+    - Game total (higher total = more runs expected = YRFI lean)
+    
+    Returns dict with nrfi_prob, yrfi_prob, nrfi_price, yrfi_price, edge
+    """
+    # League averages for calibration
+    lg_k9 = 8.8; lg_bb9 = 3.2; lg_era = 4.20
+    lg_nrfi_pct = 0.57  # ~57% of innings are scoreless first innings historically
+
+    # SP quality scores (higher = better for NRFI)
+    def sp_nrfi_score(stats):
+        era = stats.get("era", lg_era) or lg_era
+        k9  = stats.get("k9", lg_k9) or lg_k9
+        bb9 = stats.get("bb9", lg_bb9) or lg_bb9
+        era = min(max(era, 1.0), 9.0)
+        # Score: low ERA + high K/9 + low BB/9 = good NRFI pitcher
+        era_factor = (lg_era / era) ** 0.4
+        k9_factor  = (k9 / lg_k9) ** 0.3
+        bb9_factor = (lg_bb9 / max(bb9, 0.5)) ** 0.3
+        return era_factor * k9_factor * bb9_factor
+
+    away_score = sp_nrfi_score(away_sp_stats)
+    home_score = sp_nrfi_score(home_sp_stats)
+
+    # Combined SP quality (geometric mean)
+    combined_sp = (away_score * home_score) ** 0.5
+
+    # Park adjustment
+    pf = park_factor if park_factor else 1.0
+    park_adj = 1.0 / pf  # hitter park = lower NRFI prob
+
+    # Game total adjustment (higher total = lower NRFI prob)
+    total = game_total if game_total and game_total > 0 else 8.5
+    total_adj = 8.5 / total  # normalized to average total
+
+    # Base NRFI probability
+    nrfi_prob = lg_nrfi_pct * combined_sp * park_adj * total_adj
+
+    # Clamp to reasonable range
+    nrfi_prob = min(max(nrfi_prob, 0.30), 0.80)
+    yrfi_prob = 1.0 - nrfi_prob
+
+    # Convert to American odds
+    def prob_to_american(p):
+        if p >= 0.5:
+            return round(-(p / (1 - p)) * 100)
+        else:
+            return round(((1 - p) / p) * 100)
+
+    nrfi_fair = prob_to_american(nrfi_prob)
+    yrfi_fair = prob_to_american(yrfi_prob)
+
+    return {
+        "nrfi_prob": round(nrfi_prob * 100, 1),
+        "yrfi_prob": round(yrfi_prob * 100, 1),
+        "nrfi_fair_price": nrfi_fair,
+        "yrfi_fair_price": yrfi_fair,
+        "away_sp_nrfi_score": round(away_score, 3),
+        "home_sp_nrfi_score": round(home_score, 3),
+    }
+
 def summarize_game(g):
     """Compress game data to key numbers only — keeps prompt size manageable."""
     home_sp = g.get("home_sp_stats",{})
@@ -1444,6 +1516,12 @@ def summarize_game(g):
         },
         "home_streak": g.get("home_streak",{}),
         "away_streak": g.get("away_streak",{}),
+        "nrfi_data": estimate_nrfi_odds(
+            g.get("away_sp_stats",{}),
+            g.get("home_sp_stats",{}),
+            g.get("park_factor",{}).get("runs", 1.0),
+            safe_float(odds.get("total",{}).get("line", 0)),
+        ),
         "baseline_home_win_prob": estimate_win_prob(
             home_sp.get("era", 4.20),
             away_sp.get("era", 4.20),
@@ -2790,11 +2868,9 @@ def main():
         gd["home_team_splits"]      = home_splits
         gd["away_team_splits"]      = away_splits
 
-        # Team momentum/streak
-        try: gd["home_streak"] = fetch_team_streak(g["home_id"])
-        except: gd["home_streak"] = {}
-        try: gd["away_streak"] = fetch_team_streak(g["away_id"])
-        except: gd["away_streak"] = {}
+        # Team momentum/streak (fetched via standings, not per-team endpoint)
+        gd["home_streak"] = {}
+        gd["away_streak"] = {}
 
         games_with_data.append(gd)
 
