@@ -1634,13 +1634,13 @@ def summarize_game(g):
             safe_float(odds.get("total",{}).get("line", 0)),
         ),
         "baseline_home_win_prob": estimate_win_prob(
-            home_sp.get("era", 4.20),
-            away_sp.get("era", 4.20),
-            g.get("home_team_batting",{}).get("ops", 0.720),
-            g.get("away_team_batting",{}).get("ops", 0.720),
-            g.get("park_factor",{}).get("runs", 1.0),
-            home_rec.get("era_last3", 0),
-            away_rec.get("era_last3", 0),
+            home_sp.get("era", 4.20) or 4.20,
+            away_sp.get("era", 4.20) or 4.20,
+            g.get("home_team_batting",{}).get("ops") or 0.720,
+            g.get("away_team_batting",{}).get("ops") or 0.720,
+            g.get("park_factor",{}).get("runs", 1.0) or 1.0,
+            home_rec.get("era_last3", 0) or 0,
+            away_rec.get("era_last3", 0) or 0,
         ),
     }
 
@@ -2305,22 +2305,24 @@ def build_record_html(record):
         w=d["W"]; l=d["L"]; p=d.get("P",0); tot=w+l+p
         wr = round(w/tot*100,1) if tot else 0
         u = round(d["units"],2)
-        color = "#1D9E75" if u>=0 else "#A32D2D"
-        return ('<tr><td style="padding:8px 12px;font-weight:600">'+label+'</td>'
-                '<td style="padding:8px 12px;text-align:center">'+str(w)+'-'+str(l)+(('-'+str(p)) if p else '')+'</td>'
-                '<td style="padding:8px 12px;text-align:center">'+str(wr)+'%</td>'
-                '<td style="padding:8px 12px;text-align:center;color:'+color+';font-weight:600">'
+        uc = "var(--green)" if u>=0 else "var(--red)"
+        tier_colors = {"MAX":"var(--gold)","A":"var(--green)","B":"var(--blue)","C":"var(--purple)","WATCH":"var(--muted)"}
+        dot = ('<span class="tier-dot '+label+'"></span>') if label in tier_colors else ""
+        return ('<tr>'
+                '<td style="font-weight:600">'+dot+label+'</td>'
+                '<td style="text-align:center;font-family:\'DM Mono\',monospace">'+str(w)+'-'+str(l)+(('-'+str(p)) if p else '')+'</td>'
+                '<td style="text-align:center">'+str(wr)+'%</td>'
+                '<td style="text-align:center;font-family:\'DM Mono\',monospace;font-weight:600;color:'+uc+'">'
                 +('+'if u>=0 else '')+str(u)+'u</td></tr>')
 
     def pick_row(p):
         res = p.get("result","")
         ur  = p.get("units_result",0)
-        if res=="W": rc="#1D9E75"; rl="WIN"
-        elif res=="L": rc="#A32D2D"; rl="LOSS"
-        elif res=="P": rc="#888"; rl="PUSH"
-        else: rc="#BA7517"; rl="PENDING"
+        if res=="W": rl="WIN"
+        elif res=="L": rl="LOSS"
+        elif res=="P": rl="PUSH"
+        else: rl="PENDING"
         t = p.get("tier","?")
-        tc = {"A":"#1D9E75","B":"#378ADD","C":"#BA7517","WATCH":"#8B6FBA"}.get(t,"#888")
         open_l  = p.get("open_line","")
         close_l = p.get("close_line","")
         clv_str = ""
@@ -2335,21 +2337,20 @@ def build_record_html(record):
         # WATCH picks always show 0u
         if t == "WATCH":
             ur = 0
-            if res == "W": rc = "#1D9E75"; rl = "WIN"
-            elif res == "L": rc = "#A32D2D"; rl = "LOSS"
-        return ('<tr style="border-bottom:0.5px solid #f0f0ee">'
-                '<td style="padding:8px 12px;font-size:12px;color:#888">'+p.get("date","")+'</td>'
-                '<td style="padding:8px 12px;font-size:13px;font-weight:500">'+p.get("pick","")+'</td>'
-                '<td style="padding:8px 12px;font-size:12px;color:#666">'+p.get("game","")+'</td>'
-                '<td style="padding:8px 12px;text-align:center"><span style="background:'+tc+'22;color:'+tc+';font-size:11px;font-weight:600;padding:1px 7px;border-radius:10px">'+t+'</span></td>'
-                '<td style="padding:8px 12px;text-align:center;font-size:12px">'+str(open_l)+'</td>'
-                '<td style="padding:8px 12px;text-align:center;font-size:11px;color:#888">'+str(close_l)+'</td>'
-                '<td style="padding:8px 12px;text-align:center;font-size:11px;'
-                +('color:#1D9E75' if clv_str.startswith('+') else 'color:#A32D2D' if clv_str.startswith('-') else '')
-                +'">'+clv_str+'</td>'
-                '<td style="padding:8px 12px;font-size:11px;color:#666;text-align:center">'+str(final_score)+'</td>'
-                '<td style="padding:8px 12px;text-align:center"><span style="background:'+rc+'22;color:'+rc+';font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px">'+rl+'</span></td>'
-                '<td style="padding:8px 12px;text-align:center;font-weight:600;color:'+rc+'">'
+        ur_color = "var(--green)" if ur>=0 else "var(--red)"
+        clv_color = "var(--green)" if clv_str.startswith('+') else "var(--red)" if clv_str.startswith('-') else "var(--muted)"
+        tier_dot = '<span class="tier-dot '+t+'"></span>' if t in ("MAX","A","B","C","WATCH") else ""
+        return ('<tr>'
+                '<td style="color:var(--muted);font-family:\'DM Mono\',monospace;font-size:11px">'+p.get("date","")+'</td>'
+                '<td style="font-weight:600">'+p.get("pick","")+'</td>'
+                '<td style="color:var(--muted);font-size:11px">'+p.get("game","")+'</td>'
+                '<td>'+tier_dot+t+'</td>'
+                '<td style="font-family:\'DM Mono\',monospace;font-size:11px">'+str(open_l)+'</td>'
+                '<td style="font-family:\'DM Mono\',monospace;font-size:11px;color:var(--muted)">'+str(close_l)+'</td>'
+                '<td style="font-family:\'DM Mono\',monospace;font-size:11px;color:'+clv_color+'">'+clv_str+'</td>'
+                '<td style="font-size:11px;color:var(--muted)">'+str(final_score)+'</td>'
+                '<td><span class="badge '+rl+'">'+rl+'</span></td>'
+                '<td style="font-family:\'DM Mono\',monospace;font-weight:600;color:'+ur_color+'">'
                 +('+'if ur>=0 else '')+str(round(ur,2))+'u</td></tr>')
 
     tier_rows = "".join(stat_row(t,d) for t,d in sorted(tiers.items()))
@@ -2360,57 +2361,80 @@ def build_record_html(record):
     u_str   = ("+" if units_won>=0 else "")+str(units_won)+"u"
     clv_color = "#1D9E75" if avg_clv>0 else "#A32D2D" if avg_clv<0 else "#888"
 
+    rec_css = (
+        '@import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap");'
+        '*{box-sizing:border-box;margin:0;padding:0}'
+        ':root{--bg:#0D0F11;--surface:#151719;--surface2:#1C1F22;--border:#272B2F;'
+        '--text:#F0F2F4;--muted:#8A9099;--faint:#3A3F45;'
+        '--gold:#F5C842;--green:#22C87A;--red:#F04B4B;--blue:#4B9CF5;--purple:#9B72F5;}'
+        'body{font-family:"DM Sans",sans-serif;background:var(--bg);color:var(--text);'
+        'padding:1.5rem 1rem;max-width:980px;margin:0 auto}'
+        '.brand{font-family:"Syne",sans-serif;font-size:13px;font-weight:700;'
+        'letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:2px}'
+        '.page-title{font-family:"Syne",sans-serif;font-size:28px;font-weight:800;'
+        'letter-spacing:-.02em;color:var(--text);margin-bottom:4px;line-height:1}'
+        '.meta{font-size:12px;color:var(--muted);margin-bottom:1.5rem;display:flex;'
+        'gap:12px;align-items:center;flex-wrap:wrap}'
+        '.meta a{color:var(--blue);text-decoration:none;font-weight:500}'
+        '.stats-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:2rem}'
+        '.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px}'
+        '.stat-val{font-family:"Syne",sans-serif;font-size:22px;font-weight:800;line-height:1}'
+        '.stat-lbl{font-size:10px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.08em;font-weight:500}'
+        '.section-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;'
+        'color:var(--muted);margin:1.75rem 0 .75rem;display:flex;align-items:center;gap:8px}'
+        '.section-label::after{content:"";flex:1;height:1px;background:var(--border)}'
+        'table{width:100%;border-collapse:collapse;background:var(--surface);'
+        'border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:1.5rem}'
+        'th{padding:10px 14px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;'
+        'letter-spacing:.08em;text-align:left;background:var(--surface2);border-bottom:1px solid var(--border)}'
+        'td{padding:10px 14px;font-size:12px;border-bottom:1px solid var(--border);color:var(--text)}'
+        'tr:last-child td{border-bottom:none}'
+        'tr:hover td{background:var(--surface2)}'
+        '.badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;'
+        'border-radius:5px;font-family:"DM Mono",monospace}'
+        '.badge.WIN{background:#22C87A18;color:var(--green);border:1px solid #22C87A30}'
+        '.badge.LOSS{background:#F04B4B18;color:var(--red);border:1px solid #F04B4B30}'
+        '.badge.PENDING{background:#F5C84215;color:var(--gold);border:1px solid #F5C84230}'
+        '.badge.PUSH{background:#8A909918;color:var(--muted);border:1px solid #8A909930}'
+        '.tier-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}'
+        '.tier-dot.MAX{background:var(--gold)}'
+        '.tier-dot.A{background:var(--green)}'
+        '.tier-dot.B{background:var(--blue)}'
+        '.tier-dot.C{background:var(--purple)}'
+        '.tier-dot.WATCH{background:var(--muted)}'
+        '.mono{font-family:"DM Mono",monospace}'
+        'footer{font-size:11px;color:var(--faint);margin-top:2rem;text-align:center;padding-bottom:2rem;line-height:1.8}'
+        '@media(max-width:600px){.stats-bar{grid-template-columns:repeat(3,1fr)}th,td{padding:8px 10px;font-size:11px}}'
+    )
+
     return ('<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">'
             '<meta name="viewport" content="width=device-width,initial-scale=1">'
-            '<title>MLB Model Record</title>'
-            '<style>*{box-sizing:border-box;margin:0;padding:0}'
-            'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;'
-            'background:#f9f9f7;color:#1a1a1a;padding:1.25rem;max-width:950px;margin:0 auto}'
-            'h1{font-size:20px;font-weight:700;margin-bottom:3px}'
-            '.meta{font-size:13px;color:#888;margin-bottom:1.25rem}'
-            '.sum{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:1.5rem}'
-            '.s{background:#fff;border:0.5px solid #e8e8e5;border-radius:9px;padding:10px 12px}'
-            '.sn{font-size:22px;font-weight:700}.sl{font-size:10px;color:#999;margin-top:2px;'
-            'text-transform:uppercase;letter-spacing:.04em}'
-            '.section{font-size:13px;font-weight:600;color:#999;text-transform:uppercase;'
-            'letter-spacing:.06em;margin:1.5rem 0 0.5rem}'
-            'table{width:100%;background:#fff;border:0.5px solid #e8e8e5;border-radius:9px;'
-            'border-collapse:collapse;margin-bottom:1.5rem;overflow:hidden}'
-            'th{padding:8px 12px;font-size:11px;font-weight:600;color:#999;text-transform:uppercase;'
-            'letter-spacing:.04em;text-align:left;background:#f9f9f7;border-bottom:0.5px solid #e8e8e5}'
-            'tr:hover{background:#fafaf8}'
-            '.clv-note{font-size:12px;color:#378ADD;background:#E6F1FB;padding:8px 12px;'
-            'border-radius:7px;margin-bottom:1rem}'
-            '.watch-note{font-size:12px;color:#8B6FBA;background:#F0ECFB;padding:8px 12px;'
-            'border-radius:7px;margin-bottom:1rem}'
-            'footer{font-size:11px;color:#bbb;margin-top:1.5rem;text-align:center;padding-bottom:1rem}'
-            '</style></head><body>'
-            '<h1>MLB Model Record</h1>'
-            '<div class="meta">Updated '+TODAY+' &nbsp;&middot;&nbsp; <span id="live_update" style="color:#1D9E75">Live results active</span> &nbsp;&middot;&nbsp; '
-            '<a href="index.html" style="color:#378ADD;text-decoration:none">Today\'s picks &rarr;</a>'
-            ' &nbsp;&middot;&nbsp; <a href="archive.html" style="color:#378ADD;text-decoration:none">Archive &rarr;</a></div>'
-            '<div class="sum">'
-            '<div class="s"><div class="sn" data-stat="wl">'+str(len(wins))+'-'+str(len(losses))+'</div><div class="sl">W-L Record</div></div>'
-            '<div class="s"><div class="sn" data-stat="winrate">'+str(win_rate)+'%</div><div class="sl">Win rate</div></div>'
-            '<div class="s"><div class="sn" data-stat="units" style="color:'+u_color+'">'+u_str+'</div><div class="sl">Units P&L</div></div>'
-            '<div class="s"><div class="sn" style="color:'+clv_color+'">'+('+'if avg_clv>=0 else '')+str(avg_clv)+'</div><div class="sl">Avg CLV</div></div>'
-            '<div class="s"><div class="sn" style="color:#8B6FBA">'+str(watch_rate)+'%</div><div class="sl">Watch hit %</div></div>'
+            '<title>MLB Record</title>'
+            '<style>'+rec_css+'</style></head><body>'
+            '<div class="brand">MLB Betting Model</div>'
+            '<div class="page-title">Record</div>'
+            '<div class="meta">'
+            'Updated '+TODAY+' &nbsp;&middot;&nbsp; '
+            '<span id="live_update" style="color:var(--green)">&#9679; Live</span>'
+            ' &nbsp;&middot;&nbsp; <a href="index.html">Today\'s picks</a>'
+            ' &nbsp;&middot;&nbsp; <a href="archive.html">Archive</a>'
             '</div>'
-            +(('<div class="clv-note">&#128200; Closing Line Value: Avg CLV of '+('+'if avg_clv>=0 else '')+str(avg_clv)+' points. '
-               +('Positive CLV means the model consistently finds value before the market moves. This is the strongest indicator of long-term profitability.' if avg_clv>0 else 'Negative CLV suggests lines are moving against picks. Review model edge calculations.')
-               +'</div>') if clv_picks else '')
-            +(('<div class="watch-note">&#128064; WATCH picks hitting at '+str(watch_rate)+'% ('+str(watch_wins)+'/'+str(watch_total)+'). '
-               +('57%+ suggests lowering the betting threshold.' if watch_rate>=57 else 'Threshold looks correct.')+'</div>') if watch_total>=10 else '')
-            +'<div class="section">Performance by Tier</div>'
+            '<div class="stats-bar">'
+            '<div class="stat-card"><div class="stat-val" data-stat="wl">'+str(len(wins))+'-'+str(len(losses))+'</div><div class="stat-lbl">W-L Record</div></div>'
+            '<div class="stat-card"><div class="stat-val" data-stat="winrate">'+str(win_rate)+'%</div><div class="stat-lbl">Win Rate</div></div>'
+            '<div class="stat-card"><div class="stat-val" data-stat="units" style="color:'+u_color+'">'+u_str+'</div><div class="stat-lbl">Units P&L</div></div>'
+            '<div class="stat-card"><div class="stat-val" style="color:'+clv_color+'">'+('+'if avg_clv>=0 else '')+str(avg_clv)+'</div><div class="stat-lbl">Avg CLV</div></div>'
+            '<div class="stat-card"><div class="stat-val" style="color:var(--purple)">'+str(watch_rate)+'%</div><div class="stat-lbl">Watch Hit %</div></div>'
+            '</div>'
+            '<div class="section-label">Performance by Tier</div>'
             '<table><thead><tr><th>Tier</th><th>Record</th><th>Win %</th><th>Units</th></tr></thead><tbody>'+tier_rows+'</tbody></table>'
-            '<div class="section">Performance by Bet Type</div>'
+            '<div class="section-label">Performance by Bet Type</div>'
             '<table><thead><tr><th>Type</th><th>Record</th><th>Win %</th><th>Units</th></tr></thead><tbody>'+bt_rows+'</tbody></table>'
-            '<div class="section">Pick History</div>'
-            '<div style="font-size:12px;color:#888;margin-bottom:8px">Update result and close_line in record.json after each game settles. CLV = opening line vs closing line.</div>'
-            '<table style="font-size:12px"><thead><tr>'
+            '<div class="section-label">Pick History</div>'
+            '<table><thead><tr>'
             '<th>Date</th><th>Pick</th><th>Game</th><th>Tier</th><th>Open</th><th>Close</th><th>CLV</th><th>Score</th><th>Result</th><th>Units</th>'
             '</tr></thead><tbody>'+pick_rows+'</tbody></table>'
-            '<footer>EV model &nbsp;&middot;&nbsp; Track CLV to measure long-term edge &nbsp;&middot;&nbsp; Paper trading until 50+ picks verified</footer>'
+            '<footer>EV model &middot; Track CLV to measure long-term edge &middot; Paper trading until 50+ picks verified</footer>'
             + RECORD_LIVE_JS
             + '</body></html>')
 
@@ -2710,123 +2734,130 @@ def build_html(data):
     TLBL={"MAX":"&#9733; MAX BET &mdash; HIGHEST CONFIDENCE","A":"TIER A &mdash; PLAY","B":"TIER B &mdash; PLAY","C":"TIER C &mdash; LEAN","WATCH":"WATCH &mdash; TRACK ONLY"}
 
     def sp_box(label, name):
-        return ('<div style="background:#f7f7f5;border-radius:7px;padding:8px 10px">'
-                '<div style="font-size:10px;color:#999;margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">'+label+'</div>'
-                '<div style="font-size:13px;font-weight:500">'+str(name)+'</div></div>')
+        return ('<div class="sp-box">'
+                '<div class="sp-lbl">'+label+'</div>'
+                '<div class="sp-name">'+str(name)+'</div></div>')
 
     def mrow(icon, text):
         t=str(text)
-        if not t or t in ("N/A","null","None",""): return ""
-        return '<div style="font-size:12px;color:#666;margin-bottom:3px">'+icon+' '+t+'</div>'
+        if not t or t in ('N/A','null','None',''): return ''
+        return '<div class="data-row">'+icon+' '+t+'</div>'
 
     def flag_row(text):
         t=str(text)
-        if not t or t in ("","null","None"): return ""
-        return ('<div style="font-size:12px;background:#FAEEDA;color:#633806;padding:4px 8px;'
-                'border-radius:4px;margin-bottom:6px">&#9888; '+t+'</div>')
+        if not t or t in ('','null','None'): return ''
+        return '<div class="flag">⚠️ '+t+'</div>'
 
     def score_span(game):
-        return ('<span id="'+score_id(game)+'" style="font-size:11px;background:#f0f0ee;'
-                'color:#888;padding:2px 8px;border-radius:4px;margin-left:6px">--</span>')
+        return '<span id="'+score_id(game)+'" class="score-pill">--</span>'
 
     def pick_card(p):
-        t=p.get("tier","C")
-        c=TBAR.get(t,"#888"); bg=TBG.get(t,"#eee"); tc=TTC.get(t,"#333")
-        ev=p.get("ev_pct",0); bw=min(int(float(ev or 0))*8,100)
-        game=str(p.get("game",""))
-        ump=str(p.get("hp_ump",""))
-        ump_txt=(' &nbsp;&middot;&nbsp; &#9878; '+ump) if ump else ""
+        t = p.get("tier","C")
+        ev = p.get("ev_pct",0)
+        bw = min(int(float(ev or 0))*8, 100)
+        game = str(p.get("game",""))
+        ump  = str(p.get("hp_ump",""))
+        ump_txt = (' &middot; &#9878; '+ump) if ump and ump != "TBD" else ""
+        tier_labels = {"MAX":"&#9733; MAX BET","A":"TIER A &mdash; PLAY","B":"TIER B &mdash; PLAY","C":"TIER C &mdash; LEAN","WATCH":"WATCH"}
+        lbl = tier_labels.get(t, t)
         return (
-            '<div style="background:#fff;border:0.5px solid #e0e0e0;border-left:3px solid '+c+';'
-            'border-radius:10px;padding:1rem 1.25rem;margin-bottom:10px">'
-            '<span style="background:'+bg+';color:'+tc+';font-size:11px;font-weight:600;'
-            'padding:2px 9px;border-radius:4px;display:inline-block;margin-bottom:8px">'+TLBL.get(t,"LEAN")+'</span>'
+            '<div class="pick-card tier-'+t+'">'
+            '<div class="card-inner">'
+            '<div class="tier-badge '+t+'">'+lbl+'</div>'
             +flag_row(p.get("flags",""))+
-            '<div style="font-size:16px;font-weight:600;margin-bottom:2px">'+str(p.get("pick",""))+'</div>'
-            '<div style="font-size:13px;color:#777;margin-bottom:10px">'
-            +game+' &nbsp;&middot;&nbsp; '+str(p.get("line","N/A"))
-            +' &nbsp;&middot;&nbsp; '+str(p.get("units",0))+'u'+ump_txt+score_span(game)+'</div>'
-            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'
-            +sp_box("Away SP",p.get("away_sp","TBD"))+sp_box("Home SP",p.get("home_sp","TBD"))+'</div>'
-            '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">'
-            '<span style="font-size:11px;background:#f0f0ee;padding:2px 9px;border-radius:20px;color:#555">'
-            'Win '+str(p.get("win_prob_pct",0))+'% vs implied '+str(p.get("implied_prob_pct",0))+'%</span>'
-            '<span style="font-size:11px;background:'+bg+';color:'+tc+';padding:2px 9px;'
-            'border-radius:20px;font-weight:600">+'+str(ev)+'% EV</span></div>'
-            '<div style="height:4px;background:#f0f0ee;border-radius:2px;margin-bottom:10px;overflow:hidden">'
-            '<div style="height:100%;width:'+str(bw)+'%;background:'+c+';border-radius:2px"></div></div>'
-            '<div style="margin-bottom:10px">'
+            '<div class="pick-name">'+str(p.get("pick",""))+'</div>'
+            '<div class="pick-meta">'
+            '<span class="game">'+game+'</span>'
+            '<span class="odds">'+str(p.get("line","N/A"))+'</span>'
+            '<span class="units">'+str(p.get("units",0))+'u</span>'
+            +ump_txt+' '+score_span(game)+
+            '</div>'
+            '<div class="sp-grid">'
+            +sp_box("Away SP",p.get("away_sp","TBD"))+sp_box("Home SP",p.get("home_sp","TBD"))+
+            '</div>'
+            '<div class="ev-row">'
+            '<span class="win-prob">Win '+str(p.get("win_prob_pct",0))+'% vs implied '+str(p.get("implied_prob_pct",0))+'%</span>'
+            '<span class="ev-badge" style="background:var(--surface2);color:var(--green)">+'+str(ev)+'% EV</span>'
+            '</div>'
+            '<div class="ev-bar"><div class="ev-fill '+t+'" style="width:'+str(bw)+'%"></div></div>'
+            '<div>'
             +mrow("&#9918;",p.get("sp_analysis",""))
             +mrow("&#128101;",p.get("lineup_analysis",""))
             +mrow("&#128293;",p.get("bullpen_note",""))
             +mrow("&#129657;",p.get("injury_flags",""))
             +mrow("&#9878;",p.get("umpire_note",""))
             +mrow("&#127966;",p.get("park_note",""))
-            +mrow("&#127748;",p.get("weather_impact",""))+'</div>'
-            '<div style="border-top:0.5px solid #eee;padding-top:8px">'
-            '<div style="font-size:12px;font-weight:600;color:#222;margin-bottom:3px">Key edge: '+str(p.get("key_edge",""))+'</div>'
-            '<div style="font-size:12px;color:#666;line-height:1.6">'+str(p.get("rationale",""))+'</div>'
+            +mrow("&#127748;",p.get("weather_impact",""))+
+            '</div>'
+            +(('<div class="key-edge">'
+               '<div class="key-edge-lbl">Key Edge</div>'
+               '<div class="key-edge-text">'+str(p.get("key_edge",""))+'</div>'
+               '</div>') if p.get("key_edge") else '')+
+            '<div class="rationale">'+str(p.get("rationale",""))+'</div>'
             '</div></div>'
         )
 
     def watch_card(p):
-        game=str(p.get("game",""))
-        ev=p.get("ev_pct",0)
+        t = "WATCH"
+        game = str(p.get("game",""))
+        ev = p.get("ev_pct",0)
         return (
-            '<div style="background:#fff;border:0.5px solid #C4B8E8;border-left:3px solid #8B6FBA;'
-            'border-radius:10px;padding:1rem 1.25rem;margin-bottom:10px">'
-            '<span style="background:#F0ECFB;color:#4A2D8F;font-size:11px;font-weight:600;'
-            'padding:2px 9px;border-radius:4px;display:inline-block;margin-bottom:8px">WATCH &mdash; TRACK ONLY</span>'
+            '<div class="pick-card tier-WATCH">'
+            '<div class="card-inner">'
+            '<div class="tier-badge WATCH">WATCH &mdash; TRACK ONLY</div>'
             +flag_row(p.get("flags",""))+
-            '<div style="font-size:16px;font-weight:600;margin-bottom:2px">'+str(p.get("pick",""))+'</div>'
-            '<div style="font-size:13px;color:#777;margin-bottom:4px">'
-            +game+' &nbsp;&middot;&nbsp; '+str(p.get("line","N/A"))+' &nbsp;&middot;&nbsp; Not betting'
-            +score_span(game)+'</div>'
-            '<div style="font-size:11px;color:#8B6FBA;margin-bottom:10px;font-style:italic">'
-            'Edge is real but below threshold ('+str(ev)+'% vs 3% min). Tracking to build confidence.</div>'
-            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'
-            +sp_box("Away SP",p.get("away_sp","TBD"))+sp_box("Home SP",p.get("home_sp","TBD"))+'</div>'
-            '<div style="margin-bottom:10px">'
+            '<div class="pick-name" style="font-size:17px">'+str(p.get("pick",game))+'</div>'
+            '<div class="pick-meta">'
+            '<span class="game">'+game+'</span>'
+            '<span class="odds">'+str(p.get("line","N/A"))+'</span>'
+            '<span style="font-size:11px;color:var(--muted)">Not betting</span>'
+            ' '+score_span(game)+
+            '</div>'
+            '<div class="sp-grid">'
+            +sp_box("Away SP",p.get("away_sp","TBD"))+sp_box("Home SP",p.get("home_sp","TBD"))+
+            '</div>'
+            '<div>'
             +mrow("&#9918;",p.get("sp_analysis",""))
             +mrow("&#128101;",p.get("lineup_analysis",""))
             +mrow("&#128293;",p.get("bullpen_note",""))
-            +mrow("&#129657;",p.get("injury_flags",""))
-            +mrow("&#9878;",p.get("umpire_note",""))
             +mrow("&#127966;",p.get("park_note",""))
-            +mrow("&#127748;",p.get("weather_impact",""))+'</div>'
-            '<div style="border-top:0.5px solid #eee;padding-top:8px">'
-            '<div style="font-size:12px;font-weight:600;color:#4A2D8F;margin-bottom:3px">'
-            'Why watching: '+str(p.get("avoid_reason","Edge below threshold"))+'</div>'
-            '<div style="font-size:12px;color:#888;line-height:1.6">'+str(p.get("rationale",""))+'</div>'
+            +mrow("&#127748;",p.get("weather_impact",""))+
+            '</div>'
+            '<div style="border-top:1px solid var(--border);padding-top:8px;margin-top:8px">'
+            '<div class="watch-why">&#128065; '+str(p.get("avoid_reason",""))+'</div>'
+            '<div class="rationale">'+str(p.get("rationale",""))+'</div>'
+            '</div>'
             '</div></div>'
         )
 
     def skip_card(p):
-        game=str(p.get("game",""))
+        game = str(p.get("game",""))
         return (
-            '<div style="background:#fff;border:0.5px solid #e0e0e0;border-left:3px solid #B4B2A9;'
-            'border-radius:10px;padding:1rem 1.25rem;margin-bottom:10px">'
-            '<span style="background:#F1EFE8;color:#5F5E5A;font-size:11px;font-weight:600;'
-            'padding:2px 9px;border-radius:4px;display:inline-block;margin-bottom:8px">SKIP &mdash; NO EDGE</span>'
+            '<div class="pick-card tier-SKIP">'
+            '<div class="card-inner">'
+            '<div class="tier-badge SKIP">SKIP &mdash; NO EDGE</div>'
             +flag_row(p.get("flags",""))+
-            '<div style="font-size:16px;font-weight:600;margin-bottom:2px">'+game+score_span(game)+'</div>'
-            '<div style="font-size:13px;color:#777;margin-bottom:10px">'+str(p.get("venue",""))+'</div>'
-            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'
-            +sp_box("Away SP",p.get("away_sp","TBD"))+sp_box("Home SP",p.get("home_sp","TBD"))+'</div>'
-            '<div style="margin-bottom:10px">'
+            '<div class="pick-name" style="font-size:16px;color:var(--muted)">'+game+' '+score_span(game)+'</div>'
+            '<div class="pick-meta"><span style="color:var(--muted)">'+str(p.get("venue",""))+'</span></div>'
+            '<div class="sp-grid">'
+            +sp_box("Away SP",p.get("away_sp","TBD"))+sp_box("Home SP",p.get("home_sp","TBD"))+
+            '</div>'
+            '<div>'
             +mrow("&#9918;",p.get("sp_analysis",""))
             +mrow("&#128101;",p.get("lineup_analysis",""))
             +mrow("&#128293;",p.get("bullpen_note",""))
             +mrow("&#129657;",p.get("injury_flags",""))
             +mrow("&#9878;",p.get("umpire_note",""))
             +mrow("&#127966;",p.get("park_note",""))
-            +mrow("&#127748;",p.get("weather_impact",""))+'</div>'
-            '<div style="border-top:0.5px solid #eee;padding-top:8px">'
-            '<div style="font-size:12px;font-weight:600;color:#A32D2D;margin-bottom:3px">'
-            'Why skip: '+str(p.get("avoid_reason","No clear edge"))+'</div>'
-            '<div style="font-size:12px;color:#888;line-height:1.6">'+str(p.get("rationale",""))+'</div>'
+            +mrow("&#127748;",p.get("weather_impact",""))+
+            '</div>'
+            '<div style="border-top:1px solid var(--border);padding-top:8px;margin-top:8px">'
+            '<div class="skip-reason">Why skip: '+str(p.get("avoid_reason","No clear edge"))+'</div>'
+            '<div class="rationale">'+str(p.get("rationale",""))+'</div>'
+            '</div>'
             '</div></div>'
         )
+
 
     cards = ("".join(pick_card(p) for p in active)
              +"".join(watch_card(p) for p in watched)
@@ -2868,39 +2899,130 @@ def build_html(data):
     )
 
     css = (
-        '<style>*{box-sizing:border-box;margin:0;padding:0}'
-        'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;'
-        'background:#f9f9f7;color:#1a1a1a;padding:1.25rem;max-width:700px;margin:0 auto}'
-        'h1{font-size:20px;font-weight:700;margin-bottom:3px}'
-        '.meta{font-size:13px;color:#888;margin-bottom:2px}'
-        '.updated{font-size:11px;color:#aaa;margin-bottom:1.25rem;display:flex;gap:8px;align-items:center;flex-wrap:wrap}'
-        '.sum{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1.25rem}'
-        '.s{background:#fff;border:0.5px solid #e8e8e5;border-radius:9px;padding:10px 12px}'
-        '.sn{font-size:22px;font-weight:700}.sl{font-size:10px;color:#999;margin-top:2px;text-transform:uppercase;letter-spacing:.04em}'
-        '.st{font-size:13px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:.06em;margin:1.25rem 0 0.5rem}'
-        'footer{font-size:11px;color:#bbb;margin-top:1.5rem;text-align:center;padding-bottom:1rem}'
+        '<style>'
+        '@import url(\"https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap\");'
+        '*{box-sizing:border-box;margin:0;padding:0}'
+        ':root{'
+        '--bg:#0D0F11;--surface:#151719;--surface2:#1C1F22;--border:#272B2F;'
+        '--text:#F0F2F4;--muted:#8A9099;--faint:#3A3F45;'
+        '--gold:#F5C842;--green:#22C87A;--red:#F04B4B;--blue:#4B9CF5;--purple:#9B72F5;'
+        '}'
+        'body{font-family:"DM Sans",sans-serif;background:var(--bg);color:var(--text);'
+        'padding:1.5rem 1rem;max-width:720px;margin:0 auto;min-height:100vh}'
+        '.brand{font-family:"Syne",sans-serif;font-size:13px;font-weight:700;'
+        'letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:2px}'
+        '.page-title{font-family:"Syne",sans-serif;font-size:28px;font-weight:800;'
+        'letter-spacing:-.02em;color:var(--text);margin-bottom:4px;line-height:1}'
+        '.meta{font-size:12px;color:var(--muted);margin-bottom:1.5rem;display:flex;'
+        'gap:12px;align-items:center;flex-wrap:wrap}'
+        '.meta a{color:var(--blue);text-decoration:none;font-weight:500}'
+        '.meta a:hover{color:var(--text)}'
+        '.divider{color:var(--faint)}'
+        '.stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:2rem}'
+        '.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;'
+        'padding:12px 14px}'
+        '.stat-val{font-family:"Syne",sans-serif;font-size:24px;font-weight:800;line-height:1}'
+        '.stat-lbl{font-size:10px;color:var(--muted);margin-top:4px;text-transform:uppercase;'
+        'letter-spacing:.08em;font-weight:500}'
+        '.section-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;'
+        'color:var(--muted);margin:1.75rem 0 .75rem;display:flex;align-items:center;gap:8px}'
+        '.section-label::after{content:"";flex:1;height:1px;background:var(--border)}'
+        '.pick-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;'
+        'margin-bottom:12px;overflow:hidden;position:relative}'
+        '.pick-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px}'
+        '.pick-card.tier-MAX::before{background:var(--gold)}'
+        '.pick-card.tier-A::before{background:var(--green)}'
+        '.pick-card.tier-B::before{background:var(--blue)}'
+        '.pick-card.tier-C::before{background:var(--purple)}'
+        '.pick-card.tier-WATCH::before{background:var(--muted)}'
+        '.pick-card.tier-SKIP::before{background:var(--faint)}'
+        '.card-inner{padding:1rem 1rem 1rem 1.25rem}'
+        '.tier-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;'
+        'letter-spacing:.1em;text-transform:uppercase;padding:3px 10px;border-radius:6px;margin-bottom:10px}'
+        '.tier-badge.MAX{background:#F5C84220;color:var(--gold);border:1px solid #F5C84240}'
+        '.tier-badge.A{background:#22C87A18;color:var(--green);border:1px solid #22C87A30}'
+        '.tier-badge.B{background:#4B9CF518;color:var(--blue);border:1px solid #4B9CF530}'
+        '.tier-badge.C{background:#9B72F518;color:var(--purple);border:1px solid #9B72F530}'
+        '.tier-badge.WATCH{background:#8A909918;color:var(--muted);border:1px solid #8A909930}'
+        '.tier-badge.SKIP{background:#3A3F4518;color:var(--faint);border:1px solid #3A3F4530}'
+        '.pick-name{font-family:"Syne",sans-serif;font-size:20px;font-weight:800;'
+        'letter-spacing:-.01em;margin-bottom:3px;line-height:1.1}'
+        '.pick-meta{font-size:12px;color:var(--muted);margin-bottom:12px;display:flex;'
+        'gap:8px;align-items:center;flex-wrap:wrap}'
+        '.pick-meta .game{color:var(--text);opacity:.7}'
+        '.pick-meta .odds{font-family:"DM Mono",monospace;font-weight:500;color:var(--text)}'
+        '.pick-meta .units{font-family:"DM Mono",monospace;font-weight:500;'
+        'color:var(--gold);background:#F5C84215;padding:1px 7px;border-radius:4px}'
+        '.score-pill{font-family:"DM Mono",monospace;font-size:10px;background:var(--surface2);'
+        'color:var(--muted);padding:2px 8px;border-radius:4px}'
+        '.score-pill.live{background:#F5C84220;color:var(--gold)}'
+        '.score-pill.final{background:#22C87A15;color:var(--green)}'
+        '.sp-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}'
+        '.sp-box{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px}'
+        '.sp-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}'
+        '.sp-name{font-size:13px;font-weight:600;color:var(--text)}'
+        '.ev-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}'
+        '.win-prob{font-size:11px;background:var(--surface2);color:var(--muted);'
+        'padding:3px 10px;border-radius:20px;font-family:"DM Mono",monospace}'
+        '.ev-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;'
+        'font-family:"DM Mono",monospace}'
+        '.ev-bar{height:3px;background:var(--surface2);border-radius:2px;margin-bottom:12px}'
+        '.ev-fill{height:100%;border-radius:2px;background:var(--green)}'
+        '.ev-fill.MAX{background:var(--gold)}'
+        '.ev-fill.A{background:var(--green)}'
+        '.ev-fill.B{background:var(--blue)}'
+        '.ev-fill.C{background:var(--purple)}'
+        '.data-row{font-size:12px;color:var(--muted);margin-bottom:4px;line-height:1.5}'
+        '.flag{font-size:11px;background:#F5C84210;color:#F5C842AA;padding:4px 10px;'
+        'border-radius:6px;margin-bottom:8px;border:1px solid #F5C84220}'
+        '.key-edge{background:var(--surface2);border-left:2px solid var(--gold);'
+        'padding:8px 12px;border-radius:0 8px 8px 0;margin-bottom:10px}'
+        '.key-edge-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.1em;'
+        'color:var(--gold);font-weight:700;margin-bottom:3px}'
+        '.key-edge-text{font-size:12px;color:var(--text);font-weight:500;line-height:1.4}'
+        '.rationale{font-size:12px;color:var(--muted);line-height:1.6;margin-top:8px;'
+        'border-top:1px solid var(--border);padding-top:8px}'
+        '.skip-reason{font-size:11px;color:var(--red);font-weight:600;margin-bottom:4px}'
+        '.watch-why{font-size:11px;color:var(--purple);font-style:italic;margin-bottom:4px}'
+        'footer{font-size:11px;color:var(--faint);margin-top:2rem;text-align:center;'
+        'padding-bottom:2rem;line-height:1.8}'
+        '@media(max-width:480px){'
+        '.stats-bar{grid-template-columns:repeat(2,1fr)}'
+        '.sp-grid{grid-template-columns:1fr}'
+        '.page-title{font-size:22px}'
+        '}'
         '</style>'
     )
 
+    has_max = any(p.get('tier')=='MAX' for p in active)
+    active_color = 'var(--gold)' if has_max else 'var(--green)'
     return (
         '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1">'
-        '<title>MLB Picks - '+date+'</title>'+css+'</head><body>'
-        '<h1>MLB Betting Model</h1>'
-        '<div class="meta">'+date+' &nbsp;&middot;&nbsp; '+str(data["total_games"])+' games'
-        ' &nbsp;&middot;&nbsp; <a href="archive.html" style="color:#378ADD;text-decoration:none">Archive &rarr;</a>'
-        ' &nbsp;&middot;&nbsp; <a href="record.html" style="color:#8B6FBA;text-decoration:none">&#128200; Record</a></div>'
-        '<div class="updated">Picks generated '+gen+' ET &nbsp;&middot;&nbsp; Locked picks &nbsp;&middot;&nbsp; '+model_badge
-        +' &nbsp;&middot;&nbsp; <span id="last_update">Scores loading...</span></div>'
-        '<div class="sum">'
-        '<div class="s">'+'<div class="sn" style="color:'+('#FFD700' if any(p.get("tier")=="MAX" for p in active) else "#1D9E75")+'">'+str(len(active))+'</div>'+'<div class="sl">Active picks</div></div>'
-        '<div class="s"><div class="sn">'+str(total_u)+'u</div><div class="sl">Total units</div></div>'
-        '<div class="s"><div class="sn" style="color:#8B6FBA">'+str(len(watched))+'</div><div class="sl">Watching</div></div>'
-        '<div class="s"><div class="sn">'+str(len(skipped))+'</div><div class="sl">No edge</div></div>'
+        '<title>MLB Picks — '+date+'</title>'+css+'</head><body>'
+        '<div class="brand">MLB Betting Model</div>'
+        '<div class="page-title">Today\'s Picks</div>'
+        '<div class="meta">'
+        '<span>'+date+'</span><span class="divider">&middot;</span>'
+        '<span>'+str(data['total_games'])+' games</span><span class="divider">&middot;</span>'
+        '<a href="archive.html">Archive</a><span class="divider">&middot;</span>'
+        '<a href="record.html">Record</a><span class="divider">&middot;</span>'
+        '<span>'+model_badge+'</span><span class="divider">&middot;</span>'
+        '<span id="last_update" style="color:var(--muted)">Loading scores...</span>'
         '</div>'
-        '<div class="st">Active Picks</div>'
+        '<div class="stats-bar">'
+        '<div class="stat-card"><div class="stat-val" style="color:'+active_color+'">'+str(len(active))+'</div>'
+        '<div class="stat-lbl">Active picks</div></div>'
+        '<div class="stat-card"><div class="stat-val" style="color:var(--gold)">'+str(total_u)+'u</div>'
+        '<div class="stat-lbl">Total units</div></div>'
+        '<div class="stat-card"><div class="stat-val" style="color:var(--purple)">'+str(len(watched))+'</div>'
+        '<div class="stat-lbl">Watching</div></div>'
+        '<div class="stat-card"><div class="stat-val" style="color:var(--muted)">'+str(len(skipped))+'</div>'
+        '<div class="stat-lbl">No edge</div></div>'
+        '</div>'
+        '<div class="section-label">Active Picks</div>'
         +cards+
-        '<footer>EV model &nbsp;&middot;&nbsp; 2025+2026 stats &nbsp;&middot;&nbsp; Recent form &nbsp;&middot;&nbsp; Splits &nbsp;&middot;&nbsp; Lineups &nbsp;&middot;&nbsp; Bullpen &nbsp;&middot;&nbsp; Umpires &nbsp;&middot;&nbsp; Never bet more than you can afford to lose</footer>'
+        '<footer>EV model &middot; 2025+2026 stats &middot; Recent form &middot; Splits &middot; Lineups &middot; Bullpen &middot; Umpires<br>Never bet more than you can afford to lose</footer>'
         +live_js+'</body></html>'
     )
 
