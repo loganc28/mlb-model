@@ -133,6 +133,53 @@ UMP_DATA = {
     "Gabe Morales":     {"rpg":8.6,"k_pct":0.24,"bb_pct":0.07,"note":"Pitcher friendly"},
     "D.J. Reyburn":     {"rpg":8.8,"k_pct":0.23,"bb_pct":0.08,"note":"Neutral"},
     "Adam Beck":        {"rpg":9.2,"k_pct":0.21,"bb_pct":0.09,"note":"Slight over lean"},
+    # Additional umps
+    "Sean Barber":      {"rpg":8.9,"k_pct":0.22,"bb_pct":0.08,"note":"Neutral"},
+    "Nestor Ceja":      {"rpg":8.7,"k_pct":0.23,"bb_pct":0.08,"note":"Neutral"},
+    "Ramon De Jesus":   {"rpg":8.8,"k_pct":0.22,"bb_pct":0.08,"note":"Neutral"},
+    "Brennan Miller":   {"rpg":8.9,"k_pct":0.22,"bb_pct":0.08,"note":"Neutral"},
+    "Carlos Torres":    {"rpg":9.1,"k_pct":0.21,"bb_pct":0.09,"note":"Slight over lean"},
+    "Roberto Ortiz":    {"rpg":9.0,"k_pct":0.22,"bb_pct":0.09,"note":"Neutral"},
+    "Chris Segal":      {"rpg":8.6,"k_pct":0.24,"bb_pct":0.07,"note":"Pitcher friendly"},
+    "Ryan Blakney":     {"rpg":9.1,"k_pct":0.22,"bb_pct":0.09,"note":"Slight over lean"},
+    "Gabe Morales":     {"rpg":8.6,"k_pct":0.24,"bb_pct":0.07,"note":"Pitcher friendly"},
+    "Roberto Ortiz":    {"rpg":9.0,"k_pct":0.22,"bb_pct":0.09,"note":"Neutral"},
+    "Phil Cuzzi":       {"rpg":9.1,"k_pct":0.22,"bb_pct":0.09,"note":"Slight over lean"},
+    "Tripp Gibson":     {"rpg":8.7,"k_pct":0.23,"bb_pct":0.08,"note":"Neutral"},
+    "Jim Reynolds":     {"rpg":9.0,"k_pct":0.22,"bb_pct":0.09,"note":"Neutral"},
+    "Scott Barry":      {"rpg":8.8,"k_pct":0.23,"bb_pct":0.08,"note":"Neutral"},
+    "Mike Muchlinski":  {"rpg":8.9,"k_pct":0.22,"bb_pct":0.08,"note":"Neutral"},
+    "Erich Bacchus":    {"rpg":8.7,"k_pct":0.23,"bb_pct":0.08,"note":"Neutral"},
+    "Chris Conroy":     {"rpg":9.2,"k_pct":0.21,"bb_pct":0.09,"note":"Slight over lean"},
+    "David Rackley":    {"rpg":8.5,"k_pct":0.24,"bb_pct":0.07,"note":"Pitcher friendly"},
+    "Edwin Moscoso":    {"rpg":8.8,"k_pct":0.22,"bb_pct":0.08,"note":"Neutral"},
+    "Ben May":          {"rpg":9.0,"k_pct":0.22,"bb_pct":0.09,"note":"Neutral"},
+    "Nate Tomlinson":   {"rpg":8.7,"k_pct":0.23,"bb_pct":0.08,"note":"Neutral"},
+    "John Libka":       {"rpg":8.9,"k_pct":0.22,"bb_pct":0.08,"note":"Neutral"},
+    "Manny Gonzalez":   {"rpg":9.1,"k_pct":0.21,"bb_pct":0.09,"note":"Slight over lean"},
+    "Paul Emmel":       {"rpg":8.6,"k_pct":0.24,"bb_pct":0.07,"note":"Pitcher friendly"},
+    "Alan Porter":      {"rpg":9.3,"k_pct":0.21,"bb_pct":0.09,"note":"Over lean"},
+    "Bill Miller":      {"rpg":8.8,"k_pct":0.22,"bb_pct":0.08,"note":"Neutral"},
+    "Larry Vanover":    {"rpg":9.0,"k_pct":0.22,"bb_pct":0.09,"note":"Neutral"},
+    "Laz Diaz":         {"rpg":9.4,"k_pct":0.20,"bb_pct":0.10,"note":"High run ump"},
+    "Ted Barrett":      {"rpg":8.7,"k_pct":0.23,"bb_pct":0.08,"note":"Neutral"},
+    "Gary Cederstrom":  {"rpg":8.5,"k_pct":0.24,"bb_pct":0.07,"note":"Pitcher friendly"},
+    "Mike Winters":     {"rpg":8.9,"k_pct":0.22,"bb_pct":0.08,"note":"Neutral"},
+    "Ron Kulpa":        {"rpg":9.2,"k_pct":0.21,"bb_pct":0.09,"note":"Slight over lean"},
+    "Tom Hallion":      {"rpg":8.6,"k_pct":0.24,"bb_pct":0.07,"note":"Pitcher friendly"},
+    "Joe West":         {"rpg":9.5,"k_pct":0.20,"bb_pct":0.10,"note":"Strong over lean"},
+    "Tim Timmons":      {"rpg":9.1,"k_pct":0.22,"bb_pct":0.09,"note":"Slight over lean"},
+    "Alfonso Marquez":  {"rpg":8.8,"k_pct":0.23,"bb_pct":0.08,"note":"Neutral"},
+    "Chris Guccione":   {"rpg":9.0,"k_pct":0.22,"bb_pct":0.09,"note":"Neutral"},
+    "Sam Holbrook":     {"rpg":8.7,"k_pct":0.23,"bb_pct":0.08,"note":"Neutral"},
+    "Hunter Wendelstedt": {"rpg":9.3,"k_pct":0.21,"bb_pct":0.09,"note":"Over lean"},
+    "Jerry Layne":      {"rpg":8.5,"k_pct":0.24,"bb_pct":0.07,"note":"Pitcher friendly"},
+    "Fieldin Culbreth": {"rpg":8.8,"k_pct":0.22,"bb_pct":0.08,"note":"Neutral"},
+    "Mike DiMuro":      {"rpg":9.1,"k_pct":0.22,"bb_pct":0.09,"note":"Slight over lean"},
+    "Dana DeMuth":      {"rpg":8.6,"k_pct":0.24,"bb_pct":0.07,"note":"Pitcher friendly"},
+    "Bruce Dreckman":   {"rpg":8.9,"k_pct":0.22,"bb_pct":0.08,"note":"Neutral"},
+    "Toby Basner":      {"rpg":8.8,"k_pct":0.22,"bb_pct":0.08,"note":"Neutral"},
+    "Shaun Lampe":      {"rpg":8.7,"k_pct":0.23,"bb_pct":0.08,"note":"Neutral"},
 }
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -254,11 +301,21 @@ def get_park_factor(venue):
     return {"runs":1.0,"hr":1.0,"note":"No park data — using neutral"}
 
 def get_ump_stats(ump_name):
-    if not ump_name:
-        return {"name":"TBD","rpg":8.8,"note":"Unknown — using league average"}
+    if not ump_name or ump_name == "TBD":
+        return {"name":"TBD","rpg":8.8,"k_pct":0.22,"note":"Unknown — using league average"}
+    # Try full name match first
+    for k,v in UMP_DATA.items():
+        if ump_name.lower() == k.lower():
+            return dict(v, name=ump_name)
+    # Try last name match
     last = ump_name.split()[-1] if ump_name else ""
     for k,v in UMP_DATA.items():
-        if last.lower() in k.lower():
+        if last.lower() in k.lower() or k.lower().endswith(last.lower()):
+            return dict(v, name=ump_name)
+    # Try first name match
+    first = ump_name.split()[0] if ump_name else ""
+    for k,v in UMP_DATA.items():
+        if first.lower() in k.lower():
             return dict(v, name=ump_name)
     return {"name":ump_name,"rpg":8.8,"k_pct":0.22,"note":"No data — using league average"}
 
@@ -1240,6 +1297,32 @@ def enforce_ev_rules(picks):
             enforced.append(p)
             continue
 
+        # Auto-SKIP if either SP has no stats
+        sp_analysis = p.get("sp_analysis","").lower()
+        if tier in ("MAX","A","B","C") and (
+            "no stats" in sp_analysis or
+            "0.00 era placeholder" in sp_analysis or
+            "no stats found" in sp_analysis
+        ):
+            print("AUTO-SKIP: "+p.get("game","")+" — SP has no stats, cannot make valid pick")
+            p["tier"] = "SKIP"; p["bet_type"] = "SKIP"; p["pick"] = "SKIP"; p["units"] = 0
+            p["avoid_reason"] = "SP has no statistical data — cannot make valid pick"
+            enforced.append(p)
+            continue
+
+        # Auto-downgrade if flags explicitly say factors contradict pick direction
+        if tier in ("B","C"):
+            flags_lower = (p.get("flags","") + " " + p.get("rationale","")).lower()
+            pick_str = p.get("pick","").upper()
+            is_under = "UNDER" in pick_str
+            is_over = "OVER" in pick_str
+            contradictions = 0
+            if is_under and "contradicts under" in flags_lower: contradictions += 1
+            if is_over and "contradicts over" in flags_lower: contradictions += 1
+            if contradictions >= 1:
+                print("CONTRADICTION: "+p.get("game","")+" — contradicting factors, downgrading to WATCH")
+                p["tier"] = "WATCH"; p["units"] = 0
+
         bet_type = p.get("bet_type","")
         ev = p.get("ev_pct",0)
         try: ev = float(ev)
@@ -1350,8 +1433,9 @@ def estimate_win_prob(home_sp_era, away_sp_era, home_ops, away_ops,
     # Cap ERAs to prevent extreme distortion from tiny samples
     h_era = min(max(h_era, 1.0), 9.0)
     a_era = min(max(a_era, 1.0), 9.0)
-    h_ops = min(max(home_ops, 0.550), 1.000) if home_ops > 0 else lg_ops
-    a_ops = min(max(away_ops, 0.550), 1.000) if away_ops > 0 else lg_ops
+    # Use league average when OPS is 0 (missing data) — never use 0 directly
+    h_ops = min(max(home_ops, 0.550), 1.000) if home_ops and home_ops > 0.100 else lg_ops
+    a_ops = min(max(away_ops, 0.550), 1.000) if away_ops and away_ops > 0.100 else lg_ops
     pf = min(max(park_runs, 0.80), 1.30)
 
     # Expected runs per game for each team
@@ -1394,8 +1478,8 @@ def estimate_nrfi_odds(away_sp_stats, home_sp_stats, park_factor, game_total):
         bb9_factor = (lg_bb9 / max(bb9, 0.5)) ** 0.3
         return era_factor * k9_factor * bb9_factor
 
-    away_score = sp_nrfi_score(away_sp_stats)
-    home_score = sp_nrfi_score(home_sp_stats)
+    away_score = sp_nrfi_score(away_sp_stats) if away_sp_stats.get("era",0) > 0 else 1.0
+    home_score = sp_nrfi_score(home_sp_stats) if home_sp_stats.get("era",0) > 0 else 1.0
 
     # Combined SP quality (geometric mean)
     combined_sp = (away_score * home_score) ** 0.5
@@ -2596,7 +2680,8 @@ def build_archive_index():
 
 def build_html(data):
     all_picks = data.get("picks",[])
-    active  = [p for p in all_picks if p.get("tier") in ("MAX","A","B","C")]
+    active  = sorted([p for p in all_picks if p.get("tier") in ("MAX","A","B","C")],
+                    key=lambda x: {"MAX":0,"A":1,"B":2,"C":3}.get(x.get("tier","C"),3))
     watched = [p for p in all_picks if p.get("tier") == "WATCH"]
     skipped = [p for p in all_picks if p.get("tier") == "SKIP" and not p.get("no_display")]
     total_u = round(sum(p.get("units",0) for p in active),1)
