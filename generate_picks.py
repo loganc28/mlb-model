@@ -578,6 +578,15 @@ def fetch_lineup(game_pk):
         batters = []
         batting_order = team_data.get("battingOrder",[])
         players = team_data.get("players",{})
+        # Get injured player names to filter from lineup
+        injured_ids = set()
+        for pid_str, pdata in players.items():
+            status = pdata.get("gameStatus",{})
+            if not status.get("isCurrentBatter") and not status.get("isCurrentPitcher"):
+                il_status = pdata.get("status",{}).get("code","")
+                if il_status in ("IL10","IL15","IL60","DL10","DL15","DL60","DTD","SCR"):
+                    injured_ids.add(str(pid_str).replace("ID",""))
+
         for pid in batting_order[:9]:
             player = players.get("ID"+str(pid),{})
             name = player.get("person",{}).get("fullName","")
@@ -586,6 +595,9 @@ def fetch_lineup(game_pk):
             s = player.get("seasonStats",{}).get("batting",{})
             avg = safe_float(s.get("avg","0"))
             ops = safe_float(s.get("ops","0"))
+            # Skip if player is on IL/injured list
+            if str(pid) in injured_ids:
+                continue
             if name:
                 batters.append({"name":name,"pos":pos,"bats":bats,"avg":avg,"ops":ops})
         lineups[side] = {"team":team_name,"batters":batters}
@@ -739,14 +751,20 @@ def fetch_injuries(team_id):
 
     injured = []
 
-    # Source 1: MLB Stats API official IL
+    # Source 1: MLB Stats API official IL — only confirmed IL placements
+    IL_STATUSES = {
+        "10-Day IL", "15-Day IL", "60-Day IL",
+        "10-Day Injured List", "15-Day Injured List", "60-Day Injured List",
+        "Bereavement List", "Restricted List", "Suspended List",
+    }
     try:
         data = mlb_api("/teams/"+str(team_id)+"/roster", {"rosterType":"injuries"})
         for p in data.get("roster",[]):
             name = p.get("person",{}).get("fullName","")
             status = p.get("status",{}).get("description","")
             pos = p.get("position",{}).get("abbreviation","")
-            if name:
+            # Only include confirmed IL placements — not day-to-day or general roster moves
+            if name and any(il in status for il in IL_STATUSES):
                 injured.append({
                     "name": name,
                     "status": status,
@@ -1097,11 +1115,18 @@ TIER ASSIGNMENT:
 
 Most games on any slate should be SKIP or WATCH. If you have more than 6 active picks
 on a 12-game slate, your standards are too low.
+TOTALS CAP: Maximum 3 total (OVER/UNDER) active picks per slate. If you have more, keep only
+the 3 highest EV ones. Spread your picks across ML, Run Line, and Totals — do not default
+entirely to game totals just because they are easier to justify.
 
 BET TYPE:
 - ML: SP gap 2.0+ AND team OPS 0.750+ AND odds -115 to -175.
 - Run Line -1.5: Dominant favorite — SP gap 2.0+, fresh bullpen, strong lineup.
 - Run Line +1.5: Overpriced favorite (-180+) with real underlying edge.
+  WIN PROB FOR RUN LINES: +1.5 win prob should be 55-68% maximum. Do not assign 75%+ to
+  any +1.5 pick — that implies near-certainty which doesn't exist in baseball. The underdog
+  covers +1.5 roughly 60-65% of the time even in strong matchups. Be conservative.
+  -1.5 win prob should be 45-60% maximum — winning by 2+ is much harder than winning outright.
 - Total OVER: Fatigued bullpens + hitter park OR out-blowing wind + warm temp.
 - Total UNDER: Elite dual SPs + pitcher park + fresh pens. Wind IN adds to edge.
 - F5 Total OVER/UNDER: Use when SP quality gap is strong but bullpen fatigue on one side creates uncertainty for full game. F5 isolates the SP edge.
@@ -1235,11 +1260,13 @@ def enforce_ev_rules(picks):
                 print("EV mismatch for "+p.get("game","")+" — Claude said "+str(ev)+"%, calc: "+str(calc_ev)+"%. Using calculated.")
                 p["ev_pct"] = calc_ev
                 ev = calc_ev
-        # Sanity cap: no pick should ever show more than 15% EV — above that is almost certainly hallucinated
-        if ev > 15:
-            print("EV sanity cap: "+p.get("game","")+" claimed "+str(ev)+"% EV — capping at 15%")
-            ev = 15.0
-            p["ev_pct"] = 15.0
+        # Sanity cap — caps vary by bet type
+        # Run lines have tighter cap because win_prob for +1.5 is easier to inflate
+        max_ev = 10.0 if "Run Line" in bet_type else 15.0
+        if ev > max_ev:
+            print("EV sanity cap: "+p.get("game","")+" claimed "+str(ev)+"% EV — capping at "+str(max_ev)+"%")
+            ev = max_ev
+            p["ev_pct"] = max_ev
 
         # Check ML odds cap
         line_str = str(p.get("line",""))
@@ -1575,6 +1602,28 @@ def call_ai(games_with_data):
 
     if all_picks:
         all_picks = enforce_ev_rules(all_picks)
+
+    # Hard cap: no more than 3 total (OVER/UNDER) active picks per slate
+    # Prevents model from defaulting entirely to totals
+    total_picks = [p for p in all_picks if p.get("tier") in ("MAX","A","B","C")
+                   and "OVER" in p.get("bet_type","").upper() or "UNDER" in p.get("bet_type","").upper()]
+    if len([p for p in all_picks if p.get("tier") in ("MAX","A","B","C")
+            and ("OVER" in p.get("bet_type","").upper() or "UNDER" in p.get("bet_type","").upper())]) > 3:
+        # Keep highest EV totals up to 3, downgrade rest to WATCH
+        active_totals = sorted(
+            [p for p in all_picks if p.get("tier") in ("MAX","A","B","C")
+             and ("OVER" in p.get("bet_type","").upper() or "UNDER" in p.get("bet_type","").upper())],
+            key=lambda x: x.get("ev_pct",0), reverse=True
+        )
+        keep = {id(p) for p in active_totals[:3]}
+        for p in all_picks:
+            if (p.get("tier") in ("MAX","A","B","C")
+                and ("OVER" in p.get("bet_type","").upper() or "UNDER" in p.get("bet_type","").upper())
+                and id(p) not in keep):
+                p["tier"] = "WATCH"
+                p["units"] = 0
+                p["avoid_reason"] = "Downgraded: total pick cap (max 3 totals per slate)"
+                print("CAPPED: "+p.get("game","")+" — downgraded to WATCH (total pick cap)")
 
     # Add silent SKIPs for no-odds games (don't show on page)
     for g in no_odds:
