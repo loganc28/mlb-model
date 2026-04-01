@@ -1794,6 +1794,9 @@ def fetch_final_scores(date_str):
             total_runs = home_score + away_score
             f5_total = home_f5 + away_f5
             key = away+"@"+home
+            # First inning scores for NRFI/YRFI settlement
+            inn1_home = int(innings[0].get("home",{}).get("runs",0) or 0) if innings else 0
+            inn1_away = int(innings[0].get("away",{}).get("runs",0) or 0) if innings else 0
             scores[key] = {
                 "home": home,
                 "away": away,
@@ -1805,6 +1808,9 @@ def fetch_final_scores(date_str):
                 "f5_total": f5_total,
                 "winner": home if home_score > away_score else away,
                 "run_diff": abs(home_score - away_score),
+                "inn1_home": inn1_home,
+                "inn1_away": inn1_away,
+                "inn1_total": inn1_home + inn1_away,
             }
     return scores
 
@@ -1879,6 +1885,16 @@ def settle_pick(pick, scores):
             if adjusted > 0: result = "W"
             elif adjusted < 0: result = "L"
             else: result = "P"
+
+        elif bet_type == "NRFI":
+            inn1 = score.get("inn1_total", None)
+            if inn1 is None: return None
+            result = "W" if inn1 == 0 else "L"
+
+        elif bet_type == "YRFI":
+            inn1 = score.get("inn1_total", None)
+            if inn1 is None: return None
+            result = "W" if inn1 > 0 else "L"
 
         elif bet_type in ("WATCH","SKIP") or not bet_type:
             # For WATCH picks — still track if they would have won
@@ -2128,7 +2144,17 @@ function settlePick(pick, game, line, scores) {
             }
         }
     }
-    
+
+    // NRFI / YRFI — uses inning1 from linescore hydration
+    if (pickUp === "NRFI" || pickUp === "YRFI") {
+        if (!score.inning1) return null;
+        var inn1away = score.inning1.away || 0;
+        var inn1home = score.inning1.home || 0;
+        var firstInningRuns = inn1away + inn1home;
+        if (pickUp === "NRFI") return firstInningRuns === 0 ? "W" : "L";
+        if (pickUp === "YRFI") return firstInningRuns > 0 ? "W" : "L";
+    }
+
     return null;
 }
 
@@ -2236,9 +2262,19 @@ function fetchScoresForRecord() {
                         if (g.status.abstractGameState !== "Final") return;
                         var away = g.teams.away.team.name;
                         var home = g.teams.home.team.name;
+                        // Parse first inning from linescore
+                        var inning1 = null;
+                        var innings = (g.linescore && g.linescore.innings) ? g.linescore.innings : [];
+                        if (innings.length > 0) {
+                            inning1 = {
+                                away: innings[0].away ? (innings[0].away.runs || 0) : 0,
+                                home: innings[0].home ? (innings[0].home.runs || 0) : 0
+                            };
+                        }
                         allScores[away + " @ " + home] = {
                             away_score: g.teams.away.score || 0,
                             home_score: g.teams.home.score || 0,
+                            inning1: inning1
                         };
                     });
                 });
