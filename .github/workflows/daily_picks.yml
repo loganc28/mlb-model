@@ -2,8 +2,17 @@ name: Daily MLB Picks
 
 on:
   schedule:
-    - cron: '0 14 31 2 *'
+    - cron: '0 12 * * *'
+    - cron: '0 19 * * *'
   workflow_dispatch:
+    inputs:
+      force_regenerate:
+        description: 'Force regenerate picks? (yes/no)'
+        required: false
+        default: 'no'
+
+env:
+  FORCE_REGENERATE: ${{ github.event.inputs.force_regenerate || 'no' }}
 
 jobs:
   generate-picks:
@@ -26,6 +35,8 @@ jobs:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          FORCE_REGENERATE: ${{ env.FORCE_REGENERATE }}
         run: python generate_picks.py
 
       - name: Commit and push output
