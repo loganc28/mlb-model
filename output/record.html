@@ -1,0 +1,265 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MLB Record</title><style>@import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap");*{box-sizing:border-box;margin:0;padding:0}:root{--bg:#0D0F11;--surface:#151719;--surface2:#1C1F22;--border:#272B2F;--text:#F0F2F4;--muted:#8A9099;--faint:#3A3F45;--gold:#F5C842;--green:#22C87A;--red:#F04B4B;--blue:#4B9CF5;--purple:#9B72F5;}body{font-family:"DM Sans",sans-serif;background:var(--bg);color:var(--text);padding:1.5rem 1rem;max-width:980px;margin:0 auto}.brand{font-family:"Syne",sans-serif;font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:2px}.page-title{font-family:"Syne",sans-serif;font-size:28px;font-weight:800;letter-spacing:-.02em;color:var(--text);margin-bottom:4px;line-height:1}.meta{font-size:12px;color:var(--muted);margin-bottom:1.5rem;display:flex;gap:12px;align-items:center;flex-wrap:wrap}.meta a{color:var(--blue);text-decoration:none;font-weight:500}.stats-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:2rem}.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px}.stat-val{font-family:"Syne",sans-serif;font-size:22px;font-weight:800;line-height:1}.stat-lbl{font-size:10px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.08em;font-weight:500}.section-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:1.75rem 0 .75rem;display:flex;align-items:center;gap:8px}.section-label::after{content:"";flex:1;height:1px;background:var(--border)}table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:1.5rem}th{padding:10px 14px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;text-align:left;background:var(--surface2);border-bottom:1px solid var(--border)}td{padding:10px 14px;font-size:12px;border-bottom:1px solid var(--border);color:var(--text)}tr:last-child td{border-bottom:none}tr:hover td{background:var(--surface2)}.badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;font-family:"DM Mono",monospace}.badge.WIN{background:#22C87A18;color:var(--green);border:1px solid #22C87A30}.badge.LOSS{background:#F04B4B18;color:var(--red);border:1px solid #F04B4B30}.badge.PENDING{background:#F5C84215;color:var(--gold);border:1px solid #F5C84230}.badge.PUSH{background:#8A909918;color:var(--muted);border:1px solid #8A909930}.tier-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}.tier-dot.MAX{background:var(--gold)}.tier-dot.A{background:var(--green)}.tier-dot.B{background:var(--blue)}.tier-dot.C{background:var(--purple)}.tier-dot.WATCH{background:var(--muted)}.mono{font-family:"DM Mono",monospace}footer{font-size:11px;color:var(--faint);margin-top:2rem;text-align:center;padding-bottom:2rem;line-height:1.8}@media(max-width:600px){.stats-bar{grid-template-columns:repeat(3,1fr)}th,td{padding:8px 10px;font-size:11px}}</style></head><body><div class="brand">MLB Betting Model</div><div class="page-title">Record</div><div class="meta">Updated 2026-04-01 &nbsp;&middot;&nbsp; <span id="live_update" style="color:var(--green)">&#9679; Live</span> &nbsp;&middot;&nbsp; <a href="index.html">Today's picks</a> &nbsp;&middot;&nbsp; <a href="archive.html">Archive</a></div><div class="stats-bar"><div class="stat-card"><div class="stat-val" data-stat="wl">16-13</div><div class="stat-lbl">W-L Record</div></div><div class="stat-card"><div class="stat-val" data-stat="winrate">55.2%</div><div class="stat-lbl">Win Rate</div></div><div class="stat-card"><div class="stat-val" data-stat="units" style="color:#1D9E75">+1.65u</div><div class="stat-lbl">Units P&L</div></div><div class="stat-card"><div class="stat-val" style="color:#888">+0</div><div class="stat-lbl">Avg CLV</div></div><div class="stat-card"><div class="stat-val" style="color:var(--purple)">60.0%</div><div class="stat-lbl">Watch Hit %</div></div></div><div class="section-label">Performance by Tier</div><table><thead><tr><th>Tier</th><th>Record</th><th>Win %</th><th>Units</th></tr></thead><tbody><tr><td style="font-weight:600"><span class="tier-dot A"></span>A</td><td style="text-align:center;font-family:'DM Mono',monospace">2-4</td><td style="text-align:center">33.3%</td><td style="text-align:center;font-family:'DM Mono',monospace;font-weight:600;color:var(--red)">-3.22u</td></tr><tr><td style="font-weight:600"><span class="tier-dot B"></span>B</td><td style="text-align:center;font-family:'DM Mono',monospace">6-4</td><td style="text-align:center">60.0%</td><td style="text-align:center;font-family:'DM Mono',monospace;font-weight:600;color:var(--green)">+1.5u</td></tr><tr><td style="font-weight:600"><span class="tier-dot C"></span>C</td><td style="text-align:center;font-family:'DM Mono',monospace">4-3</td><td style="text-align:center">57.1%</td><td style="text-align:center;font-family:'DM Mono',monospace;font-weight:600;color:var(--green)">+0.49u</td></tr><tr><td style="font-weight:600"><span class="tier-dot MAX"></span>MAX</td><td style="text-align:center;font-family:'DM Mono',monospace">1-0</td><td style="text-align:center">100.0%</td><td style="text-align:center;font-family:'DM Mono',monospace;font-weight:600;color:var(--green)">+2.88u</td></tr><tr><td style="font-weight:600"><span class="tier-dot WATCH"></span>WATCH</td><td style="text-align:center;font-family:'DM Mono',monospace">3-2</td><td style="text-align:center">60.0%</td><td style="text-align:center;font-family:'DM Mono',monospace;font-weight:600;color:var(--green)">+0.0u</td></tr></tbody></table><div class="section-label">Performance by Bet Type</div><table><thead><tr><th>Type</th><th>Record</th><th>Win %</th><th>Units</th></tr></thead><tbody><tr><td style="font-weight:600">ML</td><td style="text-align:center;font-family:'DM Mono',monospace">2-2</td><td style="text-align:center">50.0%</td><td style="text-align:center;font-family:'DM Mono',monospace;font-weight:600;color:var(--red)">-1.52u</td></tr><tr><td style="font-weight:600">NRFI</td><td style="text-align:center;font-family:'DM Mono',monospace">1-0</td><td style="text-align:center">100.0%</td><td style="text-align:center;font-family:'DM Mono',monospace;font-weight:600;color:var(--green)">+0.59u</td></tr><tr><td style="font-weight:600">Run Line</td><td style="text-align:center;font-family:'DM Mono',monospace">3-2</td><td style="text-align:center">60.0%</td><td style="text-align:center;font-family:'DM Mono',monospace;font-weight:600;color:var(--green)">+1.12u</td></tr><tr><td style="font-weight:600">Total OVER</td><td style="text-align:center;font-family:'DM Mono',monospace">5-5</td><td style="text-align:center">50.0%</td><td style="text-align:center;font-family:'DM Mono',monospace;font-weight:600;color:var(--red)">-1.63u</td></tr><tr><td style="font-weight:600">Total UNDER</td><td style="text-align:center;font-family:'DM Mono',monospace">5-4</td><td style="text-align:center">55.6%</td><td style="text-align:center;font-family:'DM Mono',monospace;font-weight:600;color:var(--green)">+3.09u</td></tr></tbody></table><div class="section-label">Pick History</div><table><thead><tr><th>Date</th><th>Pick</th><th>Game</th><th>Tier</th><th>Open</th><th>Close</th><th>CLV</th><th>Score</th><th>Result</th><th>Units</th></tr></thead><tbody><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-04-01</td><td style="font-weight:600">Tigers -1.5 (WATCH)</td><td style="color:var(--muted);font-size:11px">Detroit Tigers @ Arizona Diamondbacks</td><td><span class="tier-dot WATCH"></span>WATCH</td><td style="font-family:'DM Mono',monospace;font-size:11px">109</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)"></td><td><span class="badge PENDING">PENDING</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--green)">+0u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-04-01</td><td style="font-weight:600">UNDER 7.5</td><td style="color:var(--muted);font-size:11px">New York Yankees @ Seattle Mariners</td><td><span class="tier-dot B"></span>B</td><td style="font-family:'DM Mono',monospace;font-size:11px">105</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)"></td><td><span class="badge PENDING">PENDING</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--green)">+0u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-04-01</td><td style="font-weight:600">Red Sox ML</td><td style="color:var(--muted);font-size:11px">Boston Red Sox @ Houston Astros</td><td><span class="tier-dot B"></span>B</td><td style="font-family:'DM Mono',monospace;font-size:11px">-145</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)"></td><td><span class="badge PENDING">PENDING</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--green)">+0u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-04-01</td><td style="font-weight:600">UNDER 7.5</td><td style="color:var(--muted);font-size:11px">New York Mets @ St. Louis Cardinals</td><td><span class="tier-dot C"></span>C</td><td style="font-family:'DM Mono',monospace;font-size:11px">100</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)"></td><td><span class="badge PENDING">PENDING</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--green)">+0u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-04-01</td><td style="font-weight:600">Phillies -1.5</td><td style="color:var(--muted);font-size:11px">Washington Nationals @ Philadelphia Phillies</td><td><span class="tier-dot C"></span>C</td><td style="font-family:'DM Mono',monospace;font-size:11px">-117</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)"></td><td><span class="badge PENDING">PENDING</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--green)">+0u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-04-01</td><td style="font-weight:600">OVER 7.5</td><td style="color:var(--muted);font-size:11px">Pittsburgh Pirates @ Cincinnati Reds</td><td><span class="tier-dot B"></span>B</td><td style="font-family:'DM Mono',monospace;font-size:11px">-108</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)"></td><td><span class="badge PENDING">PENDING</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--green)">+0u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-03-31</td><td style="font-weight:600">OVER 8.5 (WATCH)</td><td style="color:var(--muted);font-size:11px">Chicago White Sox @ Miami Marlins</td><td><span class="tier-dot WATCH"></span>WATCH</td><td style="font-family:'DM Mono',monospace;font-size:11px">-115</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)">Chicago White Sox 2 - Miami Marlins 9</td><td><span class="badge WIN">WIN</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--green)">+0u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-03-31</td><td style="font-weight:600">OVER 8.5 (WATCH)</td><td style="color:var(--muted);font-size:11px">Colorado Rockies @ Toronto Blue Jays</td><td><span class="tier-dot WATCH"></span>WATCH</td><td style="font-family:'DM Mono',monospace;font-size:11px">+101</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)">Colorado Rockies 1 - Toronto Blue Jays 5</td><td><span class="badge LOSS">LOSS</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--green)">+0u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-03-31</td><td style="font-weight:600">NRFI</td><td style="color:var(--muted);font-size:11px">Los Angeles Angels @ Chicago Cubs</td><td><span class="tier-dot B"></span>B</td><td style="font-family:'DM Mono',monospace;font-size:11px">-170</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)">Chicago Cubs 0 - Los Angeles Angels 2 (NRFI: 0-0 after 1)</td><td><span class="badge WIN">WIN</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--green)">+0.59u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-03-31</td><td style="font-weight:600">Mets -1.5</td><td style="color:var(--muted);font-size:11px">New York Mets @ St. Louis Cardinals</td><td><span class="tier-dot C"></span>C</td><td style="font-family:'DM Mono',monospace;font-size:11px">+110</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)">New York Mets 0 - St. Louis Cardinals 3</td><td><span class="badge LOSS">LOSS</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--red)">-0.5u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-03-31</td><td style="font-weight:600">OVER 7.5</td><td style="color:var(--muted);font-size:11px">San Francisco Giants @ San Diego Padres</td><td><span class="tier-dot C"></span>C</td><td style="font-family:'DM Mono',monospace;font-size:11px">-103</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)">San Francisco Giants 9 - San Diego Padres 3</td><td><span class="badge WIN">WIN</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--green)">+0.48u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-03-31</td><td style="font-weight:600">Yankees ML</td><td style="color:var(--muted);font-size:11px">New York Yankees @ Seattle Mariners</td><td><span class="tier-dot B"></span>B</td><td style="font-family:'DM Mono',monospace;font-size:11px">-102</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)">New York Yankees 5 - Seattle Mariners 0</td><td><span class="badge WIN">WIN</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--green)">+0.98u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-03-31</td><td style="font-weight:600">Guardians +1.5</td><td style="color:var(--muted);font-size:11px">Cleveland Guardians @ Los Angeles Dodgers</td><td><span class="tier-dot C"></span>C</td><td style="font-family:'DM Mono',monospace;font-size:11px">+100</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)">Los Angeles Dodgers 4 - Cleveland Guardians 1</td><td><span class="badge LOSS">LOSS</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--red)">-0.5u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-03-30</td><td style="font-weight:600">UNDER 8.5</td><td style="color:var(--muted);font-size:11px">San Francisco Giants @ San Diego Padres</td><td><span class="tier-dot C"></span>C</td><td style="font-family:'DM Mono',monospace;font-size:11px">+100</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)">San Francisco Giants 3 - San Diego Padres 2</td><td><span class="badge WIN">WIN</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--green)">+0.5u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-03-30</td><td style="font-weight:600">Guardians +1.5</td><td style="color:var(--muted);font-size:11px">Cleveland Guardians @ Los Angeles Dodgers</td><td><span class="tier-dot B"></span>B</td><td style="font-family:'DM Mono',monospace;font-size:11px">+112</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)">Cleveland Guardians 4 - Los Angeles Dodgers 2</td><td><span class="badge WIN">WIN</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--green)">+1.12u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-03-30</td><td style="font-weight:600">OVER 8.0</td><td style="color:var(--muted);font-size:11px">Pittsburgh Pirates @ Cincinnati Reds</td><td><span class="tier-dot B"></span>B</td><td style="font-family:'DM Mono',monospace;font-size:11px">-102</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)">Cincinnati Reds 2 - Pittsburgh Pirates 0</td><td><span class="badge LOSS">LOSS</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--red)">-1.0u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-03-30</td><td style="font-weight:600">UNDER 7.5</td><td style="color:var(--muted);font-size:11px">New York Yankees @ Seattle Mariners</td><td><span class="tier-dot A"></span>A</td><td style="font-family:'DM Mono',monospace;font-size:11px">-108</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)">Seattle Mariners 2 - New York Yankees 1</td><td><span class="badge WIN">WIN</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--green)">+1.39u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-03-29</td><td style="font-weight:600">OVER 7.5 (WATCH)</td><td style="color:var(--muted);font-size:11px">Tampa Bay Rays @ St. Louis Cardinals</td><td><span class="tier-dot WATCH"></span>WATCH</td><td style="font-family:'DM Mono',monospace;font-size:11px">-118</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)">Tampa Bay Rays 11 - St. Louis Cardinals 7</td><td><span class="badge WIN">WIN</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--green)">+0u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-03-29</td><td style="font-weight:600">OVER 8.0 (WATCH)</td><td style="color:var(--muted);font-size:11px">Colorado Rockies @ Miami Marlins</td><td><span class="tier-dot WATCH"></span>WATCH</td><td style="font-family:'DM Mono',monospace;font-size:11px">-105</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)">Colorado Rockies 3 - Miami Marlins 4</td><td><span class="badge LOSS">LOSS</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--green)">+0u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-03-29</td><td style="font-weight:600">UNDER 7.5</td><td style="color:var(--muted);font-size:11px">Cleveland Guardians @ Seattle Mariners</td><td><span class="tier-dot A"></span>A</td><td style="font-family:'DM Mono',monospace;font-size:11px">-108</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)">Cleveland Guardians 0 - Seattle Mariners 8</td><td><span class="badge LOSS">LOSS</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--red)">-1.5u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-03-29</td><td style="font-weight:600">Nationals +1.5</td><td style="color:var(--muted);font-size:11px">Washington Nationals @ Chicago Cubs</td><td><span class="tier-dot C"></span>C</td><td style="font-family:'DM Mono',monospace;font-size:11px">+105</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)">Washington Nationals 6 - Chicago Cubs 3</td><td><span class="badge WIN">WIN</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--green)">+0.53u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-03-29</td><td style="font-weight:600">OVER 8.0</td><td style="color:var(--muted);font-size:11px">Kansas City Royals @ Atlanta Braves</td><td><span class="tier-dot A"></span>A</td><td style="font-family:'DM Mono',monospace;font-size:11px">-112</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)">Kansas City Royals 4 - Atlanta Braves 1</td><td><span class="badge LOSS">LOSS</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--red)">-1.5u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-03-29</td><td style="font-weight:600">OVER 8.0</td><td style="color:var(--muted);font-size:11px">Texas Rangers @ Philadelphia Phillies</td><td><span class="tier-dot B"></span>B</td><td style="font-family:'DM Mono',monospace;font-size:11px">-112</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)">Texas Rangers 8 - Philadelphia Phillies 3</td><td><span class="badge WIN">WIN</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--green)">+0.89u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-03-28</td><td style="font-weight:600">Marlins ML (WATCH)</td><td style="color:var(--muted);font-size:11px">Colorado Rockies @ Miami Marlins</td><td><span class="tier-dot WATCH"></span>WATCH</td><td style="font-family:'DM Mono',monospace;font-size:11px">-193</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)">Colorado Rockies 3 - Miami Marlins 4</td><td><span class="badge WIN">WIN</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--green)">+0u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-03-28</td><td style="font-weight:600">UNDER 7.0</td><td style="color:var(--muted);font-size:11px">Cleveland Guardians @ Seattle Mariners</td><td><span class="tier-dot B"></span>B</td><td style="font-family:'DM Mono',monospace;font-size:11px">-112</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)">Cleveland Guardians 6 - Seattle Mariners 5</td><td><span class="badge LOSS">LOSS</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--red)">-1.0u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-03-28</td><td style="font-weight:600">Diamondbacks +1.5</td><td style="color:var(--muted);font-size:11px">Arizona Diamondbacks @ Los Angeles Dodgers</td><td><span class="tier-dot C"></span>C</td><td style="font-family:'DM Mono',monospace;font-size:11px">-105</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)">Arizona Diamondbacks 2 - Los Angeles Dodgers 3</td><td><span class="badge WIN">WIN</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--green)">+0.48u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-03-28</td><td style="font-weight:600">UNDER 8.0</td><td style="color:var(--muted);font-size:11px">Detroit Tigers @ San Diego Padres</td><td><span class="tier-dot MAX"></span>MAX</td><td style="font-family:'DM Mono',monospace;font-size:11px">-104</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)">Detroit Tigers 0 - San Diego Padres 3</td><td><span class="badge WIN">WIN</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--green)">+2.88u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-03-28</td><td style="font-weight:600">UNDER 8.5</td><td style="color:var(--muted);font-size:11px">New York Yankees @ San Francisco Giants</td><td><span class="tier-dot B"></span>B</td><td style="font-family:'DM Mono',monospace;font-size:11px">-108</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)">New York Yankees 3 - San Francisco Giants 1</td><td><span class="badge WIN">WIN</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--green)">+0.93u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-03-28</td><td style="font-weight:600">OVER 8.5</td><td style="color:var(--muted);font-size:11px">Kansas City Royals @ Atlanta Braves</td><td><span class="tier-dot A"></span>A</td><td style="font-family:'DM Mono',monospace;font-size:11px">-108</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)">Kansas City Royals 2 - Atlanta Braves 6</td><td><span class="badge LOSS">LOSS</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--red)">-1.5u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-03-28</td><td style="font-weight:600">OVER 9.0</td><td style="color:var(--muted);font-size:11px">Los Angeles Angels @ Houston Astros</td><td><span class="tier-dot B"></span>B</td><td style="font-family:'DM Mono',monospace;font-size:11px">-101</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)">Los Angeles Angels 9 - Houston Astros 11</td><td><span class="badge WIN">WIN</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--green)">+0.99u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-03-28</td><td style="font-weight:600">Pirates ML</td><td style="color:var(--muted);font-size:11px">Pittsburgh Pirates @ New York Mets</td><td><span class="tier-dot A"></span>A</td><td style="font-family:'DM Mono',monospace;font-size:11px">+149</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)">Pittsburgh Pirates 2 - New York Mets 4</td><td><span class="badge LOSS">LOSS</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--red)">-1.5u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-03-28</td><td style="font-weight:600">Red Sox ML</td><td style="color:var(--muted);font-size:11px">Boston Red Sox @ Cincinnati Reds</td><td><span class="tier-dot B"></span>B</td><td style="font-family:'DM Mono',monospace;font-size:11px">-143</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)">Boston Red Sox 5 - Cincinnati Reds 6</td><td><span class="badge LOSS">LOSS</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--red)">-1.0u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-03-28</td><td style="font-weight:600">UNDER 7.0</td><td style="color:var(--muted);font-size:11px">Texas Rangers @ Philadelphia Phillies</td><td><span class="tier-dot C"></span>C</td><td style="font-family:'DM Mono',monospace;font-size:11px">+100</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)">Texas Rangers 5 - Philadelphia Phillies 4</td><td><span class="badge LOSS">LOSS</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--red)">-0.5u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-03-28</td><td style="font-weight:600">UNDER 7.5</td><td style="color:var(--muted);font-size:11px">Minnesota Twins @ Baltimore Orioles</td><td><span class="tier-dot A"></span>A</td><td style="font-family:'DM Mono',monospace;font-size:11px">-108</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)">Minnesota Twins 4 - Baltimore Orioles 1</td><td><span class="badge WIN">WIN</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--green)">+1.39u</td></tr><tr><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px">2026-03-28</td><td style="font-weight:600">UNDER 9.0</td><td style="color:var(--muted);font-size:11px">Washington Nationals @ Chicago Cubs</td><td><span class="tier-dot B"></span>B</td><td style="font-family:'DM Mono',monospace;font-size:11px">-122</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></td><td style="font-size:11px;color:var(--muted)">Washington Nationals 2 - Chicago Cubs 10</td><td><span class="badge LOSS">LOSS</span></td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--red)">-1.0u</td></tr></tbody></table><footer>EV model &middot; Track CLV to measure long-term edge &middot; Paper trading until 50+ picks verified</footer>
+<script>
+// Live record settlement — updates W/L display when games go Final
+// Reads pick data embedded in the page and checks MLB API for final scores
+
+var PICK_DATA = [];
+
+function parsePicksFromPage() {
+    // Extract pick data from table rows
+    var rows = document.querySelectorAll("tbody tr");
+    rows.forEach(function(row, idx) {
+        var cells = row.querySelectorAll("td");
+        if (cells.length < 9) return;
+        var pick = cells[1] ? cells[1].textContent.trim() : "";
+        var game = cells[2] ? cells[2].textContent.trim() : "";
+        var tier = cells[3] ? cells[3].textContent.trim() : "";
+        var line = cells[4] ? cells[4].textContent.trim() : "";
+        var resultCell = cells[8];
+        var unitsCell = cells[9];
+        var resultSpan = resultCell ? resultCell.querySelector("span") : null;
+        if (resultSpan && resultSpan.textContent.trim() === "PENDING") {
+            PICK_DATA.push({
+                idx: idx,
+                pick: pick,
+                game: game,
+                tier: tier,
+                line: line,
+                resultSpan: resultSpan,
+                unitsCell: unitsCell,
+                row: row
+            });
+        }
+    });
+}
+
+function americanToDecimal(odds) {
+    odds = parseFloat(odds);
+    if (isNaN(odds)) return 1.909; // default -110
+    if (odds < 0) return 1 + (100 / Math.abs(odds));
+    return 1 + (odds / 100);
+}
+
+function calcUnitsResult(result, line, units) {
+    units = parseFloat(units) || 1.0;
+    if (result === "W") {
+        var dec = americanToDecimal(line);
+        return Math.round((units * (dec - 1)) * 100) / 100;
+    } else if (result === "L") {
+        return -units;
+    }
+    return 0;
+}
+
+function settlePick(pick, game, line, scores) {
+    // Parse game string "AWAY @ HOME"
+    var parts = game.split(" @ ");
+    if (parts.length !== 2) return null;
+    var away = parts[0].trim();
+    var home = parts[1].trim();
+    
+    // Find score
+    var score = null;
+    for (var key in scores) {
+        if (key.indexOf(away) >= 0 && key.indexOf(home) >= 0) {
+            score = scores[key];
+            break;
+        }
+    }
+    if (!score) return null;
+    
+    var awayScore = score.away_score;
+    var homeScore = score.home_score;
+    var total = awayScore + homeScore;
+    var pickUp = pick.toUpperCase();
+    
+    // Total OVER/UNDER
+    if (pickUp.indexOf("OVER") >= 0 || pickUp.indexOf("UNDER") >= 0) {
+        var lineMatch = pick.match(/[0-9.]+/);
+        if (!lineMatch) return null;
+        var lineNum = parseFloat(lineMatch[0]);
+        if (total > lineNum) return pickUp.indexOf("OVER") >= 0 ? "W" : "L";
+        if (total < lineNum) return pickUp.indexOf("UNDER") >= 0 ? "W" : "L";
+        return "P";
+    }
+    
+    // ML
+    if (pickUp.indexOf("ML") >= 0) {
+        var winner = homeScore > awayScore ? home : away;
+        for (var team of [away, home]) {
+            if (pickUp.indexOf(team.toUpperCase().split(" ").pop()) >= 0) {
+                return winner === team ? "W" : "L";
+            }
+        }
+    }
+    
+    // Run Line +1.5 / -1.5
+    if (pickUp.indexOf("+1.5") >= 0 || pickUp.indexOf("-1.5") >= 0) {
+        var spread = pickUp.indexOf("+1.5") >= 0 ? 1.5 : -1.5;
+        for (var team of [away, home]) {
+            if (pickUp.indexOf(team.toUpperCase().split(" ").pop()) >= 0) {
+                var teamScore = team === home ? homeScore : awayScore;
+                var oppScore = team === home ? awayScore : homeScore;
+                var adjusted = teamScore - oppScore + spread;
+                if (adjusted > 0) return "W";
+                if (adjusted < 0) return "L";
+                return "P";
+            }
+        }
+    }
+
+    // NRFI / YRFI — uses inning1 from linescore hydration
+    if (pickUp === "NRFI" || pickUp === "YRFI") {
+        if (!score.inning1) return null;
+        var inn1away = score.inning1.away || 0;
+        var inn1home = score.inning1.home || 0;
+        var firstInningRuns = inn1away + inn1home;
+        if (pickUp === "NRFI") return firstInningRuns === 0 ? "W" : "L";
+        if (pickUp === "YRFI") return firstInningRuns > 0 ? "W" : "L";
+    }
+
+    return null;
+}
+
+function updateRecordDisplay(scores) {
+    var wins = 0, losses = 0, pushes = 0, totalUnits = 0;
+
+    // First count already-settled picks from server (non-WATCH, non-PENDING)
+    document.querySelectorAll("tbody tr").forEach(function(row) {
+        var cells = row.querySelectorAll("td");
+        if (cells.length < 10) return;
+        var tier = cells[3] ? cells[3].textContent.trim() : "";
+        var resultSpan = cells[8] ? cells[8].querySelector("span") : null;
+        var unitsCell = cells[9];
+        if (!resultSpan) return;
+        var existingResult = resultSpan.textContent.trim();
+        if (existingResult !== "WIN" && existingResult !== "LOSS" && existingResult !== "PUSH") return;
+        if (tier === "WATCH") return; // WATCH picks don't count
+        var unitsText = unitsCell ? unitsCell.textContent.trim() : "0u";
+        var unitsVal = parseFloat(unitsText.replace("u","")) || 0;
+        if (existingResult === "WIN") { wins++; totalUnits += unitsVal; }
+        else if (existingResult === "LOSS") { losses++; totalUnits += unitsVal; }
+        else pushes++;
+    });
+
+    PICK_DATA.forEach(function(pd) {
+        var result = settlePick(pd.pick, pd.game, pd.line, scores);
+        if (!result) return;
+
+        var isWatch = pd.tier === "WATCH";
+        var units = isWatch ? 0 : parseFloat(pd.tier === "A" ? 1.5 : pd.tier === "MAX" ? 3.0 : pd.tier === "C" ? 0.5 : 1.0);
+        var unitsResult = isWatch ? 0 : calcUnitsResult(result, pd.line, units);
+
+        // Update result cell
+        var color = result === "W" ? "#1D9E75" : result === "L" ? "#A32D2D" : "#888";
+        pd.resultSpan.textContent = result === "W" ? "WIN" : result === "L" ? "LOSS" : "PUSH";
+        pd.resultSpan.style.background = color + "22";
+        pd.resultSpan.style.color = color;
+
+        // Update units cell
+        if (pd.unitsCell) {
+            pd.unitsCell.textContent = (unitsResult >= 0 ? "+" : "") + unitsResult + "u";
+            pd.unitsCell.style.color = color;
+        }
+
+        // Update score cell if available
+        var scoreCell = pd.row.querySelector("td:nth-child(8)");
+        if (scoreCell && scores[pd.game]) {
+            var s = scores[pd.game];
+            var parts = pd.game.split(" @ ");
+            scoreCell.textContent = parts[0] + " " + s.away_score + " - " + parts[1] + " " + s.home_score;
+        }
+
+        // Count (non-WATCH only, not already counted from server)
+        if (!isWatch) {
+            if (result === "W") { wins++; totalUnits += unitsResult; }
+            else if (result === "L") { losses++; totalUnits += unitsResult; }
+            else pushes++;
+        }
+
+        // Highlight row
+        pd.row.style.background = result === "W" ? "#f0fff8" : result === "L" ? "#fff0f0" : "";
+    });
+
+    // Update summary stats
+    var total = wins + losses + pushes;
+    if (total > 0) {
+        var wrEl = document.querySelector(".sn[data-stat=winrate]");
+        var wlEl = document.querySelector(".sn[data-stat=wl]");
+        var uEl  = document.querySelector(".sn[data-stat=units]");
+        if (wrEl) wrEl.textContent = Math.round(wins/total*100) + "%";
+        if (wlEl) wlEl.textContent = wins + "-" + losses;
+        if (uEl) {
+            uEl.textContent = (totalUnits >= 0 ? "+" : "") + Math.round(totalUnits*100)/100 + "u";
+            uEl.style.color = totalUnits >= 0 ? "#1D9E75" : "#A32D2D";
+        }
+    }
+    
+    // Update last refreshed
+    var lu = document.getElementById("live_update");
+    if (lu) lu.textContent = "Live results updated " + new Date().toLocaleTimeString("en-US", {timeZone:"America/New_York",hour:"numeric",minute:"2-digit"}) + " ET";
+}
+
+function fetchScoresForRecord() {
+    // Get unique dates from picks
+    var dates = new Set();
+    PICK_DATA.forEach(function(pd) {
+        // Extract date from row
+        var dateCell = pd.row.querySelector("td:first-child");
+        if (dateCell) dates.add(dateCell.textContent.trim());
+    });
+    
+    // Also always check today
+    dates.add(new Date().toLocaleDateString("en-CA", {timeZone:"America/New_York"}));
+    
+    var allScores = {};
+    var promises = [];
+    
+    dates.forEach(function(date) {
+        if (!date || date.length < 8) return;
+        var p = fetch("https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=" + date + "&hydrate=linescore,team")
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                (data.dates || []).forEach(function(d) {
+                    (d.games || []).forEach(function(g) {
+                        if (g.status.abstractGameState !== "Final") return;
+                        var away = g.teams.away.team.name;
+                        var home = g.teams.home.team.name;
+                        // Parse first inning from linescore
+                        var inning1 = null;
+                        var innings = (g.linescore && g.linescore.innings) ? g.linescore.innings : [];
+                        if (innings.length > 0) {
+                            inning1 = {
+                                away: innings[0].away ? (innings[0].away.runs || 0) : 0,
+                                home: innings[0].home ? (innings[0].home.runs || 0) : 0
+                            };
+                        }
+                        allScores[away + " @ " + home] = {
+                            away_score: g.teams.away.score || 0,
+                            home_score: g.teams.home.score || 0,
+                            inning1: inning1
+                        };
+                    });
+                });
+            }).catch(function() {});
+        promises.push(p);
+    });
+    
+    Promise.all(promises).then(function() {
+        if (Object.keys(allScores).length > 0) {
+            updateRecordDisplay(allScores);
+        }
+    });
+}
+
+// Initialize on page load
+document.addEventListener("DOMContentLoaded", function() {
+    parsePicksFromPage();
+    if (PICK_DATA.length > 0) {
+        fetchScoresForRecord();
+        // Refresh every 2 minutes
+        setInterval(fetchScoresForRecord, 120000);
+    }
+});
+</script>
+</body></html>
