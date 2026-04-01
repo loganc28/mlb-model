@@ -3233,9 +3233,10 @@ def main():
     # Seeded picks from record.json manual entry don't have these fields
     today_picks = [p for p in record.get("picks",[])
                    if p.get("date")==TODAY 
-                   and p.get("tier") in ("MAX","A","B","C","WATCH")
-                   and p.get("home_sp")]  # home_sp only present on AI-generated picks
+                   and p.get("tier") in ("MAX","A","B","C","WATCH")]
     picks_locked = len(today_picks) > 0
+    if picks_locked:
+        print("Picks already in record.json for "+TODAY+" ("+str(len(today_picks))+" picks). Locking.")
 
     # Check trigger conditions for regeneration
     def should_regenerate(locked_picks, new_game_data, old_odds):
