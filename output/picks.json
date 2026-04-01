@@ -1,155 +1,310 @@
 {
   "date": "2026-04-01",
-  "generated_at": "2026-04-01T12:14:00.000000Z",
+  "generated_at": "2026-04-01T20:10:35.766427Z",
   "stats_date": "2026-04-01",
   "ai_model": "Claude Sonnet 4.5",
   "total_games": 15,
-  "total_picks": 2,
+  "total_picks": 1,
   "picks": [
-    {
-      "game": "Pittsburgh Pirates @ Cincinnati Reds",
-      "venue": "Great American Ball Park",
-      "game_time": "2026-04-01T16:40:00Z",
-      "status": "Final",
-      "live_score": "Pittsburgh Pirates 8 - Cincinnati Reds 3",
-      "away_sp": "Paul Skenes",
-      "home_sp": "Andrew Abbott",
-      "hp_ump": "Rob Drake",
-      "bet_type": "Total OVER",
-      "pick": "OVER 7.5",
-      "line": "-108",
-      "tier": "B",
-      "units": 1.0,
-      "win_prob_pct": 56,
-      "implied_prob_pct": 51.9,
-      "ev_pct": 4.1,
-      "sp_analysis": "Skenes season ERA 1.97 K/9 10.38 but recent ERA 225.0, away split 67.5 ERA (SMALL SAMPLE - 1 start, data error likely). Abbott season ERA 2.87 K/9 8.07, recent ERA 0.0, home split 0.0 ERA (1 start). Both have unreliable recent metrics.",
-      "lineup_analysis": "Pirates OPS 0.666 (weak offense, below 0.700 threshold). Reds OPS 0.822 (above league average, strong lineup edge).",
-      "bullpen_note": "Pirates MODERATE fatigue: Hunter Barco. Reds SEVERE fatigue: 4 arms including Pierce Johnson, Brock Burke, Franco, Phillips.",
-      "injury_flags": "None",
-      "umpire_note": "Rob Drake 9.0 rpg, 22% K rate \u2014 slight OVER lean (+1 point)",
-      "park_note": "Great American Ball Park 1.12 runs factor, 1.18 HR factor \u2014 hitter friendly (+1 point)",
-      "weather_impact": "14.5 mph SSW blowing OUT to CF at 71F \u2014 meaningful OVER lean, ball carries well (+1 point)",
-      "key_edge": "Reds SEVERE bullpen fatigue (4 arms) + hitter-friendly park 1.12 runs factor + wind OUT 14.5 mph + umpire 9.0 rpg",
-      "rationale": "Reds bullpen exhausted with 4 fatigued arms creates late-inning vulnerability. Great American Ball Park is MLB's most hitter-friendly venue (1.12 runs, 1.18 HR). Wind blowing OUT at 14+ mph enhances fly ball carry. Umpire Drake runs 9.0 rpg. Reds strong .822 OPS lineup can exploit conditions. Pirates weak .666 OPS limits ML consideration but Reds fatigue keeps this competitive for scoring.",
-      "avoid_reason": "",
-      "flags": "Both SPs have SMALL SAMPLE. Skenes recent/away ERA data appears erroneous (225.0/67.5). Rain 20% possible."
-    },
     {
       "game": "Washington Nationals @ Philadelphia Phillies",
       "venue": "Citizens Bank Park",
       "game_time": "2026-04-01T17:05:00Z",
-      "status": "Final",
+      "status": "In Progress",
       "live_score": "Washington Nationals 5 - Philadelphia Phillies 3",
       "away_sp": "Cade Cavalli",
-      "home_sp": "Cristopher Sanchez",
+      "home_sp": "Cristopher S\u00e1nchez",
       "hp_ump": "Tripp Gibson",
-      "bet_type": "Run Line",
-      "pick": "Nationals +1.5",
-      "line": "+106",
-      "tier": "B",
-      "units": 1.0,
-      "win_prob_pct": 62,
-      "implied_prob_pct": 48.5,
-      "ev_pct": 10.0,
-      "sp_analysis": "Cavalli season ERA 4.25 K/9 7.47, recent ERA 5.62, away split 4.91 ERA (SMALL SAMPLE - 1 start). Sanchez season ERA 2.50 K/9 9.45, recent ERA 0.0, home split 0.0 ERA (1 start). SP edge favors Phillies by ~1.75 runs but both recent forms unreliable.",
-      "lineup_analysis": "Nationals OPS 0.845 (strong, above 0.750). Phillies OPS 0.812 (solid). Nationals have surprising lineup edge despite being road underdog.",
-      "bullpen_note": "Nationals SEVERE fatigue: 3 arms including Waldichuk, Littell, Lord. Phillies SEVERE fatigue: 5 arms including Duran, Banks, Alvarado, Bowlan, Mayza.",
+      "bet_type": "SKIP",
+      "pick": "SKIP",
+      "line": "N/A",
+      "tier": "SKIP",
+      "units": 0.0,
+      "win_prob_pct": 0,
+      "implied_prob_pct": 0,
+      "ev_pct": 0,
+      "sp_analysis": "S\u00e1nchez season ERA 2.50, K/9 9.45, home split 0.0 ERA (15.0 K/9), recent 0.81 ERA. Cavalli season 4.25 ERA, away split 4.91 ERA, recent 2.93 ERA. SMALL SAMPLE flags on both \u2014 recent form unreliable.",
+      "lineup_analysis": "Washington OPS 0.845, Philadelphia OPS 0.812. No relevant lineup data available.",
+      "bullpen_note": "SEVERE fatigue both sides: Washington 3 arms, Philadelphia 5 arms fatigued.",
       "injury_flags": "None",
-      "umpire_note": "Tripp Gibson 8.7 rpg \u2014 neutral",
-      "park_note": "Citizens Bank Park 1.06 runs factor, 1.12 HR factor \u2014 hitter friendly",
-      "weather_impact": "20.0 mph WSW crosswind \u2014 no directional scoring impact",
-      "key_edge": "Nationals +1.5 at +106 plus money with strong .845 OPS lineup \u2014 covers if they keep it close or win outright",
-      "rationale": "Phillies ML at -265 is toxic value. Nationals have superior lineup (.845 vs .812 OPS) and get +1.5 runs at plus money odds. Both bullpens severely fatigued neutralizes late-game advantage. Sanchez has SP edge but Nationals offense can keep this within 1 run. Run line price offers 13.5% EV \u2014 excellent value on a competitive underdog.",
-      "avoid_reason": "",
-      "flags": "Both SPs SMALL SAMPLE. Both teams SEVERE bullpen fatigue. Crosswind 20 mph."
+      "umpire_note": "Tripp Gibson 8.7 rpg, 23% K \u2014 neutral umpire.",
+      "park_note": "Citizens Bank Park 1.06 runs factor, 1.12 HR factor \u2014 hitter friendly.",
+      "weather_impact": "10.8 mph WNW \u2014 crosswind, temp 82F.",
+      "nrfi_analysis": "",
+      "key_edge": "Game already in progress \u2014 betting closed.",
+      "rationale": "",
+      "avoid_reason": "Status: In Progress. Game already started, live score 5-3. No bets allowed on games in progress per Rule 7.",
+      "flags": "Game In Progress"
+    },
+    {
+      "game": "Colorado Rockies @ Toronto Blue Jays",
+      "venue": "Rogers Centre",
+      "game_time": "2026-04-01T17:07:00Z",
+      "status": "In Progress",
+      "live_score": "Colorado Rockies 2 - Toronto Blue Jays 1",
+      "away_sp": "Kyle Freeland",
+      "home_sp": "Kevin Gausman",
+      "hp_ump": "Brian O'Nora",
+      "bet_type": "SKIP",
+      "pick": "SKIP",
+      "line": "N/A",
+      "tier": "SKIP",
+      "units": 0.0,
+      "win_prob_pct": 0,
+      "implied_prob_pct": 0,
+      "ev_pct": 0,
+      "sp_analysis": "Gausman season 3.59 ERA, K/9 8.81, home split 1.5 ERA (16.5 K/9), recent 0.75 ERA. Freeland season 4.98 ERA, away split 4.15 ERA, recent 2.97 ERA. SMALL SAMPLE flags on both.",
+      "lineup_analysis": "Colorado OPS 0.0 (no data), Toronto OPS 0.777. No meaningful lineup comparison.",
+      "bullpen_note": "SEVERE fatigue both sides: Colorado 3 arms, Toronto 5 arms fatigued.",
+      "injury_flags": "None",
+      "umpire_note": "Brian O'Nora 8.9 rpg, 22% K \u2014 neutral umpire.",
+      "park_note": "Rogers Centre 1.01 runs factor, 1.05 HR \u2014 dome neutral.",
+      "weather_impact": "Dome \u2014 weather irrelevant.",
+      "nrfi_analysis": "",
+      "key_edge": "Game already in progress \u2014 betting closed.",
+      "rationale": "",
+      "avoid_reason": "Status: In Progress. Game already started, live score 2-1. No bets allowed on games in progress per Rule 7.",
+      "flags": "Game In Progress"
+    },
+    {
+      "game": "New York Mets @ St. Louis Cardinals",
+      "venue": "Busch Stadium",
+      "game_time": "2026-04-01T17:15:00Z",
+      "status": "In Progress",
+      "live_score": "New York Mets 1 - St. Louis Cardinals 1",
+      "away_sp": "Freddy Peralta",
+      "home_sp": "Matthew Liberatore",
+      "hp_ump": "Nic Lentz",
+      "bet_type": "SKIP",
+      "pick": "SKIP",
+      "line": "N/A",
+      "tier": "SKIP",
+      "units": 0.0,
+      "win_prob_pct": 0,
+      "implied_prob_pct": 0,
+      "ev_pct": 0,
+      "sp_analysis": "Peralta season 2.70 ERA, K/9 10.42, recent 4.46 ERA (declining 1.76 runs). Liberatore season 4.21 ERA, home split 1.8 ERA, recent 1.64 ERA. SMALL SAMPLE flags on both.",
+      "lineup_analysis": "Mets OPS 0.0 (no data), Cardinals OPS 0.802. No meaningful lineup comparison.",
+      "bullpen_note": "Cardinals SEVERE fatigue (3 arms), Mets MODERATE fatigue (1 arm).",
+      "injury_flags": "None",
+      "umpire_note": "Nic Lentz 8.8 rpg \u2014 neutral (league average).",
+      "park_note": "Busch Stadium 0.97 runs factor, 0.92 HR \u2014 pitcher lean.",
+      "weather_impact": "17.0 mph E \u2014 crosswind, 61F, 100% rain chance.",
+      "nrfi_analysis": "",
+      "key_edge": "Game already in progress \u2014 betting closed.",
+      "rationale": "",
+      "avoid_reason": "Status: In Progress. Game already started, live score 1-1. No bets allowed on games in progress per Rule 7.",
+      "flags": "Game In Progress, Rain 100%"
+    },
+    {
+      "game": "Tampa Bay Rays @ Milwaukee Brewers",
+      "venue": "American Family Field",
+      "game_time": "2026-04-01T17:40:00Z",
+      "status": "In Progress",
+      "live_score": "Tampa Bay Rays 2 - Milwaukee Brewers 4",
+      "away_sp": "Drew Rasmussen",
+      "home_sp": "Jacob Misiorowski",
+      "hp_ump": "CB Bucknor",
+      "bet_type": "SKIP",
+      "pick": "SKIP",
+      "line": "N/A",
+      "tier": "SKIP",
+      "units": 0.0,
+      "win_prob_pct": 0,
+      "implied_prob_pct": 0,
+      "ev_pct": 0,
+      "sp_analysis": "Rasmussen season 2.76 ERA, away split 1.8 ERA, recent 1.8 ERA. Misiorowski season 4.36 ERA, home split 1.8 ERA, recent 2.45 ERA. SMALL SAMPLE flags on both.",
+      "lineup_analysis": "Tampa Bay OPS 0.671 (weak), Milwaukee OPS 0.0 (no data).",
+      "bullpen_note": "SEVERE fatigue both sides: Tampa 2 arms, Milwaukee 3 arms fatigued.",
+      "injury_flags": "None",
+      "umpire_note": "CB Bucknor 9.4 rpg, 20% K \u2014 high run umpire (+1 OVER lean).",
+      "park_note": "American Family Field 1.03 runs factor, 1.06 HR \u2014 dome, slight hitter lean.",
+      "weather_impact": "Dome \u2014 weather irrelevant.",
+      "nrfi_analysis": "",
+      "key_edge": "Game already in progress \u2014 betting closed.",
+      "rationale": "",
+      "avoid_reason": "Status: In Progress. Game already started, live score 2-4. No bets allowed on games in progress per Rule 7.",
+      "flags": "Game In Progress"
     },
     {
       "game": "Boston Red Sox @ Houston Astros",
       "venue": "Daikin Park",
       "game_time": "2026-04-01T18:10:00Z",
-      "status": "Final",
-      "live_score": "Boston Red Sox 2 - Houston Astros 9",
+      "status": "In Progress",
+      "live_score": "Boston Red Sox 2 - Houston Astros 6",
       "away_sp": "Garrett Crochet",
       "home_sp": "Mike Burrows",
       "hp_ump": "Bruce Dreckman",
-      "bet_type": "ML",
-      "pick": "Red Sox ML",
-      "line": "-145",
-      "tier": "WATCH",
-      "units": 0,
-      "win_prob_pct": 57,
-      "implied_prob_pct": 59.2,
-      "ev_pct": 2.8,
-      "sp_analysis": "Crochet season ERA 2.59 K/9 11.19, recent ERA 0.0, away split 0.0 ERA (1 start, elite). Burrows season ERA 3.94 K/9 9.09, recent ERA 8.65, home split 7.94 ERA (SMALL SAMPLE - 1 start, declining significantly).",
-      "lineup_analysis": "Red Sox OPS 0.859 (elite lineup, well above 0.750). Astros OPS 0.727 (above threshold but weaker). Red Sox have .132 OPS edge.",
-      "bullpen_note": "Red Sox SEVERE fatigue: 3 arms including Moran, Watson, Oviedo. Astros SEVERE fatigue: 2 arms including Bolton, Weiss.",
+      "bet_type": "SKIP",
+      "pick": "SKIP",
+      "line": "N/A",
+      "tier": "SKIP",
+      "units": 0.0,
+      "win_prob_pct": 0,
+      "implied_prob_pct": 0,
+      "ev_pct": 0,
+      "sp_analysis": "Crochet season 2.59 ERA, away split 0.0 ERA, recent 3.27 ERA. Burrows season 3.94 ERA, home split 7.94 ERA (vulnerable), recent 6.18 ERA. SMALL SAMPLE flags on both.",
+      "lineup_analysis": "Boston OPS 0.859 (strong), Houston OPS 0.727.",
+      "bullpen_note": "SEVERE fatigue both sides: Boston 3 arms, Houston 2 arms fatigued.",
       "injury_flags": "None",
-      "umpire_note": "Bruce Dreckman 8.9 rpg, neutral",
-      "park_note": "Daikin Park dome 0.98 runs factor, 1.02 HR factor \u2014 neutral",
-      "weather_impact": "Dome \u2014 weather irrelevant",
-      "key_edge": "",
-      "rationale": "EV 2.8% below minimum 3% threshold for ML. Tracking only.",
-      "avoid_reason": "EV 2.8% below minimum 3% threshold for ML",
-      "flags": "Both SPs SMALL SAMPLE. Both bullpens SEVERE fatigue."
+      "umpire_note": "Bruce Dreckman 8.9 rpg, 22% K \u2014 neutral umpire.",
+      "park_note": "Daikin Park 0.98 runs factor, 1.02 HR \u2014 dome neutral.",
+      "weather_impact": "Dome \u2014 weather irrelevant.",
+      "nrfi_analysis": "",
+      "key_edge": "Game already in progress \u2014 betting closed.",
+      "rationale": "",
+      "avoid_reason": "Status: In Progress. Game already started, live score 2-6. No bets allowed on games in progress per Rule 7.",
+      "flags": "Game In Progress"
+    },
+    {
+      "game": "Los Angeles Angels @ Chicago Cubs",
+      "venue": "Wrigley Field",
+      "game_time": "2026-04-01T18:20:00Z",
+      "status": "In Progress",
+      "live_score": "Los Angeles Angels 2 - Chicago Cubs 5",
+      "away_sp": "Yusei Kikuchi",
+      "home_sp": "Matthew Boyd",
+      "hp_ump": "David Rackley",
+      "bet_type": "SKIP",
+      "pick": "SKIP",
+      "line": "N/A",
+      "tier": "SKIP",
+      "units": 0.0,
+      "win_prob_pct": 0,
+      "implied_prob_pct": 0,
+      "ev_pct": 0,
+      "sp_analysis": "Boyd season 3.21 ERA, home split 14.73 ERA (VOLATILE), recent 7.5 ERA (declining 4.29 runs). Kikuchi season 3.99 ERA, away split 4.15 ERA, recent 6.85 ERA (declining 2.86 runs). SMALL SAMPLE flags on both.",
+      "lineup_analysis": "Angels OPS 0.0 (no data), Cubs OPS 0.739.",
+      "bullpen_note": "SEVERE fatigue both sides: Angels 3 arms, Cubs 3 arms fatigued.",
+      "injury_flags": "None",
+      "umpire_note": "David Rackley 8.5 rpg, 24% K \u2014 pitcher friendly (-1 UNDER lean).",
+      "park_note": "Wrigley Field 1.04 runs factor, 1.02 HR \u2014 wind-dependent.",
+      "weather_impact": "32.2 mph NE \u2014 crosswind, temp 38F (cold suppresses scoring).",
+      "nrfi_analysis": "",
+      "key_edge": "Game already in progress \u2014 betting closed.",
+      "rationale": "",
+      "avoid_reason": "Status: In Progress. Game already started, live score 2-5. No bets allowed on games in progress per Rule 7.",
+      "flags": "Game In Progress"
     },
     {
       "game": "Detroit Tigers @ Arizona Diamondbacks",
       "venue": "Chase Field",
       "game_time": "2026-04-01T19:40:00Z",
-      "status": "Final",
-      "live_score": "Detroit Tigers 3 - Arizona Diamondbacks 2",
+      "status": "In Progress",
+      "live_score": "Detroit Tigers 0 - Arizona Diamondbacks 1",
       "away_sp": "Tarik Skubal",
       "home_sp": "Zac Gallen",
       "hp_ump": "Adam Hamari",
-      "bet_type": "Run Line",
-      "pick": "Tigers -1.5",
-      "line": "+109",
-      "tier": "WATCH",
-      "units": 0,
-      "win_prob_pct": 55,
-      "implied_prob_pct": 47.8,
+      "bet_type": "SKIP",
+      "pick": "SKIP",
+      "line": "N/A",
+      "tier": "SKIP",
+      "units": 0.0,
+      "win_prob_pct": 0,
+      "implied_prob_pct": 0,
       "ev_pct": 0,
-      "sp_analysis": "Skubal 2.21 ERA / 11.12 K9 elite, away split 0.00 ERA (1 start shutout), recent 0.0 ERA. Gallen 4.83 ERA / 8.2 K9, recent 9.00 ERA disaster (SMALL SAMPLE). SP edge 2.62 ERA gap favors Skubal heavily.",
-      "lineup_analysis": "Tigers OPS 0.616 weak offense, Diamondbacks OPS 0.851 strong. OPS gap 0.235 favors Arizona sharply, contradicts Tigers Run Line pick.",
-      "bullpen_note": "Tigers SEVERE (Vest/Hurter/De Jesus fatigued). Diamondbacks SEVERE (Hoffmann/Ross). Both bullpens compromised.",
+      "sp_analysis": "Skubal season 2.21 ERA, K/9 11.12, away split 0.0 ERA, recent 1.29 ERA (elite). Gallen season 4.83 ERA, recent 6.0 ERA (declining 1.17 runs). SMALL SAMPLE flags on both.",
+      "lineup_analysis": "Detroit OPS 0.616 (weak), Arizona OPS 0.851 (strong).",
+      "bullpen_note": "SEVERE fatigue both sides: Detroit 3 arms, Arizona 2 arms fatigued.",
       "injury_flags": "None",
-      "umpire_note": "Adam Hamari 9.2 rpg, slight over lean",
-      "park_note": "Chase Field 1.02 runs / 1.04 HR. Dome, neutral conditions.",
-      "weather_impact": "Dome \u2014 weather irrelevant",
-      "key_edge": "",
-      "rationale": "Line validation failed \u2014 price inconsistent with run line direction. Tracking only.",
-      "avoid_reason": "Line validation failed \u2014 price inconsistent with run line direction",
-      "flags": "Tigers OPS 0.616 below 0.700 threshold. Gallen recent ERA has SMALL SAMPLE. Both teams SEVERE bullpen fatigue."
+      "umpire_note": "Adam Hamari 9.2 rpg, 21% K \u2014 slight OVER lean (+1 point).",
+      "park_note": "Chase Field 1.02 runs factor, 1.04 HR \u2014 dome neutral.",
+      "weather_impact": "Dome \u2014 weather irrelevant.",
+      "nrfi_analysis": "",
+      "key_edge": "Game already in progress \u2014 betting closed.",
+      "rationale": "",
+      "avoid_reason": "Status: In Progress. Game already started, live score 0-1. No bets allowed on games in progress per Rule 7.",
+      "flags": "Game In Progress"
+    },
+    {
+      "game": "San Francisco Giants @ San Diego Padres",
+      "venue": "Petco Park",
+      "game_time": "2026-04-01T20:10:00Z",
+      "status": "Warmup",
+      "live_score": "San Francisco Giants 0 - San Diego Padres 0",
+      "away_sp": "Adrian Houser",
+      "home_sp": "Nick Pivetta",
+      "hp_ump": "Ryan Additon",
+      "bet_type": "SKIP",
+      "pick": "SKIP",
+      "line": "-400",
+      "tier": "SKIP",
+      "units": 0,
+      "win_prob_pct": 80,
+      "implied_prob_pct": 56,
+      "ev_pct": 15.0,
+      "sp_analysis": "Pivetta season 2.87 ERA, K/9 9.44, home split 18.0 ERA (SMALL SAMPLE 1 start \u2014 unreliable). Houser season 3.31 ERA, away split 3.7 ERA, recent 4.5 ERA. SMALL SAMPLE flags make recent form unreliable, use season stats.",
+      "lineup_analysis": "Giants OPS 0.0 (no data), Padres OPS 0.719. Low offensive environment expected.",
+      "bullpen_note": "SEVERE fatigue both sides: Giants 2 arms, Padres 3 arms fatigued. Does not affect NRFI (1st inning only).",
+      "injury_flags": "None",
+      "umpire_note": "Ryan Additon 9.1 rpg, 22% K \u2014 slight OVER lean for full game, neutral for NRFI.",
+      "park_note": "Petco Park 0.88 runs factor, 0.82 HR \u2014 elite pitcher park (+1 NRFI point).",
+      "weather_impact": "26.3 mph W \u2014 crosswind, temp 71F.",
+      "nrfi_analysis": "NRFI prob 80.0%, YRFI prob 20.0%. Away SP NRFI score 1.058, Home SP NRFI score 1.284. Both pitchers have elite NRFI profiles. Pivetta K/9 9.44 (above 8.5), BB/9 2.48 (below 3.0). Houser K/9 6.62 (below threshold but still solid), BB/9 2.74 (acceptable). Petco Park factor 0.88 strongly supports NRFI. Model fair price -400 vs typical book -130 creates massive EV edge.",
+      "key_edge": "NRFI model probability 80% in elite pitcher park \u2014 24% EV vs typical -130 book price.",
+      "rationale": "NRFI model shows 80% probability with fair price -400. Petco Park's 0.88 runs factor is elite pitcher-friendly environment. Both SPs have strong NRFI scores (1.058 and 1.284). Early season with SMALL SAMPLE flags means season stats are most reliable, and both pitchers have sub-4.00 ERAs. Typical book offers NRFI around -130 for average games, creating 24% EV when our model shows -400 fair value.",
+      "avoid_reason": "ML odds -400.0 exceed -180 cap \u2014 negative EV at this juice",
+      "flags": "SMALL SAMPLE recent form both SPs"
     },
     {
       "game": "New York Yankees @ Seattle Mariners",
       "venue": "T-Mobile Park",
       "game_time": "2026-04-01T20:10:00Z",
-      "status": "Pre-Game",
+      "status": "Warmup",
       "live_score": "New York Yankees 0 - Seattle Mariners 0",
       "away_sp": "Cam Schlittler",
       "home_sp": "George Kirby",
       "hp_ump": "Lance Barrett",
-      "bet_type": "Total UNDER",
-      "pick": "UNDER 7.5",
-      "line": "+100",
-      "tier": "WATCH",
+      "bet_type": "SKIP",
+      "pick": "SKIP",
+      "line": "-400",
+      "tier": "SKIP",
       "units": 0,
-      "win_prob_pct": 59,
-      "implied_prob_pct": 50.0,
-      "ev_pct": 8.0,
-      "sp_analysis": "Schlittler 2.96 ERA / 10.36 K9 strong, away split 0.00 ERA (1 start shutout), recent 0.00 ERA. Kirby 4.21 ERA / 9.79 K9, home split 1.50 ERA elite, recent 1.50 ERA (SMALL SAMPLE). Home split shows Kirby dominant at T-Mobile.",
-      "lineup_analysis": "Yankees OPS 1.145 explosive offense, Mariners OPS 0.815 solid. Yankees OPS extremely high but SPs strong enough to contain.",
-      "bullpen_note": "Yankees MODERATE (Blackburn fatigued). Mariners MODERATE (Wilcox fatigued). Both bullpens relatively fresh, only 1 arm each fatigued.",
+      "win_prob_pct": 80,
+      "implied_prob_pct": 80,
+      "ev_pct": 0,
+      "sp_analysis": "Schlittler season 2.96 ERA/10.36 K9, away split 0.00 ERA/14.12 K9 in 1 start. Kirby season 4.21 ERA/9.79 K9, home split 1.50 ERA/9.00 K9 in 1 start. Both pitchers showing elite recent form but SMALL SAMPLE flags present.",
+      "lineup_analysis": "Yankees OPS 1.145 elite but early season inflated. Mariners OPS 0.815 moderate. No confirmed injuries.",
+      "bullpen_note": "Yankees MODERATE (Blackburn fatigued). Mariners MODERATE (Wilcox fatigued). Neutral fatigue.",
       "injury_flags": "None",
-      "umpire_note": "Lance Barrett 8.5 rpg, pitcher friendly",
-      "park_note": "T-Mobile 0.93 runs / 0.91 HR. Pitcher friendly environment.",
-      "weather_impact": "15.2 mph ESE \u2014 crosswind. 44F cold temp suppresses offense. 100% rain probability creates delay risk.",
+      "umpire_note": "Barrett 8.5 rpg, 24% K \u2014 pitcher friendly lean",
+      "park_note": "T-Mobile 0.93 runs factor, 0.91 HR factor \u2014 pitcher friendly",
+      "weather_impact": "6.9 mph SE \u2014 crosswind. 48F cold suppresses offense.",
+      "nrfi_analysis": "NRFI prob 80% vs YRFI 20%. Schlittler K/9 10.36, BB/9 3.82. Kirby K/9 9.79, BB/9 2.07. Park factor 0.93 pitcher friendly. Ump 8.5 rpg supports NRFI. Fair price -400 matches typical book pricing, minimal edge but high confidence setup.",
+      "key_edge": "80% NRFI probability with elite K rates (10.36/9.79), pitcher park (0.93), cold weather (48F), pitcher-friendly ump (8.5 rpg)",
+      "rationale": "Both starters show elite strikeout ability and recent dominance despite small samples. Pitcher-friendly park and cold weather suppress first inning scoring. Barrett's low 8.5 rpg adds confirmation. NRFI at fair value but meets 80% threshold for high-confidence recommendation.",
+      "avoid_reason": "ML odds -400.0 exceed -180 cap \u2014 negative EV at this juice",
+      "flags": "100% precip chance \u2014 monitor for delay. SMALL SAMPLE on both SPs."
+    },
+    {
+      "game": "Minnesota Twins @ Kansas City Royals",
+      "venue": "Kauffman Stadium",
+      "game_time": "2026-04-01T23:40:00Z",
+      "status": "Pre-Game",
+      "live_score": "Minnesota Twins 0 - Kansas City Royals 0",
+      "away_sp": "Joe Ryan",
+      "home_sp": "Noah Cameron",
+      "hp_ump": "Andy Fletcher",
+      "bet_type": "SKIP",
+      "pick": "SKIP",
+      "line": "N/A",
+      "tier": "SKIP",
+      "units": 0.0,
+      "win_prob_pct": 0,
+      "implied_prob_pct": 0,
+      "ev_pct": 0,
+      "sp_analysis": "Ryan season 3.42 ERA/10.21 K9, away split 0.00 ERA/12.35 K9 in 1 start. Cameron season 2.99 ERA/7.43 K9, home split 2.93 ERA/8.04 K9, recent 3.10 ERA but SMALL SAMPLE (3 starts).",
+      "lineup_analysis": "Twins OPS 0.827 vs Royals OPS 0.852 \u2014 minimal gap. No confirmed injuries.",
+      "bullpen_note": "Twins MODERATE (Funderburk fatigued). Royals FRESH \u2014 bullpen edge to KC.",
+      "injury_flags": "None",
+      "umpire_note": "Fletcher 8.8 rpg \u2014 league average neutral",
+      "park_note": "Kauffman 0.97 runs factor \u2014 neutral to slight pitcher lean",
+      "weather_impact": "20.8 mph ENE \u2014 crosswind. 57F moderate temps.",
+      "nrfi_analysis": "",
       "key_edge": "",
-      "rationale": "Downgraded: total pick cap (max 3 totals per slate). Both starters performing well \u2014 Schlittler 0.00 recent away ERA, Kirby 1.50 home split. T-Mobile pitcher-friendly park (0.93 runs factor). Cold 44F temperature suppresses scoring.",
-      "avoid_reason": "Downgraded: total pick cap (max 3 totals per slate)",
-      "flags": "SMALL SAMPLE on Kirby recent form (1 start). 100% rain probability creates delay/cancellation risk."
+      "rationale": "",
+      "avoid_reason": "100% precip chance creates postponement risk. SP ERA gap only 0.43 \u2014 insufficient edge. Both lineups weak OPS below 0.860. SMALL SAMPLE flags on both pitchers make recent form unreliable. Total at 9.5 has no directional edge with crosswind and neutral umpire. ML at -160 overpriced for marginal SP quality difference. No qualifying bet meets EV threshold.",
+      "flags": "100% precip chance \u2014 high postponement risk. SMALL SAMPLE on both SPs."
     },
     {
       "game": "Cleveland Guardians @ Los Angeles Dodgers",
@@ -160,25 +315,4024 @@
       "away_sp": "Gavin Williams",
       "home_sp": "Yoshinobu Yamamoto",
       "hp_ump": "TBD",
-      "bet_type": "Total UNDER",
-      "pick": "UNDER 8.0",
-      "line": "-107",
-      "tier": "WATCH",
-      "units": 0,
+      "bet_type": "Total OVER",
+      "pick": "OVER 8.0",
+      "line": "100",
+      "tier": "B",
+      "units": 1.0,
       "win_prob_pct": 54,
-      "implied_prob_pct": 51.7,
-      "ev_pct": 2.0,
-      "sp_analysis": "Williams 3.06 ERA / 9.31 K9 solid, away split 5.40 ERA concerning, recent 5.40 ERA (SMALL SAMPLE). Yamamoto 2.49 ERA / 10.44 K9 elite, home split 3.00 ERA, recent 3.00 ERA (SMALL SAMPLE). Yamamoto clearly stronger SP.",
-      "lineup_analysis": "Guardians OPS 0.833 solid, Dodgers OPS 0.869 strong. Both lineups capable but Yamamoto elite K rate (10.44) can contain them.",
-      "bullpen_note": "Guardians SEVERE (Festa/Allard/Smith/Sabrowski \u2014 4 arms fatigued). Dodgers SEVERE (Diaz/Wrobleski \u2014 2 arms). Guardians bullpen more compromised but both SEVERE creates OVER lean late.",
+      "implied_prob_pct": 50,
+      "ev_pct": 4,
+      "sp_analysis": "Williams season 3.06 ERA/9.31 K9, away split 5.40 ERA/12.60 K9 in 1 start \u2014 DECLINING on road. Yamamoto season 2.49 ERA/10.44 K9, home split 3.00 ERA/9.00 K9 in 1 start. Williams away split shows 2.34 ERA inflation from season mark.",
+      "lineup_analysis": "Guardians OPS 0.833 vs Dodgers OPS 0.869 \u2014 both above league average. No confirmed injuries.",
+      "bullpen_note": "Guardians SEVERE (4 arms: Festa, Allard, Smith, Sabrowski fatigued). Dodgers SEVERE (2 arms: D\u00edaz, Wrobleski fatigued). Both bullpens compromised heavily favors OVER.",
       "injury_flags": "None",
-      "umpire_note": "TBD umpire, using league average 8.8 rpg, neutral",
-      "park_note": "Dodger Stadium 0.97 runs / 0.95 HR. Pitcher lean park.",
-      "weather_impact": "5.1 mph W \u2014 crosswind. 58F moderate temp.",
+      "umpire_note": "TBD \u2014 using 8.8 league average, neutral",
+      "park_note": "Dodger Stadium 0.97 runs factor \u2014 slight pitcher lean but close to neutral",
+      "weather_impact": "25.1 mph WSW \u2014 crosswind. 69F warm temps support offense.",
+      "nrfi_analysis": "",
+      "key_edge": "Both bullpens SEVERE fatigue (6 combined arms) with Williams showing 5.40 road ERA vs 3.06 season ERA",
+      "rationale": "Williams' road split (5.40 ERA) significantly worse than season ERA creates SP vulnerability. Both teams facing SEVERE bullpen fatigue (6 combined fatigued arms) heavily supports late-inning scoring. Warm 69F temps aid offense despite neutral park factor. Plus money OVER at 100 provides fair value with dual bullpen fatigue and Williams road decline.",
+      "avoid_reason": "",
+      "flags": "SMALL SAMPLE on both SPs. Umpire TBD \u2014 monitor assignment."
+    },
+    {
+      "game": "Athletics @ Atlanta Braves",
+      "venue": "Truist Park",
+      "game_time": "2026-04-01T16:15:00Z",
+      "status": "Final",
+      "live_score": "Athletics 1 - Atlanta Braves 5",
+      "away_sp": "Luis Severino",
+      "home_sp": "Chris Sale",
+      "hp_ump": "Shane Livensparger",
+      "bet_type": "SKIP",
+      "pick": "SKIP",
+      "line": "N/A",
+      "tier": "SKIP",
+      "units": 0,
+      "win_prob_pct": 0,
+      "implied_prob_pct": 0,
+      "ev_pct": 0,
+      "sp_analysis": "",
+      "lineup_analysis": "",
+      "bullpen_note": "",
+      "injury_flags": "None",
+      "umpire_note": "",
+      "park_note": "",
+      "weather_impact": "",
       "key_edge": "",
-      "rationale": "EV 2.0% below minimum 4% threshold for Total UNDER. Tracking only.",
-      "avoid_reason": "EV 2.0% below minimum 4% threshold for Total UNDER",
-      "flags": "SMALL SAMPLE on both SPs recent form. Both bullpens SEVERE fatigue. Dodgers ML at -255 too expensive to bet."
+      "rationale": "",
+      "avoid_reason": "No odds data available",
+      "flags": "",
+      "no_display": true
+    },
+    {
+      "game": "Texas Rangers @ Baltimore Orioles",
+      "venue": "Oriole Park at Camden Yards",
+      "game_time": "2026-04-01T16:35:00Z",
+      "status": "Final",
+      "live_score": "Texas Rangers 3 - Baltimore Orioles 8",
+      "away_sp": "Nathan Eovaldi",
+      "home_sp": "Trevor Rogers",
+      "hp_ump": "Manny Gonzalez",
+      "bet_type": "SKIP",
+      "pick": "SKIP",
+      "line": "N/A",
+      "tier": "SKIP",
+      "units": 0,
+      "win_prob_pct": 0,
+      "implied_prob_pct": 0,
+      "ev_pct": 0,
+      "sp_analysis": "",
+      "lineup_analysis": "",
+      "bullpen_note": "",
+      "injury_flags": "None",
+      "umpire_note": "",
+      "park_note": "",
+      "weather_impact": "",
+      "key_edge": "",
+      "rationale": "",
+      "avoid_reason": "No odds data available",
+      "flags": "",
+      "no_display": true
+    },
+    {
+      "game": "Pittsburgh Pirates @ Cincinnati Reds",
+      "venue": "Great American Ball Park",
+      "game_time": "2026-04-01T16:40:00Z",
+      "status": "Final",
+      "live_score": "Pittsburgh Pirates 8 - Cincinnati Reds 3",
+      "away_sp": "Paul Skenes",
+      "home_sp": "Andrew Abbott",
+      "hp_ump": "Rob Drake",
+      "bet_type": "SKIP",
+      "pick": "SKIP",
+      "line": "N/A",
+      "tier": "SKIP",
+      "units": 0,
+      "win_prob_pct": 0,
+      "implied_prob_pct": 0,
+      "ev_pct": 0,
+      "sp_analysis": "",
+      "lineup_analysis": "",
+      "bullpen_note": "",
+      "injury_flags": "None",
+      "umpire_note": "",
+      "park_note": "",
+      "weather_impact": "",
+      "key_edge": "",
+      "rationale": "",
+      "avoid_reason": "No odds data available",
+      "flags": "",
+      "no_display": true
+    },
+    {
+      "game": "Chicago White Sox @ Miami Marlins",
+      "venue": "loanDepot park",
+      "game_time": "2026-04-01T17:10:00Z",
+      "status": "Final",
+      "live_score": "Chicago White Sox 0 - Miami Marlins 10",
+      "away_sp": "Shane Smith",
+      "home_sp": "Sandy Alcantara",
+      "hp_ump": "Mike Muchlinski",
+      "bet_type": "SKIP",
+      "pick": "SKIP",
+      "line": "N/A",
+      "tier": "SKIP",
+      "units": 0,
+      "win_prob_pct": 0,
+      "implied_prob_pct": 0,
+      "ev_pct": 0,
+      "sp_analysis": "",
+      "lineup_analysis": "",
+      "bullpen_note": "",
+      "injury_flags": "None",
+      "umpire_note": "",
+      "park_note": "",
+      "weather_impact": "",
+      "key_edge": "",
+      "rationale": "",
+      "avoid_reason": "No odds data available",
+      "flags": "",
+      "no_display": true
+    }
+  ],
+  "raw_games_data": [
+    {
+      "game_pk": 824940,
+      "home": "Atlanta Braves",
+      "away": "Athletics",
+      "home_id": 144,
+      "away_id": 133,
+      "game_time": "2026-04-01T16:15:00Z",
+      "home_sp": "Chris Sale",
+      "away_sp": "Luis Severino",
+      "venue": "Truist Park",
+      "status": "Final",
+      "live_score": "Athletics 1 - Atlanta Braves 5",
+      "hp_ump": "Shane Livensparger",
+      "odds": {},
+      "weather": {
+        "temp_f": 82,
+        "wind_mph": 19.5,
+        "wind_dir": "SSW",
+        "precip_pct": 0,
+        "wind_impact": "19.5 mph SSW \u2014 blowing OUT to CF (OVER lean)"
+      },
+      "park_factor": {
+        "runs": 1.02,
+        "hr": 1.04,
+        "note": "Neutral"
+      },
+      "ump_stats": {
+        "name": "Shane Livensparger",
+        "rpg": 8.8,
+        "k_pct": 0.22,
+        "note": "No data \u2014 using league average"
+      },
+      "home_sp_stats": {
+        "player_id": 519242,
+        "season": 2025,
+        "gs": 20,
+        "ip": 125.2,
+        "era": 2.58,
+        "whip": 1.07,
+        "k9": 11.86,
+        "bb9": 2.3,
+        "gs_2026": 2,
+        "era_2026": 0.75,
+        "note": "Primarily 2025 (2 2026 starts)",
+        "recent_form": {
+          "starts": 2,
+          "era_last3": 0.75,
+          "k9_last3": 6.75,
+          "bb9_last3": 2.25,
+          "ip_per_start": 6.0
+        },
+        "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
+        "splits": {
+          "home_era": 0.75,
+          "home_k9": 6.75
+        },
+        "relevant_split": "Home ERA: 0.75 K/9: 6.75"
+      },
+      "away_sp_stats": {
+        "player_id": 622663,
+        "season": 2025,
+        "gs": 29,
+        "ip": 162.2,
+        "era": 4.54,
+        "whip": 1.3,
+        "k9": 6.88,
+        "bb9": 2.77,
+        "gs_2026": 2,
+        "era_2026": 6.48,
+        "note": "Primarily 2025 (2 2026 starts)",
+        "recent_form": {
+          "starts": 2,
+          "era_last3": 6.67,
+          "k9_last3": 11.11,
+          "bb9_last3": 8.89,
+          "ip_per_start": 4.0
+        },
+        "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
+        "splits": {
+          "away_era": 6.48,
+          "away_k9": 11.11
+        },
+        "relevant_split": "Away ERA: 6.48 K/9: 11.11"
+      },
+      "home_team_pitching": {
+        "season": 2026,
+        "team_era": 0.0,
+        "team_whip": 1.0,
+        "team_k9": 7.5,
+        "note": "2026 YTD"
+      },
+      "away_team_pitching": {
+        "season": 2026,
+        "team_era": 0.0,
+        "team_whip": 1.2,
+        "team_k9": 3.6,
+        "note": "2026 YTD"
+      },
+      "home_team_batting": {
+        "season": 2025,
+        "games_played": 95,
+        "ops": 0.935,
+        "avg": 0.29,
+        "obp": 0.417,
+        "slg": 0.518,
+        "runs_per_game": 0.78,
+        "note": "2025 full season"
+      },
+      "away_team_batting": {
+        "season": 2025,
+        "games_played": 117,
+        "ops": 1.002,
+        "avg": 0.29,
+        "obp": 0.383,
+        "slg": 0.619,
+        "runs_per_game": 0.77,
+        "note": "2025 full season"
+      },
+      "home_lineup": {},
+      "away_lineup": {},
+      "home_platoon": {},
+      "away_platoon": {},
+      "home_bullpen_fatigue": {
+        "recent_usage": [
+          {
+            "name": "Joel Payamps",
+            "pitches": 14,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Mart\u00edn P\u00e9rez",
+            "pitches": 47,
+            "ip": 4.1,
+            "days_ago": 1
+          },
+          {
+            "name": "Robert Suarez",
+            "pitches": 18,
+            "ip": 1.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Aaron Bummer",
+            "pitches": 13,
+            "ip": 1.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Raisel Iglesias",
+            "pitches": 8,
+            "ip": 1.0,
+            "days_ago": 2
+          }
+        ],
+        "high_usage_count": 1,
+        "fatigued_arms": [
+          "Mart\u00edn P\u00e9rez"
+        ],
+        "fatigue_level": "MODERATE"
+      },
+      "away_bullpen_fatigue": {
+        "recent_usage": [
+          {
+            "name": "Justin Sterner",
+            "pitches": 28,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Scott Barlow",
+            "pitches": 10,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Hogan Harris",
+            "pitches": 23,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Mark Leiter Jr.",
+            "pitches": 13,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Justin Sterner",
+            "pitches": 11,
+            "ip": 1.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Michael Kelly",
+            "pitches": 15,
+            "ip": 1.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Elvis Alvarado",
+            "pitches": 16,
+            "ip": 1.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Mark Leiter Jr.",
+            "pitches": 8,
+            "ip": 1.0,
+            "days_ago": 2
+          }
+        ],
+        "high_usage_count": 2,
+        "fatigued_arms": [
+          "Justin Sterner",
+          "Hogan Harris"
+        ],
+        "fatigue_level": "SEVERE"
+      },
+      "home_injuries": [],
+      "away_injuries": [],
+      "home_team_splits": {
+        "home": {
+          "ops": 0.721,
+          "runs_per_game": 4.0,
+          "games": 6
+        }
+      },
+      "away_team_splits": {
+        "away": {
+          "ops": 0.527,
+          "runs_per_game": 2.83,
+          "games": 6
+        }
+      },
+      "home_streak": {},
+      "away_streak": {}
+    },
+    {
+      "game_pk": 824860,
+      "home": "Baltimore Orioles",
+      "away": "Texas Rangers",
+      "home_id": 110,
+      "away_id": 140,
+      "game_time": "2026-04-01T16:35:00Z",
+      "home_sp": "Trevor Rogers",
+      "away_sp": "Nathan Eovaldi",
+      "venue": "Oriole Park at Camden Yards",
+      "status": "Final",
+      "live_score": "Texas Rangers 3 - Baltimore Orioles 8",
+      "hp_ump": "Manny Gonzalez",
+      "odds": {},
+      "weather": {
+        "temp_f": 87,
+        "wind_mph": 12.7,
+        "wind_dir": "WSW",
+        "precip_pct": 0,
+        "wind_impact": "12.7 mph WSW \u2014 blowing OUT to CF (OVER lean)"
+      },
+      "park_factor": {
+        "runs": 1.0,
+        "hr": 1.0,
+        "note": "No park data \u2014 using neutral"
+      },
+      "ump_stats": {
+        "rpg": 9.1,
+        "k_pct": 0.21,
+        "bb_pct": 0.09,
+        "note": "Slight over lean",
+        "name": "Manny Gonzalez"
+      },
+      "home_sp_stats": {
+        "player_id": 669432,
+        "season": 2025,
+        "gs": 18,
+        "ip": 109.2,
+        "era": 1.81,
+        "whip": 0.9,
+        "k9": 8.49,
+        "bb9": 2.39,
+        "gs_2026": 2,
+        "era_2026": 1.38,
+        "note": "Primarily 2025 (2 2026 starts)",
+        "recent_form": {
+          "starts": 2,
+          "era_last3": 1.38,
+          "k9_last3": 5.54,
+          "bb9_last3": 3.46,
+          "ip_per_start": 6.5
+        },
+        "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
+        "splits": {
+          "home_era": 1.38,
+          "home_k9": 5.54
+        },
+        "relevant_split": "Home ERA: 1.38 K/9: 5.54"
+      },
+      "away_sp_stats": {
+        "player_id": 543135,
+        "season": 2025,
+        "gs": 22,
+        "ip": 130.0,
+        "era": 1.73,
+        "whip": 0.85,
+        "k9": 8.93,
+        "bb9": 1.45,
+        "gs_2026": 2,
+        "era_2026": 11.42,
+        "note": "Primarily 2025 (2 2026 starts)",
+        "recent_form": {
+          "starts": 2,
+          "era_last3": 12.07,
+          "k9_last3": 13.17,
+          "bb9_last3": 3.29,
+          "ip_per_start": 4.1
+        },
+        "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
+        "splits": {
+          "away_era": 11.42,
+          "away_k9": 13.17
+        },
+        "relevant_split": "Away ERA: 11.42 K/9: 13.17"
+      },
+      "home_team_pitching": {
+        "season": 2026,
+        "team_era": 0.0,
+        "team_whip": 1.0,
+        "team_k9": 18.0,
+        "note": "2026 YTD"
+      },
+      "away_team_pitching": {
+        "season": 2026,
+        "team_era": 0.0,
+        "team_whip": 1.13,
+        "team_k9": 12.27,
+        "note": "2026 YTD"
+      },
+      "home_team_batting": {},
+      "away_team_batting": {},
+      "home_lineup": {},
+      "away_lineup": {},
+      "home_platoon": {},
+      "away_platoon": {},
+      "home_bullpen_fatigue": {
+        "recent_usage": [
+          {
+            "name": "Yaramil Hiraldo",
+            "pitches": 24,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Anthony Nunez",
+            "pitches": 21,
+            "ip": 2.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Grant Wolfram",
+            "pitches": 23,
+            "ip": 1.1,
+            "days_ago": 1
+          },
+          {
+            "name": "Yennier Cano",
+            "pitches": 9,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Tyler Wells",
+            "pitches": 26,
+            "ip": 1.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Rico Garcia",
+            "pitches": 21,
+            "ip": 2.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Dietrich Enns",
+            "pitches": 34,
+            "ip": 1.2,
+            "days_ago": 2
+          }
+        ],
+        "high_usage_count": 6,
+        "fatigued_arms": [
+          "Yaramil Hiraldo",
+          "Anthony Nunez",
+          "Grant Wolfram",
+          "Tyler Wells",
+          "Rico Garcia",
+          "Dietrich Enns"
+        ],
+        "fatigue_level": "SEVERE"
+      },
+      "away_bullpen_fatigue": {
+        "recent_usage": [
+          {
+            "name": "Robert Garcia",
+            "pitches": 15,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Jakob Junis",
+            "pitches": 15,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Cole Winn",
+            "pitches": 14,
+            "ip": 1.1,
+            "days_ago": 1
+          },
+          {
+            "name": "Chris Martin",
+            "pitches": 19,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Tyler Alexander",
+            "pitches": 10,
+            "ip": 1.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Jalen Beeks",
+            "pitches": 13,
+            "ip": 1.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Jakob Junis",
+            "pitches": 8,
+            "ip": 1.0,
+            "days_ago": 2
+          }
+        ],
+        "high_usage_count": 0,
+        "fatigued_arms": [],
+        "fatigue_level": "FRESH"
+      },
+      "home_injuries": [],
+      "away_injuries": [],
+      "home_team_splits": {
+        "home": {
+          "ops": 0.715,
+          "runs_per_game": 4.33,
+          "games": 6
+        }
+      },
+      "away_team_splits": {
+        "away": {
+          "ops": 0.738,
+          "runs_per_game": 5.33,
+          "games": 6
+        }
+      },
+      "home_streak": {},
+      "away_streak": {}
+    },
+    {
+      "game_pk": 824536,
+      "home": "Cincinnati Reds",
+      "away": "Pittsburgh Pirates",
+      "home_id": 113,
+      "away_id": 134,
+      "game_time": "2026-04-01T16:40:00Z",
+      "home_sp": "Andrew Abbott",
+      "away_sp": "Paul Skenes",
+      "venue": "Great American Ball Park",
+      "status": "Final",
+      "live_score": "Pittsburgh Pirates 8 - Cincinnati Reds 3",
+      "hp_ump": "Rob Drake",
+      "odds": {},
+      "weather": {
+        "temp_f": 72,
+        "wind_mph": 17.5,
+        "wind_dir": "WNW",
+        "precip_pct": 100,
+        "wind_impact": "17.5 mph WNW \u2014 crosswind"
+      },
+      "park_factor": {
+        "runs": 1.12,
+        "hr": 1.18,
+        "note": "Hitter friendly"
+      },
+      "ump_stats": {
+        "rpg": 9.0,
+        "k_pct": 0.22,
+        "bb_pct": 0.09,
+        "note": "Neutral",
+        "name": "Rob Drake"
+      },
+      "home_sp_stats": {
+        "player_id": 671096,
+        "season": 2025,
+        "gs": 29,
+        "ip": 166.1,
+        "era": 2.87,
+        "whip": 1.15,
+        "k9": 8.07,
+        "bb9": 2.33,
+        "gs_2026": 2,
+        "era_2026": 3.09,
+        "note": "Primarily 2025 (2 2026 starts)",
+        "recent_form": {
+          "starts": 2,
+          "era_last3": 3.21,
+          "k9_last3": 7.23,
+          "bb9_last3": 3.21,
+          "ip_per_start": 5.6
+        },
+        "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
+        "splits": {
+          "home_era": 3.09,
+          "home_k9": 7.23
+        },
+        "relevant_split": "Home ERA: 3.09 K/9: 7.23"
+      },
+      "away_sp_stats": {
+        "player_id": 694973,
+        "season": 2025,
+        "gs": 32,
+        "ip": 187.2,
+        "era": 1.97,
+        "whip": 0.95,
+        "k9": 10.38,
+        "bb9": 2.02,
+        "gs_2026": 2,
+        "era_2026": 9.53,
+        "note": "Primarily 2025 (2 2026 starts)",
+        "recent_form": {
+          "starts": 2,
+          "era_last3": 10.38,
+          "k9_last3": 10.38,
+          "bb9_last3": 6.92,
+          "ip_per_start": 2.6
+        },
+        "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
+        "splits": {
+          "away_era": 9.53,
+          "away_k9": 10.38
+        },
+        "relevant_split": "Away ERA: 9.53 K/9: 10.38"
+      },
+      "home_team_pitching": {
+        "season": 2026,
+        "team_era": 0.0,
+        "team_whip": 1.8,
+        "team_k9": 0.0,
+        "note": "2026 YTD"
+      },
+      "away_team_pitching": {
+        "season": 2026,
+        "team_era": 0.0,
+        "team_whip": 1.38,
+        "team_k9": 13.17,
+        "note": "2026 YTD"
+      },
+      "home_team_batting": {
+        "season": 2025,
+        "games_played": 94,
+        "ops": 0.822,
+        "avg": 0.318,
+        "obp": 0.352,
+        "slg": 0.47,
+        "runs_per_game": 0.38,
+        "note": "2025 full season"
+      },
+      "away_team_batting": {
+        "season": 2025,
+        "games_played": 3,
+        "ops": 0.666,
+        "avg": 0.333,
+        "obp": 0.333,
+        "slg": 0.333,
+        "runs_per_game": 0.33,
+        "note": "2025 full season"
+      },
+      "home_lineup": {},
+      "away_lineup": {},
+      "home_platoon": {},
+      "away_platoon": {},
+      "home_bullpen_fatigue": {
+        "recent_usage": [
+          {
+            "name": "Pierce Johnson",
+            "pitches": 20,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Sam Moll",
+            "pitches": 15,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Brock Burke",
+            "pitches": 20,
+            "ip": 2.1,
+            "days_ago": 1
+          },
+          {
+            "name": "Jose Franco",
+            "pitches": 35,
+            "ip": 1.2,
+            "days_ago": 2
+          },
+          {
+            "name": "Connor Phillips",
+            "pitches": 20,
+            "ip": 1.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Graham Ashcraft",
+            "pitches": 18,
+            "ip": 1.1,
+            "days_ago": 2
+          }
+        ],
+        "high_usage_count": 4,
+        "fatigued_arms": [
+          "Pierce Johnson",
+          "Brock Burke",
+          "Jose Franco",
+          "Connor Phillips"
+        ],
+        "fatigue_level": "SEVERE"
+      },
+      "away_bullpen_fatigue": {
+        "recent_usage": [
+          {
+            "name": "Gregory Soto",
+            "pitches": 17,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Yohan Ram\u00edrez",
+            "pitches": 10,
+            "ip": 0.2,
+            "days_ago": 1
+          },
+          {
+            "name": "Dennis Santana",
+            "pitches": 17,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Hunter Barco",
+            "pitches": 47,
+            "ip": 2.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Isaac Mattson",
+            "pitches": 15,
+            "ip": 1.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Justin Lawrence",
+            "pitches": 16,
+            "ip": 1.0,
+            "days_ago": 2
+          }
+        ],
+        "high_usage_count": 1,
+        "fatigued_arms": [
+          "Hunter Barco"
+        ],
+        "fatigue_level": "MODERATE"
+      },
+      "home_injuries": [],
+      "away_injuries": [],
+      "home_team_splits": {
+        "home": {
+          "ops": 0.614,
+          "runs_per_game": 2.83,
+          "games": 6
+        }
+      },
+      "away_team_splits": {
+        "away": {
+          "ops": 0.714,
+          "runs_per_game": 4.83,
+          "games": 6
+        }
+      },
+      "home_streak": {},
+      "away_streak": {}
+    },
+    {
+      "game_pk": 823483,
+      "home": "Philadelphia Phillies",
+      "away": "Washington Nationals",
+      "home_id": 143,
+      "away_id": 120,
+      "game_time": "2026-04-01T17:05:00Z",
+      "home_sp": "Cristopher S\u00e1nchez",
+      "away_sp": "Cade Cavalli",
+      "venue": "Citizens Bank Park",
+      "status": "In Progress",
+      "live_score": "Washington Nationals 5 - Philadelphia Phillies 3",
+      "hp_ump": "Tripp Gibson",
+      "odds": {
+        "moneyline": {
+          "Philadelphia Phillies": 450,
+          "Washington Nationals": -488
+        },
+        "total": {
+          "over": 230,
+          "under": -200,
+          "line": "8.5"
+        },
+        "runline": {
+          "Philadelphia Phillies": {
+            "price": 265,
+            "point": 1.5
+          },
+          "Washington Nationals": {
+            "price": -220,
+            "point": -1.5
+          }
+        }
+      },
+      "weather": {
+        "temp_f": 82,
+        "wind_mph": 10.8,
+        "wind_dir": "WNW",
+        "precip_pct": 0,
+        "wind_impact": "10.8 mph WNW \u2014 crosswind"
+      },
+      "park_factor": {
+        "runs": 1.06,
+        "hr": 1.12,
+        "note": "Hitter friendly"
+      },
+      "ump_stats": {
+        "rpg": 8.7,
+        "k_pct": 0.23,
+        "bb_pct": 0.08,
+        "note": "Neutral",
+        "name": "Tripp Gibson"
+      },
+      "home_sp_stats": {
+        "player_id": 650911,
+        "season": 2025,
+        "gs": 32,
+        "ip": 202.0,
+        "era": 2.5,
+        "whip": 1.06,
+        "k9": 9.45,
+        "bb9": 1.96,
+        "gs_2026": 2,
+        "era_2026": 0.79,
+        "note": "Primarily 2025 (2 2026 starts)",
+        "recent_form": {
+          "starts": 2,
+          "era_last3": 0.81,
+          "k9_last3": 13.78,
+          "bb9_last3": 3.24,
+          "ip_per_start": 5.5
+        },
+        "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
+        "splits": {
+          "home_era": 0.0,
+          "home_k9": 15.0
+        },
+        "relevant_split": "Home ERA: 0.0 K/9: 15.0"
+      },
+      "away_sp_stats": {
+        "player_id": 676917,
+        "season": 2025,
+        "gs": 10,
+        "ip": 48.2,
+        "era": 4.25,
+        "whip": 1.48,
+        "k9": 7.47,
+        "bb9": 2.8,
+        "gs_2026": 2,
+        "era_2026": 2.79,
+        "note": "Primarily 2025 (2 2026 starts)",
+        "recent_form": {
+          "starts": 2,
+          "era_last3": 2.93,
+          "k9_last3": 7.83,
+          "bb9_last3": 4.89,
+          "ip_per_start": 4.6
+        },
+        "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
+        "splits": {
+          "away_era": 4.91,
+          "away_k9": 14.06
+        },
+        "relevant_split": "Away ERA: 4.91 K/9: 14.06"
+      },
+      "home_team_pitching": {
+        "season": 2025,
+        "team_era": 0.0,
+        "team_whip": 1.0,
+        "team_k9": 0.0,
+        "note": "2025 full season"
+      },
+      "away_team_pitching": {
+        "season": 2026,
+        "team_era": 0.0,
+        "team_whip": 1.0,
+        "team_k9": 4.5,
+        "note": "2026 YTD"
+      },
+      "home_team_batting": {
+        "season": 2025,
+        "games_played": 141,
+        "ops": 0.812,
+        "avg": 0.304,
+        "obp": 0.355,
+        "slg": 0.457,
+        "runs_per_game": 0.67,
+        "note": "2025 full season"
+      },
+      "away_team_batting": {
+        "season": 2025,
+        "games_played": 91,
+        "ops": 0.845,
+        "avg": 0.299,
+        "obp": 0.347,
+        "slg": 0.498,
+        "runs_per_game": 0.56,
+        "note": "2025 full season"
+      },
+      "home_lineup": {},
+      "away_lineup": {},
+      "home_platoon": {},
+      "away_platoon": {},
+      "home_bullpen_fatigue": {
+        "recent_usage": [
+          {
+            "name": "Jhoan Duran",
+            "pitches": 20,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Tanner Banks",
+            "pitches": 37,
+            "ip": 1.2,
+            "days_ago": 1
+          },
+          {
+            "name": "Brad Keller",
+            "pitches": 15,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Jos\u00e9 Alvarado",
+            "pitches": 29,
+            "ip": 0.1,
+            "days_ago": 2
+          },
+          {
+            "name": "Jonathan Bowlan",
+            "pitches": 26,
+            "ip": 1.1,
+            "days_ago": 2
+          },
+          {
+            "name": "Tim Mayza",
+            "pitches": 23,
+            "ip": 2.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Dylan Moore",
+            "pitches": 8,
+            "ip": 0.2,
+            "days_ago": 2
+          }
+        ],
+        "high_usage_count": 5,
+        "fatigued_arms": [
+          "Jhoan Duran",
+          "Tanner Banks",
+          "Jos\u00e9 Alvarado",
+          "Jonathan Bowlan",
+          "Tim Mayza"
+        ],
+        "fatigue_level": "SEVERE"
+      },
+      "away_bullpen_fatigue": {
+        "recent_usage": [
+          {
+            "name": "Ken Waldichuk",
+            "pitches": 23,
+            "ip": 2.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Zack Littell",
+            "pitches": 75,
+            "ip": 5.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Cole Henry",
+            "pitches": 18,
+            "ip": 1.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Brad Lord",
+            "pitches": 51,
+            "ip": 3.0,
+            "days_ago": 2
+          }
+        ],
+        "high_usage_count": 3,
+        "fatigued_arms": [
+          "Ken Waldichuk",
+          "Zack Littell",
+          "Brad Lord"
+        ],
+        "fatigue_level": "SEVERE"
+      },
+      "home_injuries": [],
+      "away_injuries": [],
+      "home_team_splits": {
+        "home": {
+          "ops": 0.609,
+          "runs_per_game": 3.4,
+          "games": 5
+        }
+      },
+      "away_team_splits": {
+        "away": {
+          "ops": 0.788,
+          "runs_per_game": 6.6,
+          "games": 5
+        }
+      },
+      "home_streak": {},
+      "away_streak": {}
+    },
+    {
+      "game_pk": 822835,
+      "home": "Toronto Blue Jays",
+      "away": "Colorado Rockies",
+      "home_id": 141,
+      "away_id": 115,
+      "game_time": "2026-04-01T17:07:00Z",
+      "home_sp": "Kevin Gausman",
+      "away_sp": "Kyle Freeland",
+      "venue": "Rogers Centre",
+      "status": "In Progress",
+      "live_score": "Colorado Rockies 2 - Toronto Blue Jays 1",
+      "hp_ump": "Brian O'Nora",
+      "odds": {
+        "moneyline": {
+          "Colorado Rockies": -180,
+          "Toronto Blue Jays": 172
+        },
+        "total": {
+          "over": 175,
+          "under": 166,
+          "line": "4.5"
+        },
+        "runline": {
+          "Colorado Rockies": {
+            "price": 310,
+            "point": -1.5
+          },
+          "Toronto Blue Jays": {
+            "price": -195,
+            "point": 1.0
+          }
+        }
+      },
+      "weather": {
+        "temp_f": "Dome",
+        "wind_mph": 0,
+        "wind_dir": "N/A",
+        "precip_pct": 0,
+        "wind_impact": "Dome \u2014 weather irrelevant"
+      },
+      "park_factor": {
+        "runs": 1.01,
+        "hr": 1.05,
+        "note": "Dome, neutral"
+      },
+      "ump_stats": {
+        "rpg": 8.9,
+        "k_pct": 0.22,
+        "bb_pct": 0.08,
+        "note": "Neutral",
+        "name": "Brian O'Nora"
+      },
+      "home_sp_stats": {
+        "player_id": 592332,
+        "season": 2025,
+        "gs": 32,
+        "ip": 193.0,
+        "era": 3.59,
+        "whip": 1.06,
+        "k9": 8.81,
+        "bb9": 2.33,
+        "gs_2026": 2,
+        "era_2026": 0.75,
+        "note": "Primarily 2025 (2 2026 starts)",
+        "recent_form": {
+          "starts": 2,
+          "era_last3": 0.75,
+          "k9_last3": 15.75,
+          "bb9_last3": 0.0,
+          "ip_per_start": 6.0
+        },
+        "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
+        "splits": {
+          "home_era": 1.5,
+          "home_k9": 16.5
+        },
+        "relevant_split": "Home ERA: 1.5 K/9: 16.5"
+      },
+      "away_sp_stats": {
+        "player_id": 607536,
+        "season": 2025,
+        "gs": 31,
+        "ip": 162.2,
+        "era": 4.98,
+        "whip": 1.42,
+        "k9": 6.88,
+        "bb9": 2.11,
+        "gs_2026": 2,
+        "era_2026": 2.89,
+        "note": "Primarily 2025 (2 2026 starts)",
+        "recent_form": {
+          "starts": 2,
+          "era_last3": 2.97,
+          "k9_last3": 7.91,
+          "bb9_last3": 2.97,
+          "ip_per_start": 4.5
+        },
+        "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
+        "splits": {
+          "away_era": 4.15,
+          "away_k9": 4.39
+        },
+        "relevant_split": "Away ERA: 4.15 K/9: 4.39"
+      },
+      "home_team_pitching": {
+        "season": 2026,
+        "team_era": 0.0,
+        "team_whip": 0.27,
+        "team_k9": 5.62,
+        "note": "2026 YTD"
+      },
+      "away_team_pitching": {
+        "season": 2026,
+        "team_era": 0.0,
+        "team_whip": 0.67,
+        "team_k9": 12.0,
+        "note": "2026 YTD"
+      },
+      "home_team_batting": {
+        "season": 2025,
+        "games_played": 64,
+        "ops": 0.777,
+        "avg": 0.289,
+        "obp": 0.361,
+        "slg": 0.416,
+        "runs_per_game": 0.39,
+        "note": "2025 full season"
+      },
+      "away_team_batting": {},
+      "home_lineup": {},
+      "away_lineup": {},
+      "home_platoon": {},
+      "away_platoon": {},
+      "home_bullpen_fatigue": {
+        "recent_usage": [
+          {
+            "name": "Jeff Hoffman",
+            "pitches": 15,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Mason Fluharty",
+            "pitches": 15,
+            "ip": 0.2,
+            "days_ago": 1
+          },
+          {
+            "name": "Braydon Fisher",
+            "pitches": 23,
+            "ip": 1.1,
+            "days_ago": 1
+          },
+          {
+            "name": "Spencer Miles",
+            "pitches": 41,
+            "ip": 1.2,
+            "days_ago": 2
+          },
+          {
+            "name": "Louis Varland",
+            "pitches": 30,
+            "ip": 1.1,
+            "days_ago": 2
+          },
+          {
+            "name": "Brendon Little",
+            "pitches": 30,
+            "ip": 0.2,
+            "days_ago": 2
+          },
+          {
+            "name": "Tyler Heineman",
+            "pitches": 27,
+            "ip": 2.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Tyler Rogers",
+            "pitches": 10,
+            "ip": 1.0,
+            "days_ago": 2
+          }
+        ],
+        "high_usage_count": 5,
+        "fatigued_arms": [
+          "Braydon Fisher",
+          "Spencer Miles",
+          "Louis Varland",
+          "Brendon Little",
+          "Tyler Heineman"
+        ],
+        "fatigue_level": "SEVERE"
+      },
+      "away_bullpen_fatigue": {
+        "recent_usage": [
+          {
+            "name": "Brennan Bernardino",
+            "pitches": 15,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Juan Mejia",
+            "pitches": 38,
+            "ip": 1.1,
+            "days_ago": 1
+          },
+          {
+            "name": "Zach Agnos",
+            "pitches": 45,
+            "ip": 2.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Jaden Hill",
+            "pitches": 16,
+            "ip": 0.2,
+            "days_ago": 1
+          },
+          {
+            "name": "Chase Dollander",
+            "pitches": 74,
+            "ip": 4.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Jaden Hill",
+            "pitches": 1,
+            "ip": 0.1,
+            "days_ago": 2
+          }
+        ],
+        "high_usage_count": 3,
+        "fatigued_arms": [
+          "Juan Mejia",
+          "Zach Agnos",
+          "Chase Dollander"
+        ],
+        "fatigue_level": "SEVERE"
+      },
+      "home_injuries": [],
+      "away_injuries": [],
+      "home_team_splits": {
+        "home": {
+          "ops": 0.815,
+          "runs_per_game": 5.2,
+          "games": 5
+        }
+      },
+      "away_team_splits": {
+        "away": {
+          "ops": 0.681,
+          "runs_per_game": 4.4,
+          "games": 5
+        }
+      },
+      "home_streak": {},
+      "away_streak": {}
+    },
+    {
+      "game_pk": 823889,
+      "home": "Miami Marlins",
+      "away": "Chicago White Sox",
+      "home_id": 146,
+      "away_id": 145,
+      "game_time": "2026-04-01T17:10:00Z",
+      "home_sp": "Sandy Alcantara",
+      "away_sp": "Shane Smith",
+      "venue": "loanDepot park",
+      "status": "Final",
+      "live_score": "Chicago White Sox 0 - Miami Marlins 10",
+      "hp_ump": "Mike Muchlinski",
+      "odds": {},
+      "weather": {
+        "temp_f": "Dome",
+        "wind_mph": 0,
+        "wind_dir": "N/A",
+        "precip_pct": 0,
+        "wind_impact": "Dome \u2014 weather irrelevant"
+      },
+      "park_factor": {
+        "runs": 0.96,
+        "hr": 0.92,
+        "note": "Slight pitcher lean, dome"
+      },
+      "ump_stats": {
+        "rpg": 8.9,
+        "k_pct": 0.22,
+        "bb_pct": 0.08,
+        "note": "Neutral",
+        "name": "Mike Muchlinski"
+      },
+      "home_sp_stats": {
+        "player_id": 645261,
+        "season": 2025,
+        "gs": 31,
+        "ip": 174.2,
+        "era": 5.36,
+        "whip": 1.27,
+        "k9": 7.34,
+        "bb9": 2.94,
+        "gs_2026": 2,
+        "era_2026": 0.0,
+        "note": "Primarily 2025 (2 2026 starts)",
+        "recent_form": {
+          "starts": 2,
+          "era_last3": 0.0,
+          "k9_last3": 6.75,
+          "bb9_last3": 1.12,
+          "ip_per_start": 8.0
+        },
+        "splits": {
+          "home_era": 0.0,
+          "home_k9": 6.75
+        },
+        "relevant_split": "Home ERA: 0.0 K/9: 6.75"
+      },
+      "away_sp_stats": {
+        "player_id": 681343,
+        "season": 2025,
+        "gs": 29,
+        "ip": 146.1,
+        "era": 3.81,
+        "whip": 1.2,
+        "k9": 8.93,
+        "bb9": 3.57,
+        "gs_2026": 2,
+        "era_2026": 19.29,
+        "note": "Primarily 2025 (2 2026 starts)",
+        "recent_form": {
+          "starts": 2,
+          "era_last3": 21.43,
+          "k9_last3": 6.43,
+          "bb9_last3": 8.57,
+          "ip_per_start": 2.1
+        },
+        "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
+        "splits": {
+          "away_era": 19.29,
+          "away_k9": 6.43
+        },
+        "relevant_split": "Away ERA: 19.29 K/9: 6.43"
+      },
+      "home_team_pitching": {
+        "season": 2026,
+        "team_era": 0.0,
+        "team_whip": 0.5,
+        "team_k9": 13.5,
+        "note": "2026 YTD"
+      },
+      "away_team_pitching": {
+        "season": 2025,
+        "team_era": 0.0,
+        "team_whip": 0.0,
+        "team_k9": 0.0,
+        "note": "2025 full season"
+      },
+      "home_team_batting": {
+        "season": 2025,
+        "games_played": 117,
+        "ops": 0.912,
+        "avg": 0.288,
+        "obp": 0.368,
+        "slg": 0.544,
+        "runs_per_game": 0.52,
+        "note": "2025 full season"
+      },
+      "away_team_batting": {},
+      "home_lineup": {},
+      "away_lineup": {},
+      "home_platoon": {},
+      "away_platoon": {},
+      "home_bullpen_fatigue": {
+        "recent_usage": [
+          {
+            "name": "Pete Fairbanks",
+            "pitches": 15,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Calvin Faucher",
+            "pitches": 17,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Anthony Bender",
+            "pitches": 27,
+            "ip": 1.2,
+            "days_ago": 1
+          },
+          {
+            "name": "Andrew Nardi",
+            "pitches": 14,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Lake Bachar",
+            "pitches": 42,
+            "ip": 3.0,
+            "days_ago": 2
+          },
+          {
+            "name": "John King",
+            "pitches": 11,
+            "ip": 1.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Michael Petersen",
+            "pitches": 11,
+            "ip": 1.0,
+            "days_ago": 2
+          }
+        ],
+        "high_usage_count": 2,
+        "fatigued_arms": [
+          "Anthony Bender",
+          "Lake Bachar"
+        ],
+        "fatigue_level": "SEVERE"
+      },
+      "away_bullpen_fatigue": {
+        "recent_usage": [
+          {
+            "name": "Jedixson Paez",
+            "pitches": 28,
+            "ip": 1.1,
+            "days_ago": 1
+          },
+          {
+            "name": "Bryan Hudson",
+            "pitches": 25,
+            "ip": 1.2,
+            "days_ago": 1
+          },
+          {
+            "name": "Sean Newcomb",
+            "pitches": 51,
+            "ip": 2.2,
+            "days_ago": 2
+          },
+          {
+            "name": "Jordan Hicks",
+            "pitches": 13,
+            "ip": 1.1,
+            "days_ago": 2
+          }
+        ],
+        "high_usage_count": 3,
+        "fatigued_arms": [
+          "Jedixson Paez",
+          "Bryan Hudson",
+          "Sean Newcomb"
+        ],
+        "fatigue_level": "SEVERE"
+      },
+      "home_injuries": [],
+      "away_injuries": [],
+      "home_team_splits": {
+        "home": {
+          "ops": 0.847,
+          "runs_per_game": 5.5,
+          "games": 6
+        }
+      },
+      "away_team_splits": {
+        "away": {
+          "ops": 0.608,
+          "runs_per_game": 3.5,
+          "games": 6
+        }
+      },
+      "home_streak": {},
+      "away_streak": {}
+    },
+    {
+      "game_pk": 823078,
+      "home": "St. Louis Cardinals",
+      "away": "New York Mets",
+      "home_id": 138,
+      "away_id": 121,
+      "game_time": "2026-04-01T17:15:00Z",
+      "home_sp": "Matthew Liberatore",
+      "away_sp": "Freddy Peralta",
+      "venue": "Busch Stadium",
+      "status": "In Progress",
+      "live_score": "New York Mets 1 - St. Louis Cardinals 1",
+      "hp_ump": "Nic Lentz",
+      "odds": {
+        "moneyline": {
+          "New York Mets": -106,
+          "St. Louis Cardinals": -104
+        },
+        "total": {
+          "over": -105,
+          "under": -104,
+          "line": "4.5"
+        },
+        "runline": {
+          "New York Mets": {
+            "price": 260,
+            "point": -1.5
+          },
+          "St. Louis Cardinals": {
+            "price": -220,
+            "point": 1.0
+          }
+        }
+      },
+      "weather": {
+        "temp_f": 61,
+        "wind_mph": 17.0,
+        "wind_dir": "E",
+        "precip_pct": 100,
+        "wind_impact": "17.0 mph E \u2014 crosswind"
+      },
+      "park_factor": {
+        "runs": 0.97,
+        "hr": 0.92,
+        "note": "Pitcher lean"
+      },
+      "ump_stats": {
+        "name": "Nic Lentz",
+        "rpg": 8.8,
+        "k_pct": 0.22,
+        "note": "No data \u2014 using league average"
+      },
+      "home_sp_stats": {
+        "player_id": 669461,
+        "season": 2025,
+        "gs": 29,
+        "ip": 151.2,
+        "era": 4.21,
+        "whip": 1.31,
+        "k9": 7.26,
+        "bb9": 2.38,
+        "gs_2026": 2,
+        "era_2026": 0.9,
+        "note": "Primarily 2025 (2 2026 starts)",
+        "recent_form": {
+          "starts": 2,
+          "era_last3": 1.64,
+          "k9_last3": 3.27,
+          "bb9_last3": 2.45,
+          "ip_per_start": 5.5
+        },
+        "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
+        "splits": {
+          "home_era": 1.8,
+          "home_k9": 3.6
+        },
+        "relevant_split": "Home ERA: 1.8 K/9: 3.6"
+      },
+      "away_sp_stats": {
+        "player_id": 642547,
+        "season": 2025,
+        "gs": 33,
+        "ip": 176.2,
+        "era": 2.7,
+        "whip": 1.08,
+        "k9": 10.42,
+        "bb9": 3.37,
+        "gs_2026": 2,
+        "era_2026": 3.72,
+        "note": "Primarily 2025 (2 2026 starts)",
+        "recent_form": {
+          "starts": 2,
+          "era_last3": 4.46,
+          "k9_last3": 12.48,
+          "bb9_last3": 1.78,
+          "ip_per_start": 5.0
+        },
+        "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
+        "splits": {
+          "home_era": 7.2,
+          "home_k9": 12.6
+        }
+      },
+      "home_team_pitching": {
+        "season": 2026,
+        "team_era": 0.0,
+        "team_whip": 0.0,
+        "team_k9": 0.0,
+        "note": "2026 YTD"
+      },
+      "away_team_pitching": {
+        "season": 2026,
+        "team_era": 0.0,
+        "team_whip": 0.0,
+        "team_k9": 4.29,
+        "note": "2026 YTD"
+      },
+      "home_team_batting": {
+        "season": 2025,
+        "games_played": 139,
+        "ops": 0.802,
+        "avg": 0.29,
+        "obp": 0.343,
+        "slg": 0.459,
+        "runs_per_game": 0.39,
+        "note": "2025 full season"
+      },
+      "away_team_batting": {},
+      "home_lineup": {},
+      "away_lineup": {},
+      "home_platoon": {},
+      "away_platoon": {},
+      "home_bullpen_fatigue": {
+        "recent_usage": [
+          {
+            "name": "Gordon Graceffo",
+            "pitches": 3,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "JoJo Romero",
+            "pitches": 13,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Riley O'Brien",
+            "pitches": 11,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Ryne Stanek",
+            "pitches": 22,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Matt Svanson",
+            "pitches": 36,
+            "ip": 2.0,
+            "days_ago": 2
+          },
+          {
+            "name": "George Soriano",
+            "pitches": 21,
+            "ip": 2.0,
+            "days_ago": 2
+          }
+        ],
+        "high_usage_count": 3,
+        "fatigued_arms": [
+          "Ryne Stanek",
+          "Matt Svanson",
+          "George Soriano"
+        ],
+        "fatigue_level": "SEVERE"
+      },
+      "away_bullpen_fatigue": {
+        "recent_usage": [
+          {
+            "name": "Richard Lovelady",
+            "pitches": 29,
+            "ip": 2.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Tobias Myers",
+            "pitches": 14,
+            "ip": 1.1,
+            "days_ago": 2
+          },
+          {
+            "name": "Devin Williams",
+            "pitches": 12,
+            "ip": 1.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Brooks Raley",
+            "pitches": 17,
+            "ip": 1.0,
+            "days_ago": 2
+          }
+        ],
+        "high_usage_count": 1,
+        "fatigued_arms": [
+          "Richard Lovelady"
+        ],
+        "fatigue_level": "MODERATE"
+      },
+      "home_injuries": [],
+      "away_injuries": [],
+      "home_team_splits": {
+        "home": {
+          "ops": 0.732,
+          "runs_per_game": 5.4,
+          "games": 5
+        }
+      },
+      "away_team_splits": {
+        "home": {
+          "ops": 0.775,
+          "runs_per_game": 4.99,
+          "games": 81
+        },
+        "away": {
+          "ops": 0.732,
+          "runs_per_game": 4.47,
+          "games": 81
+        }
+      },
+      "home_streak": {},
+      "away_streak": {}
+    },
+    {
+      "game_pk": 823806,
+      "home": "Milwaukee Brewers",
+      "away": "Tampa Bay Rays",
+      "home_id": 158,
+      "away_id": 139,
+      "game_time": "2026-04-01T17:40:00Z",
+      "home_sp": "Jacob Misiorowski",
+      "away_sp": "Drew Rasmussen",
+      "venue": "American Family Field",
+      "status": "In Progress",
+      "live_score": "Tampa Bay Rays 2 - Milwaukee Brewers 4",
+      "hp_ump": "CB Bucknor",
+      "odds": {
+        "moneyline": {
+          "Milwaukee Brewers": -10000,
+          "Tampa Bay Rays": 2200
+        },
+        "total": {
+          "over": 126,
+          "under": 110,
+          "line": "7.5"
+        },
+        "runline": {
+          "Milwaukee Brewers": {
+            "price": 140,
+            "point": -3.5
+          },
+          "Tampa Bay Rays": {
+            "price": 100,
+            "point": 2.5
+          }
+        }
+      },
+      "weather": {
+        "temp_f": "Dome",
+        "wind_mph": 0,
+        "wind_dir": "N/A",
+        "precip_pct": 0,
+        "wind_impact": "Dome \u2014 weather irrelevant"
+      },
+      "park_factor": {
+        "runs": 1.03,
+        "hr": 1.06,
+        "note": "Slight hitter lean, dome"
+      },
+      "ump_stats": {
+        "rpg": 9.4,
+        "k_pct": 0.2,
+        "bb_pct": 0.1,
+        "note": "High run ump",
+        "name": "CB Bucknor"
+      },
+      "home_sp_stats": {
+        "player_id": 694819,
+        "season": 2025,
+        "gs": 14,
+        "ip": 66.0,
+        "era": 4.36,
+        "whip": 1.24,
+        "k9": 11.86,
+        "bb9": 4.23,
+        "gs_2026": 2,
+        "era_2026": 2.53,
+        "note": "Primarily 2025 (2 2026 starts)",
+        "recent_form": {
+          "starts": 2,
+          "era_last3": 2.45,
+          "k9_last3": 14.73,
+          "bb9_last3": 4.09,
+          "ip_per_start": 5.5
+        },
+        "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
+        "splits": {
+          "home_era": 1.8,
+          "home_k9": 19.8
+        },
+        "relevant_split": "Home ERA: 1.8 K/9: 19.8"
+      },
+      "away_sp_stats": {
+        "player_id": 656876,
+        "season": 2025,
+        "gs": 31,
+        "ip": 150.0,
+        "era": 2.76,
+        "whip": 1.02,
+        "k9": 7.62,
+        "bb9": 2.22,
+        "gs_2026": 2,
+        "era_2026": 1.8,
+        "note": "Primarily 2025 (2 2026 starts)",
+        "recent_form": {
+          "starts": 2,
+          "era_last3": 1.8,
+          "k9_last3": 9.0,
+          "bb9_last3": 0.9,
+          "ip_per_start": 5.0
+        },
+        "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
+        "splits": {
+          "away_era": 1.8,
+          "away_k9": 3.6
+        },
+        "relevant_split": "Away ERA: 1.8 K/9: 3.6"
+      },
+      "home_team_pitching": {
+        "season": 2026,
+        "team_era": 0.0,
+        "team_whip": 2.0,
+        "team_k9": 18.0,
+        "note": "2026 YTD"
+      },
+      "away_team_pitching": {
+        "season": 2026,
+        "team_era": 0.0,
+        "team_whip": 0.0,
+        "team_k9": 9.0,
+        "note": "2026 YTD"
+      },
+      "home_team_batting": {},
+      "away_team_batting": {
+        "season": 2025,
+        "games_played": 109,
+        "ops": 0.671,
+        "avg": 0.295,
+        "obp": 0.326,
+        "slg": 0.345,
+        "runs_per_game": 0.49,
+        "note": "2025 full season"
+      },
+      "home_lineup": {},
+      "away_lineup": {},
+      "home_platoon": {},
+      "away_platoon": {},
+      "home_bullpen_fatigue": {
+        "recent_usage": [
+          {
+            "name": "Abner Uribe",
+            "pitches": 22,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Grant Anderson",
+            "pitches": 19,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Angel Zerpa",
+            "pitches": 14,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Jared Koenig",
+            "pitches": 16,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Aaron Ashby",
+            "pitches": 24,
+            "ip": 2.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Angel Zerpa",
+            "pitches": 10,
+            "ip": 1.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Trevor Megill",
+            "pitches": 20,
+            "ip": 1.0,
+            "days_ago": 2
+          }
+        ],
+        "high_usage_count": 3,
+        "fatigued_arms": [
+          "Abner Uribe",
+          "Aaron Ashby",
+          "Trevor Megill"
+        ],
+        "fatigue_level": "SEVERE"
+      },
+      "away_bullpen_fatigue": {
+        "recent_usage": [
+          {
+            "name": "Cole Sulser",
+            "pitches": 31,
+            "ip": 1.1,
+            "days_ago": 1
+          },
+          {
+            "name": "Yoendrys G\u00f3mez",
+            "pitches": 30,
+            "ip": 2.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Ian Seymour",
+            "pitches": 8,
+            "ip": 0.2,
+            "days_ago": 2
+          },
+          {
+            "name": "Garrett Cleavinger",
+            "pitches": 16,
+            "ip": 1.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Kevin Kelly",
+            "pitches": 5,
+            "ip": 0.1,
+            "days_ago": 2
+          },
+          {
+            "name": "Griffin Jax",
+            "pitches": 15,
+            "ip": 1.0,
+            "days_ago": 2
+          }
+        ],
+        "high_usage_count": 2,
+        "fatigued_arms": [
+          "Cole Sulser",
+          "Yoendrys G\u00f3mez"
+        ],
+        "fatigue_level": "SEVERE"
+      },
+      "home_injuries": [],
+      "away_injuries": [],
+      "home_team_splits": {
+        "home": {
+          "ops": 0.858,
+          "runs_per_game": 7.4,
+          "games": 5
+        }
+      },
+      "away_team_splits": {
+        "away": {
+          "ops": 0.768,
+          "runs_per_game": 5.6,
+          "games": 5
+        }
+      },
+      "home_streak": {},
+      "away_streak": {}
+    },
+    {
+      "game_pk": 824211,
+      "home": "Houston Astros",
+      "away": "Boston Red Sox",
+      "home_id": 117,
+      "away_id": 111,
+      "game_time": "2026-04-01T18:10:00Z",
+      "home_sp": "Mike Burrows",
+      "away_sp": "Garrett Crochet",
+      "venue": "Daikin Park",
+      "status": "In Progress",
+      "live_score": "Boston Red Sox 2 - Houston Astros 6",
+      "hp_ump": "Bruce Dreckman",
+      "odds": {
+        "moneyline": {
+          "Boston Red Sox": 3000,
+          "Houston Astros": -10000
+        },
+        "total": {
+          "over": 118,
+          "under": 107,
+          "line": "9.5"
+        },
+        "runline": {
+          "Boston Red Sox": {
+            "price": 105,
+            "point": 4.0
+          },
+          "Houston Astros": {
+            "price": 195,
+            "point": -4.5
+          }
+        }
+      },
+      "weather": {
+        "temp_f": "Dome",
+        "wind_mph": 0,
+        "wind_dir": "N/A",
+        "precip_pct": 0,
+        "wind_impact": "Dome \u2014 weather irrelevant"
+      },
+      "park_factor": {
+        "runs": 0.98,
+        "hr": 1.02,
+        "note": "Neutral"
+      },
+      "ump_stats": {
+        "rpg": 8.9,
+        "k_pct": 0.22,
+        "bb_pct": 0.08,
+        "note": "Neutral",
+        "name": "Bruce Dreckman"
+      },
+      "home_sp_stats": {
+        "player_id": 681347,
+        "season": 2025,
+        "gs": 19,
+        "ip": 96.0,
+        "era": 3.94,
+        "whip": 1.24,
+        "k9": 9.09,
+        "bb9": 2.91,
+        "gs_2026": 2,
+        "era_2026": 5.91,
+        "note": "Primarily 2025 (2 2026 starts)",
+        "recent_form": {
+          "starts": 2,
+          "era_last3": 6.18,
+          "k9_last3": 10.59,
+          "bb9_last3": 4.41,
+          "ip_per_start": 5.1
+        },
+        "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
+        "splits": {
+          "home_era": 7.94,
+          "home_k9": 10.38
+        },
+        "relevant_split": "Home ERA: 7.94 K/9: 10.38"
+      },
+      "away_sp_stats": {
+        "player_id": 676979,
+        "season": 2025,
+        "gs": 32,
+        "ip": 205.1,
+        "era": 2.59,
+        "whip": 1.03,
+        "k9": 11.19,
+        "bb9": 2.02,
+        "gs_2026": 2,
+        "era_2026": 0.9,
+        "note": "Primarily 2025 (2 2026 starts)",
+        "recent_form": {
+          "starts": 2,
+          "era_last3": 3.27,
+          "k9_last3": 12.27,
+          "bb9_last3": 1.64,
+          "ip_per_start": 5.5
+        },
+        "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
+        "splits": {
+          "away_era": 0.0,
+          "away_k9": 12.0
+        },
+        "relevant_split": "Away ERA: 0.0 K/9: 12.0"
+      },
+      "home_team_pitching": {
+        "season": 2025,
+        "team_era": 0.0,
+        "team_whip": 0.0,
+        "team_k9": 0.0,
+        "note": "2025 full season"
+      },
+      "away_team_pitching": {
+        "season": 2026,
+        "team_era": 0.0,
+        "team_whip": 3.0,
+        "team_k9": 45.0,
+        "note": "2026 YTD"
+      },
+      "home_team_batting": {
+        "season": 2025,
+        "games_played": 104,
+        "ops": 0.727,
+        "avg": 0.292,
+        "obp": 0.354,
+        "slg": 0.373,
+        "runs_per_game": 0.51,
+        "note": "2025 full season"
+      },
+      "away_team_batting": {
+        "season": 2025,
+        "games_played": 71,
+        "ops": 0.859,
+        "avg": 0.292,
+        "obp": 0.396,
+        "slg": 0.463,
+        "runs_per_game": 0.68,
+        "note": "2025 full season"
+      },
+      "home_lineup": {},
+      "away_lineup": {},
+      "home_platoon": {},
+      "away_platoon": {},
+      "home_bullpen_fatigue": {
+        "recent_usage": [
+          {
+            "name": "Cody Bolton",
+            "pitches": 50,
+            "ip": 3.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Ryan Weiss",
+            "pitches": 33,
+            "ip": 2.0,
+            "days_ago": 2
+          }
+        ],
+        "high_usage_count": 2,
+        "fatigued_arms": [
+          "Cody Bolton",
+          "Ryan Weiss"
+        ],
+        "fatigue_level": "SEVERE"
+      },
+      "away_bullpen_fatigue": {
+        "recent_usage": [
+          {
+            "name": "Jovani Mor\u00e1n",
+            "pitches": 26,
+            "ip": 2.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Ryan Watson",
+            "pitches": 27,
+            "ip": 1.1,
+            "days_ago": 1
+          },
+          {
+            "name": "Johan Oviedo",
+            "pitches": 72,
+            "ip": 3.2,
+            "days_ago": 2
+          }
+        ],
+        "high_usage_count": 3,
+        "fatigued_arms": [
+          "Jovani Mor\u00e1n",
+          "Ryan Watson",
+          "Johan Oviedo"
+        ],
+        "fatigue_level": "SEVERE"
+      },
+      "home_injuries": [],
+      "away_injuries": [],
+      "home_team_splits": {
+        "home": {
+          "ops": 0.829,
+          "runs_per_game": 6.5,
+          "games": 6
+        }
+      },
+      "away_team_splits": {
+        "away": {
+          "ops": 0.629,
+          "runs_per_game": 2.6,
+          "games": 5
+        }
+      },
+      "home_streak": {},
+      "away_streak": {}
+    },
+    {
+      "game_pk": 824698,
+      "home": "Chicago Cubs",
+      "away": "Los Angeles Angels",
+      "home_id": 112,
+      "away_id": 108,
+      "game_time": "2026-04-01T18:20:00Z",
+      "home_sp": "Matthew Boyd",
+      "away_sp": "Yusei Kikuchi",
+      "venue": "Wrigley Field",
+      "status": "In Progress",
+      "live_score": "Los Angeles Angels 2 - Chicago Cubs 5",
+      "hp_ump": "David Rackley",
+      "odds": {
+        "moneyline": {
+          "Chicago Cubs": -5000,
+          "Los Angeles Angels": 1700
+        },
+        "total": {
+          "over": 102,
+          "under": -118,
+          "line": "8.5"
+        },
+        "runline": {
+          "Chicago Cubs": {
+            "price": 154,
+            "point": -3.5
+          },
+          "Los Angeles Angels": {
+            "price": 125,
+            "point": 3.0
+          }
+        }
+      },
+      "weather": {
+        "temp_f": 38,
+        "wind_mph": 32.2,
+        "wind_dir": "NE",
+        "precip_pct": 0,
+        "wind_impact": "32.2 mph NE \u2014 crosswind"
+      },
+      "park_factor": {
+        "runs": 1.04,
+        "hr": 1.02,
+        "note": "Wind-dependent"
+      },
+      "ump_stats": {
+        "rpg": 8.5,
+        "k_pct": 0.24,
+        "bb_pct": 0.07,
+        "note": "Pitcher friendly",
+        "name": "David Rackley"
+      },
+      "home_sp_stats": {
+        "player_id": 571510,
+        "season": 2025,
+        "gs": 31,
+        "ip": 179.2,
+        "era": 3.21,
+        "whip": 1.09,
+        "k9": 7.73,
+        "bb9": 2.11,
+        "gs_2026": 2,
+        "era_2026": 7.04,
+        "note": "Primarily 2025 (2 2026 starts)",
+        "recent_form": {
+          "starts": 2,
+          "era_last3": 7.5,
+          "k9_last3": 18.21,
+          "bb9_last3": 3.21,
+          "ip_per_start": 4.2
+        },
+        "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
+        "splits": {
+          "home_era": 14.73,
+          "home_k9": 19.69
+        },
+        "relevant_split": "Home ERA: 14.73 K/9: 19.69"
+      },
+      "away_sp_stats": {
+        "player_id": 579328,
+        "season": 2025,
+        "gs": 33,
+        "ip": 178.1,
+        "era": 3.99,
+        "whip": 1.42,
+        "k9": 8.79,
+        "bb9": 3.74,
+        "gs_2026": 2,
+        "era_2026": 8.59,
+        "note": "Primarily 2025 (2 2026 starts)",
+        "recent_form": {
+          "starts": 2,
+          "era_last3": 6.85,
+          "k9_last3": 7.83,
+          "bb9_last3": 4.89,
+          "ip_per_start": 4.6
+        },
+        "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
+        "splits": {
+          "away_era": 4.15,
+          "away_k9": 6.59
+        },
+        "relevant_split": "Away ERA: 4.15 K/9: 6.59"
+      },
+      "home_team_pitching": {
+        "season": 2026,
+        "team_era": 0.0,
+        "team_whip": 1.0,
+        "team_k9": 0.0,
+        "note": "2026 YTD"
+      },
+      "away_team_pitching": {
+        "season": 2026,
+        "team_era": 0.0,
+        "team_whip": 1.33,
+        "team_k9": 15.0,
+        "note": "2026 YTD"
+      },
+      "home_team_batting": {
+        "season": 2025,
+        "games_played": 156,
+        "ops": 0.739,
+        "avg": 0.297,
+        "obp": 0.345,
+        "slg": 0.394,
+        "runs_per_game": 0.57,
+        "note": "2025 full season"
+      },
+      "away_team_batting": {},
+      "home_lineup": {},
+      "away_lineup": {},
+      "home_platoon": {},
+      "away_platoon": {},
+      "home_bullpen_fatigue": {
+        "recent_usage": [
+          {
+            "name": "Hoby Milner",
+            "pitches": 3,
+            "ip": 0.1,
+            "days_ago": 1
+          },
+          {
+            "name": "Phil Maton",
+            "pitches": 28,
+            "ip": 0.2,
+            "days_ago": 1
+          },
+          {
+            "name": "Ben Brown",
+            "pitches": 50,
+            "ip": 3.1,
+            "days_ago": 1
+          },
+          {
+            "name": "Colin Rea",
+            "pitches": 42,
+            "ip": 3.0,
+            "days_ago": 2
+          }
+        ],
+        "high_usage_count": 3,
+        "fatigued_arms": [
+          "Phil Maton",
+          "Ben Brown",
+          "Colin Rea"
+        ],
+        "fatigue_level": "SEVERE"
+      },
+      "away_bullpen_fatigue": {
+        "recent_usage": [
+          {
+            "name": "Chase Silseth",
+            "pitches": 14,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Drew Pomeranz",
+            "pitches": 20,
+            "ip": 1.1,
+            "days_ago": 1
+          },
+          {
+            "name": "Jordan Romano",
+            "pitches": 12,
+            "ip": 0.2,
+            "days_ago": 1
+          },
+          {
+            "name": "Joey Lucchesi",
+            "pitches": 29,
+            "ip": 1.2,
+            "days_ago": 2
+          },
+          {
+            "name": "Shaun Anderson",
+            "pitches": 40,
+            "ip": 3.0,
+            "days_ago": 2
+          }
+        ],
+        "high_usage_count": 3,
+        "fatigued_arms": [
+          "Drew Pomeranz",
+          "Joey Lucchesi",
+          "Shaun Anderson"
+        ],
+        "fatigue_level": "SEVERE"
+      },
+      "home_injuries": [],
+      "away_injuries": [],
+      "home_team_splits": {
+        "home": {
+          "ops": 0.666,
+          "runs_per_game": 4.8,
+          "games": 5
+        }
+      },
+      "away_team_splits": {
+        "away": {
+          "ops": 0.745,
+          "runs_per_game": 4.83,
+          "games": 6
+        }
+      },
+      "home_streak": {},
+      "away_streak": {}
+    },
+    {
+      "game_pk": 825106,
+      "home": "Arizona Diamondbacks",
+      "away": "Detroit Tigers",
+      "home_id": 109,
+      "away_id": 116,
+      "game_time": "2026-04-01T19:40:00Z",
+      "home_sp": "Zac Gallen",
+      "away_sp": "Tarik Skubal",
+      "venue": "Chase Field",
+      "status": "In Progress",
+      "live_score": "Detroit Tigers 0 - Arizona Diamondbacks 1",
+      "hp_ump": "Adam Hamari",
+      "odds": {
+        "moneyline": {
+          "Arizona Diamondbacks": -182,
+          "Detroit Tigers": 160
+        },
+        "total": {
+          "over": -103,
+          "under": -115,
+          "line": "7.5"
+        },
+        "runline": {
+          "Arizona Diamondbacks": {
+            "price": 124,
+            "point": -1.5
+          },
+          "Detroit Tigers": {
+            "price": 105,
+            "point": 1.0
+          }
+        }
+      },
+      "weather": {
+        "temp_f": "Dome",
+        "wind_mph": 0,
+        "wind_dir": "N/A",
+        "precip_pct": 0,
+        "wind_impact": "Dome \u2014 weather irrelevant"
+      },
+      "park_factor": {
+        "runs": 1.02,
+        "hr": 1.04,
+        "note": "Dome, neutral"
+      },
+      "ump_stats": {
+        "rpg": 9.2,
+        "k_pct": 0.21,
+        "bb_pct": 0.09,
+        "note": "Slight over lean",
+        "name": "Adam Hamari"
+      },
+      "home_sp_stats": {
+        "player_id": 668678,
+        "season": 2025,
+        "gs": 33,
+        "ip": 192.0,
+        "era": 4.83,
+        "whip": 1.26,
+        "k9": 8.2,
+        "bb9": 3.09,
+        "gs_2026": 1,
+        "era_2026": 9.0,
+        "note": "Primarily 2025 (1 2026 starts)",
+        "recent_form": {
+          "starts": 2,
+          "era_last3": 6.0,
+          "k9_last3": 3.0,
+          "bb9_last3": 3.0,
+          "ip_per_start": 3.0
+        },
+        "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
+        "splits": {
+          "away_era": 9.0,
+          "away_k9": 4.5
+        }
+      },
+      "away_sp_stats": {
+        "player_id": 669373,
+        "season": 2025,
+        "gs": 31,
+        "ip": 195.1,
+        "era": 2.21,
+        "whip": 0.89,
+        "k9": 11.12,
+        "bb9": 1.52,
+        "gs_2026": 1,
+        "era_2026": 0.0,
+        "note": "Primarily 2025 (1 2026 starts)",
+        "recent_form": {
+          "starts": 2,
+          "era_last3": 1.29,
+          "k9_last3": 7.71,
+          "bb9_last3": 0.0,
+          "ip_per_start": 3.5
+        },
+        "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
+        "splits": {
+          "away_era": 0.0,
+          "away_k9": 9.0
+        },
+        "relevant_split": "Away ERA: 0.0 K/9: 9.0"
+      },
+      "home_team_pitching": {
+        "season": 2025,
+        "team_era": 0.0,
+        "team_whip": 1.5,
+        "team_k9": 4.5,
+        "note": "2025 full season"
+      },
+      "away_team_pitching": {
+        "season": 2026,
+        "team_era": 0.0,
+        "team_whip": 0.75,
+        "team_k9": 16.36,
+        "note": "2026 YTD"
+      },
+      "home_team_batting": {
+        "season": 2025,
+        "games_played": 161,
+        "ops": 0.851,
+        "avg": 0.29,
+        "obp": 0.389,
+        "slg": 0.462,
+        "runs_per_game": 0.61,
+        "note": "2025 full season"
+      },
+      "away_team_batting": {
+        "season": 2025,
+        "games_played": 6,
+        "ops": 0.616,
+        "avg": 0.316,
+        "obp": 0.3,
+        "slg": 0.316,
+        "runs_per_game": 0.17,
+        "note": "2025 full season"
+      },
+      "home_lineup": {},
+      "away_lineup": {},
+      "home_platoon": {},
+      "away_platoon": {},
+      "home_bullpen_fatigue": {
+        "recent_usage": [
+          {
+            "name": "Andrew Hoffmann",
+            "pitches": 32,
+            "ip": 2.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Paul Sewald",
+            "pitches": 13,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Juan Morillo",
+            "pitches": 5,
+            "ip": 0.1,
+            "days_ago": 2
+          },
+          {
+            "name": "Kevin Ginkel",
+            "pitches": 13,
+            "ip": 1.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Joe Ross",
+            "pitches": 26,
+            "ip": 0.2,
+            "days_ago": 2
+          },
+          {
+            "name": "Paul Sewald",
+            "pitches": 12,
+            "ip": 1.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Taylor Clarke",
+            "pitches": 16,
+            "ip": 1.0,
+            "days_ago": 2
+          }
+        ],
+        "high_usage_count": 2,
+        "fatigued_arms": [
+          "Andrew Hoffmann",
+          "Joe Ross"
+        ],
+        "fatigue_level": "SEVERE"
+      },
+      "away_bullpen_fatigue": {
+        "recent_usage": [
+          {
+            "name": "Drew Anderson",
+            "pitches": 16,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Kenley Jansen",
+            "pitches": 8,
+            "ip": 0.1,
+            "days_ago": 1
+          },
+          {
+            "name": "Will Vest",
+            "pitches": 27,
+            "ip": 0.2,
+            "days_ago": 1
+          },
+          {
+            "name": "Brant Hurter",
+            "pitches": 26,
+            "ip": 2.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Tyler Holton",
+            "pitches": 19,
+            "ip": 1.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Kyle Finnegan",
+            "pitches": 5,
+            "ip": 0.1,
+            "days_ago": 2
+          },
+          {
+            "name": "Enmanuel De Jesus",
+            "pitches": 38,
+            "ip": 1.0,
+            "days_ago": 2
+          }
+        ],
+        "high_usage_count": 3,
+        "fatigued_arms": [
+          "Will Vest",
+          "Brant Hurter",
+          "Enmanuel De Jesus"
+        ],
+        "fatigue_level": "SEVERE"
+      },
+      "home_injuries": [],
+      "away_injuries": [],
+      "home_team_splits": {
+        "home": {
+          "ops": 0.776,
+          "runs_per_game": 5.07,
+          "games": 81
+        },
+        "away": {
+          "ops": 0.739,
+          "runs_per_game": 4.69,
+          "games": 81
+        }
+      },
+      "away_team_splits": {
+        "away": {
+          "ops": 0.601,
+          "runs_per_game": 4.8,
+          "games": 5
+        }
+      },
+      "home_streak": {},
+      "away_streak": {}
+    },
+    {
+      "game_pk": 823321,
+      "home": "San Diego Padres",
+      "away": "San Francisco Giants",
+      "home_id": 135,
+      "away_id": 137,
+      "game_time": "2026-04-01T20:10:00Z",
+      "home_sp": "Nick Pivetta",
+      "away_sp": "Adrian Houser",
+      "venue": "Petco Park",
+      "status": "Warmup",
+      "live_score": "San Francisco Giants 0 - San Diego Padres 0",
+      "hp_ump": "Ryan Additon",
+      "odds": {
+        "moneyline": {
+          "San Diego Padres": -148,
+          "San Francisco Giants": 134
+        },
+        "total": {
+          "over": 100,
+          "under": 100,
+          "line": "8.0"
+        },
+        "runline": {
+          "San Diego Padres": {
+            "price": 144,
+            "point": -1.5
+          },
+          "San Francisco Giants": {
+            "price": -120,
+            "point": 1.0
+          }
+        }
+      },
+      "weather": {
+        "temp_f": 71,
+        "wind_mph": 26.3,
+        "wind_dir": "W",
+        "precip_pct": 0,
+        "wind_impact": "26.3 mph W \u2014 crosswind"
+      },
+      "park_factor": {
+        "runs": 0.88,
+        "hr": 0.82,
+        "note": "Elite pitcher park"
+      },
+      "ump_stats": {
+        "rpg": 9.1,
+        "k_pct": 0.22,
+        "bb_pct": 0.09,
+        "note": "Slight over lean",
+        "name": "Ryan Additon"
+      },
+      "home_sp_stats": {
+        "player_id": 601713,
+        "season": 2025,
+        "gs": 31,
+        "ip": 181.2,
+        "era": 2.87,
+        "whip": 0.99,
+        "k9": 9.44,
+        "bb9": 2.48,
+        "gs_2026": 1,
+        "era_2026": 18.0,
+        "note": "Primarily 2025 (1 2026 starts)",
+        "recent_form": {
+          "starts": 1,
+          "era_last3": 18.0,
+          "k9_last3": 12.0,
+          "bb9_last3": 9.0,
+          "ip_per_start": 3.0
+        },
+        "form_flag": "SMALL SAMPLE (1 starts) \u2014 recent form not reliable",
+        "splits": {
+          "home_era": 18.0,
+          "home_k9": 12.0
+        },
+        "relevant_split": "Home ERA: 18.0 K/9: 12.0"
+      },
+      "away_sp_stats": {
+        "player_id": 605288,
+        "season": 2025,
+        "gs": 21,
+        "ip": 125.0,
+        "era": 3.31,
+        "whip": 1.28,
+        "k9": 6.62,
+        "bb9": 2.74,
+        "note": "2025 only (no 2026 starts yet)",
+        "recent_form": {
+          "starts": 3,
+          "era_last3": 4.5,
+          "k9_last3": 4.5,
+          "bb9_last3": 3.0,
+          "ip_per_start": 6.0
+        },
+        "form_flag": "SMALL SAMPLE (3 starts) \u2014 recent form not reliable",
+        "splits": {
+          "home_era": 2.77,
+          "home_k9": 5.19,
+          "away_era": 3.7,
+          "away_k9": 7.64
+        },
+        "relevant_split": "Away ERA: 3.7 K/9: 7.64"
+      },
+      "home_team_pitching": {
+        "season": 2025,
+        "team_era": 0.84,
+        "team_whip": 0.94,
+        "team_k9": 10.59,
+        "note": "2025 full season"
+      },
+      "away_team_pitching": {
+        "season": 2026,
+        "team_era": 0.0,
+        "team_whip": 0.33,
+        "team_k9": 3.0,
+        "note": "2026 YTD"
+      },
+      "home_team_batting": {
+        "season": 2025,
+        "games_played": 154,
+        "ops": 0.719,
+        "avg": 0.292,
+        "obp": 0.327,
+        "slg": 0.392,
+        "runs_per_game": 0.43,
+        "note": "2025 full season"
+      },
+      "away_team_batting": {},
+      "home_lineup": {
+        "team": "San Diego Padres",
+        "batters": [
+          {
+            "name": "Fernando Tatis Jr.",
+            "pos": "RF",
+            "bats": "",
+            "avg": 0.235,
+            "ops": 0.644
+          },
+          {
+            "name": "Xander Bogaerts",
+            "pos": "SS",
+            "bats": "",
+            "avg": 0.2,
+            "ops": 0.45
+          },
+          {
+            "name": "Jackson Merrill",
+            "pos": "CF",
+            "bats": "",
+            "avg": 0.222,
+            "ops": 0.744
+          },
+          {
+            "name": "Manny Machado",
+            "pos": "3B",
+            "bats": "",
+            "avg": 0.2,
+            "ops": 0.667
+          },
+          {
+            "name": "Ram\u00f3n Laureano",
+            "pos": "DH",
+            "bats": "",
+            "avg": 0.357,
+            "ops": 1.043
+          },
+          {
+            "name": "Jake Cronenworth",
+            "pos": "2B",
+            "bats": "",
+            "avg": 0.167,
+            "ops": 0.417
+          },
+          {
+            "name": "Gavin Sheets",
+            "pos": "1B",
+            "bats": "",
+            "avg": 0.071,
+            "ops": 0.142
+          },
+          {
+            "name": "Freddy Fermin",
+            "pos": "C",
+            "bats": "",
+            "avg": 0.1,
+            "ops": 0.282
+          },
+          {
+            "name": "Bryce Johnson",
+            "pos": "LF",
+            "bats": "",
+            "avg": 0.0,
+            "ops": 0.0
+          }
+        ]
+      },
+      "away_lineup": {
+        "team": "San Francisco Giants",
+        "batters": [
+          {
+            "name": "Willy Adames",
+            "pos": "SS",
+            "bats": "",
+            "avg": 0.3,
+            "ops": 0.8
+          },
+          {
+            "name": "Rafael Devers",
+            "pos": "DH",
+            "bats": "",
+            "avg": 0.263,
+            "ops": 0.649
+          },
+          {
+            "name": "Heliot Ramos",
+            "pos": "LF",
+            "bats": "",
+            "avg": 0.222,
+            "ops": 0.578
+          },
+          {
+            "name": "Luis Arraez",
+            "pos": "2B",
+            "bats": "",
+            "avg": 0.211,
+            "ops": 0.449
+          },
+          {
+            "name": "Matt Chapman",
+            "pos": "3B",
+            "bats": "",
+            "avg": 0.222,
+            "ops": 0.722
+          },
+          {
+            "name": "Jung Hoo Lee",
+            "pos": "RF",
+            "bats": "",
+            "avg": 0.222,
+            "ops": 0.689
+          },
+          {
+            "name": "Harrison Bader",
+            "pos": "CF",
+            "bats": "",
+            "avg": 0.158,
+            "ops": 0.526
+          },
+          {
+            "name": "Patrick Bailey",
+            "pos": "C",
+            "bats": "",
+            "avg": 0.125,
+            "ops": 0.347
+          },
+          {
+            "name": "Casey Schmitt",
+            "pos": "1B",
+            "bats": "",
+            "avg": 0.188,
+            "ops": 0.528
+          }
+        ]
+      },
+      "home_platoon": {},
+      "away_platoon": {},
+      "home_bullpen_fatigue": {
+        "recent_usage": [
+          {
+            "name": "David Morgan",
+            "pitches": 13,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Bradgley Rodriguez",
+            "pitches": 17,
+            "ip": 1.2,
+            "days_ago": 1
+          },
+          {
+            "name": "Jeremiah Estrada",
+            "pitches": 18,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Kyle Hart",
+            "pitches": 42,
+            "ip": 2.1,
+            "days_ago": 1
+          },
+          {
+            "name": "David Morgan",
+            "pitches": 20,
+            "ip": 2.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Wandy Peralta",
+            "pitches": 14,
+            "ip": 1.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Ron Marinaccio",
+            "pitches": 29,
+            "ip": 2.0,
+            "days_ago": 2
+          }
+        ],
+        "high_usage_count": 3,
+        "fatigued_arms": [
+          "Kyle Hart",
+          "David Morgan",
+          "Ron Marinaccio"
+        ],
+        "fatigue_level": "SEVERE"
+      },
+      "away_bullpen_fatigue": {
+        "recent_usage": [
+          {
+            "name": "JT Brubaker",
+            "pitches": 28,
+            "ip": 2.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Jos\u00e9 Butt\u00f3",
+            "pitches": 18,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Ryan Walker",
+            "pitches": 22,
+            "ip": 1.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Keaton Winn",
+            "pitches": 13,
+            "ip": 1.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Matt Gage",
+            "pitches": 15,
+            "ip": 1.0,
+            "days_ago": 2
+          }
+        ],
+        "high_usage_count": 2,
+        "fatigued_arms": [
+          "JT Brubaker",
+          "Ryan Walker"
+        ],
+        "fatigue_level": "SEVERE"
+      },
+      "home_injuries": [],
+      "away_injuries": [],
+      "home_team_splits": {
+        "home": {
+          "ops": 0.515,
+          "runs_per_game": 2.4,
+          "games": 5
+        }
+      },
+      "away_team_splits": {
+        "home": {
+          "ops": 0.694,
+          "runs_per_game": 4.17,
+          "games": 81
+        },
+        "away": {
+          "ops": 0.701,
+          "runs_per_game": 4.53,
+          "games": 81
+        }
+      },
+      "home_streak": {},
+      "away_streak": {}
+    },
+    {
+      "game_pk": 823157,
+      "home": "Seattle Mariners",
+      "away": "New York Yankees",
+      "home_id": 136,
+      "away_id": 147,
+      "game_time": "2026-04-01T20:10:00Z",
+      "home_sp": "George Kirby",
+      "away_sp": "Cam Schlittler",
+      "venue": "T-Mobile Park",
+      "status": "Warmup",
+      "live_score": "New York Yankees 0 - Seattle Mariners 0",
+      "hp_ump": "Lance Barrett",
+      "odds": {
+        "moneyline": {
+          "New York Yankees": 105,
+          "Seattle Mariners": -115
+        },
+        "total": {
+          "over": 105,
+          "under": 105,
+          "line": "7.0"
+        },
+        "runline": {
+          "New York Yankees": {
+            "price": 180,
+            "point": -1.5
+          },
+          "Seattle Mariners": {
+            "price": 185,
+            "point": -1.5
+          }
+        }
+      },
+      "weather": {
+        "temp_f": 48,
+        "wind_mph": 6.9,
+        "wind_dir": "SE",
+        "precip_pct": 100,
+        "wind_impact": "6.9 mph SE \u2014 crosswind"
+      },
+      "park_factor": {
+        "runs": 0.93,
+        "hr": 0.91,
+        "note": "Pitcher friendly"
+      },
+      "ump_stats": {
+        "rpg": 8.5,
+        "k_pct": 0.24,
+        "bb_pct": 0.08,
+        "note": "Pitcher friendly",
+        "name": "Lance Barrett"
+      },
+      "home_sp_stats": {
+        "player_id": 669923,
+        "season": 2025,
+        "gs": 23,
+        "ip": 126.0,
+        "era": 4.21,
+        "whip": 1.19,
+        "k9": 9.79,
+        "bb9": 2.07,
+        "gs_2026": 1,
+        "era_2026": 1.5,
+        "note": "Primarily 2025 (1 2026 starts)",
+        "recent_form": {
+          "starts": 1,
+          "era_last3": 1.5,
+          "k9_last3": 9.0,
+          "bb9_last3": 3.0,
+          "ip_per_start": 6.0
+        },
+        "form_flag": "SMALL SAMPLE (1 starts) \u2014 recent form not reliable",
+        "splits": {
+          "home_era": 1.5,
+          "home_k9": 9.0
+        },
+        "relevant_split": "Home ERA: 1.5 K/9: 9.0"
+      },
+      "away_sp_stats": {
+        "player_id": 693645,
+        "season": 2025,
+        "gs": 14,
+        "ip": 73.0,
+        "era": 2.96,
+        "whip": 1.22,
+        "k9": 10.36,
+        "bb9": 3.82,
+        "gs_2026": 1,
+        "era_2026": 0.0,
+        "note": "Primarily 2025 (1 2026 starts)",
+        "recent_form": {
+          "starts": 1,
+          "era_last3": 0.0,
+          "k9_last3": 14.12,
+          "bb9_last3": 0.0,
+          "ip_per_start": 5.1
+        },
+        "splits": {
+          "away_era": 0.0,
+          "away_k9": 14.12
+        },
+        "relevant_split": "Away ERA: 0.0 K/9: 14.12"
+      },
+      "home_team_pitching": {
+        "season": 2026,
+        "team_era": 0.0,
+        "team_whip": 0.17,
+        "team_k9": 13.5,
+        "note": "2026 YTD"
+      },
+      "away_team_pitching": {
+        "season": 2026,
+        "team_era": 0.0,
+        "team_whip": 1.8,
+        "team_k9": 14.52,
+        "note": "2026 YTD"
+      },
+      "home_team_batting": {
+        "season": 2025,
+        "games_played": 147,
+        "ops": 0.815,
+        "avg": 0.295,
+        "obp": 0.353,
+        "slg": 0.462,
+        "runs_per_game": 0.55,
+        "note": "2025 full season"
+      },
+      "away_team_batting": {
+        "season": 2025,
+        "games_played": 152,
+        "ops": 1.145,
+        "avg": 0.331,
+        "obp": 0.457,
+        "slg": 0.688,
+        "runs_per_game": 0.9,
+        "note": "2025 full season"
+      },
+      "home_lineup": {
+        "team": "Seattle Mariners",
+        "batters": [
+          {
+            "name": "Brendan Donovan",
+            "pos": "3B",
+            "bats": "",
+            "avg": 0.429,
+            "ops": 1.3
+          },
+          {
+            "name": "Cal Raleigh",
+            "pos": "C",
+            "bats": "",
+            "avg": 0.143,
+            "ops": 0.44
+          },
+          {
+            "name": "Julio Rodr\u00edguez",
+            "pos": "CF",
+            "bats": "",
+            "avg": 0.091,
+            "ops": 0.322
+          },
+          {
+            "name": "Josh Naylor",
+            "pos": "1B",
+            "bats": "",
+            "avg": 0.043,
+            "ops": 0.197
+          },
+          {
+            "name": "Randy Arozarena",
+            "pos": "LF",
+            "bats": "",
+            "avg": 0.25,
+            "ops": 0.773
+          },
+          {
+            "name": "Luke Raley",
+            "pos": "RF",
+            "bats": "",
+            "avg": 0.286,
+            "ops": 1.262
+          },
+          {
+            "name": "Dominic Canzone",
+            "pos": "DH",
+            "bats": "",
+            "avg": 0.273,
+            "ops": 1.294
+          },
+          {
+            "name": "Cole Young",
+            "pos": "2B",
+            "bats": "",
+            "avg": 0.333,
+            "ops": 0.935
+          },
+          {
+            "name": "Leo Rivas",
+            "pos": "SS",
+            "bats": "",
+            "avg": 0.2,
+            "ops": 0.573
+          }
+        ]
+      },
+      "away_lineup": {
+        "team": "New York Yankees",
+        "batters": [
+          {
+            "name": "Trent Grisham",
+            "pos": "CF",
+            "bats": "",
+            "avg": 0.235,
+            "ops": 0.728
+          },
+          {
+            "name": "Aaron Judge",
+            "pos": "RF",
+            "bats": "",
+            "avg": 0.15,
+            "ops": 0.64
+          },
+          {
+            "name": "Cody Bellinger",
+            "pos": "LF",
+            "bats": "",
+            "avg": 0.333,
+            "ops": 0.873
+          },
+          {
+            "name": "Ben Rice",
+            "pos": "DH",
+            "bats": "",
+            "avg": 0.357,
+            "ops": 0.971
+          },
+          {
+            "name": "Paul Goldschmidt",
+            "pos": "1B",
+            "bats": "",
+            "avg": 0.2,
+            "ops": 0.6
+          },
+          {
+            "name": "Jazz Chisholm Jr.",
+            "pos": "2B",
+            "bats": "",
+            "avg": 0.158,
+            "ops": 0.358
+          },
+          {
+            "name": "Amed Rosario",
+            "pos": "3B",
+            "bats": "",
+            "avg": 0.0,
+            "ops": 0.0
+          },
+          {
+            "name": "Austin Wells",
+            "pos": "C",
+            "bats": "",
+            "avg": 0.154,
+            "ops": 0.368
+          },
+          {
+            "name": "Jos\u00e9 Caballero",
+            "pos": "SS",
+            "bats": "",
+            "avg": 0.222,
+            "ops": 0.485
+          }
+        ]
+      },
+      "home_platoon": {},
+      "away_platoon": {},
+      "home_bullpen_fatigue": {
+        "recent_usage": [
+          {
+            "name": "Casey Legumina",
+            "pitches": 18,
+            "ip": 1.2,
+            "days_ago": 1
+          },
+          {
+            "name": "Cole Wilcox",
+            "pitches": 31,
+            "ip": 2.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Jose A. Ferrer",
+            "pitches": 15,
+            "ip": 0.1,
+            "days_ago": 2
+          },
+          {
+            "name": "Matt Brash",
+            "pitches": 17,
+            "ip": 1.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Gabe Speier",
+            "pitches": 16,
+            "ip": 1.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Eduard Bazardo",
+            "pitches": 6,
+            "ip": 0.2,
+            "days_ago": 2
+          }
+        ],
+        "high_usage_count": 1,
+        "fatigued_arms": [
+          "Cole Wilcox"
+        ],
+        "fatigue_level": "MODERATE"
+      },
+      "away_bullpen_fatigue": {
+        "recent_usage": [
+          {
+            "name": "Tim Hill",
+            "pitches": 7,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Brent Headrick",
+            "pitches": 10,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Paul Blackburn",
+            "pitches": 22,
+            "ip": 1.1,
+            "days_ago": 2
+          },
+          {
+            "name": "Brent Headrick",
+            "pitches": 16,
+            "ip": 0.2,
+            "days_ago": 2
+          },
+          {
+            "name": "Fernando Cruz",
+            "pitches": 11,
+            "ip": 0.2,
+            "days_ago": 2
+          },
+          {
+            "name": "Jake Bird",
+            "pitches": 14,
+            "ip": 1.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Camilo Doval",
+            "pitches": 2,
+            "ip": 0.1,
+            "days_ago": 2
+          }
+        ],
+        "high_usage_count": 1,
+        "fatigued_arms": [
+          "Paul Blackburn"
+        ],
+        "fatigue_level": "MODERATE"
+      },
+      "home_injuries": [],
+      "away_injuries": [],
+      "home_team_splits": {
+        "home": {
+          "ops": 0.687,
+          "runs_per_game": 4.0,
+          "games": 6
+        }
+      },
+      "away_team_splits": {
+        "away": {
+          "ops": 0.638,
+          "runs_per_game": 3.8,
+          "games": 5
+        }
+      },
+      "home_streak": {},
+      "away_streak": {}
+    },
+    {
+      "game_pk": 824136,
+      "home": "Kansas City Royals",
+      "away": "Minnesota Twins",
+      "home_id": 118,
+      "away_id": 142,
+      "game_time": "2026-04-01T23:40:00Z",
+      "home_sp": "Noah Cameron",
+      "away_sp": "Joe Ryan",
+      "venue": "Kauffman Stadium",
+      "status": "Pre-Game",
+      "live_score": "Minnesota Twins 0 - Kansas City Royals 0",
+      "hp_ump": "Andy Fletcher",
+      "odds": {
+        "moneyline": {
+          "Kansas City Royals": -160,
+          "Minnesota Twins": 145
+        },
+        "total": {
+          "over": -105,
+          "under": 100,
+          "line": "9.5"
+        },
+        "runline": {
+          "Kansas City Royals": {
+            "price": 132,
+            "point": -1.5
+          },
+          "Minnesota Twins": {
+            "price": -160,
+            "point": 1.5
+          }
+        }
+      },
+      "weather": {
+        "temp_f": 57,
+        "wind_mph": 20.8,
+        "wind_dir": "ENE",
+        "precip_pct": 100,
+        "wind_impact": "20.8 mph ENE \u2014 crosswind"
+      },
+      "park_factor": {
+        "runs": 0.97,
+        "hr": 0.9,
+        "note": "Pitcher friendly"
+      },
+      "ump_stats": {
+        "name": "Andy Fletcher",
+        "rpg": 8.8,
+        "k_pct": 0.22,
+        "note": "No data \u2014 using league average"
+      },
+      "home_sp_stats": {
+        "player_id": 702070,
+        "season": 2025,
+        "gs": 24,
+        "ip": 138.1,
+        "era": 2.99,
+        "whip": 1.1,
+        "k9": 7.43,
+        "bb9": 2.8,
+        "note": "2025 only (no 2026 starts yet)",
+        "recent_form": {
+          "starts": 3,
+          "era_last3": 3.1,
+          "k9_last3": 9.31,
+          "bb9_last3": 3.62,
+          "ip_per_start": 5.8
+        },
+        "form_flag": "SMALL SAMPLE (3 starts) \u2014 recent form not reliable",
+        "splits": {
+          "home_era": 2.93,
+          "home_k9": 8.04,
+          "away_era": 3.06,
+          "away_k9": 6.92
+        },
+        "relevant_split": "Home ERA: 2.93 K/9: 8.04"
+      },
+      "away_sp_stats": {
+        "player_id": 657746,
+        "season": 2025,
+        "gs": 30,
+        "ip": 171.0,
+        "era": 3.42,
+        "whip": 1.04,
+        "k9": 10.21,
+        "bb9": 2.05,
+        "gs_2026": 1,
+        "era_2026": 0.0,
+        "note": "Primarily 2025 (1 2026 starts)",
+        "recent_form": {
+          "starts": 1,
+          "era_last3": 0.0,
+          "k9_last3": 12.35,
+          "bb9_last3": 3.53,
+          "ip_per_start": 5.1
+        },
+        "splits": {
+          "away_era": 0.0,
+          "away_k9": 12.35
+        },
+        "relevant_split": "Away ERA: 0.0 K/9: 12.35"
+      },
+      "home_team_pitching": {
+        "season": 2026,
+        "team_era": 0.0,
+        "team_whip": 1.5,
+        "team_k9": 4.5,
+        "note": "2026 YTD"
+      },
+      "away_team_pitching": {
+        "season": 2026,
+        "team_era": 0.0,
+        "team_whip": 0.75,
+        "team_k9": 16.36,
+        "note": "2026 YTD"
+      },
+      "home_team_batting": {
+        "season": 2025,
+        "games_played": 157,
+        "ops": 0.852,
+        "avg": 0.295,
+        "obp": 0.351,
+        "slg": 0.501,
+        "runs_per_game": 0.63,
+        "note": "2025 full season"
+      },
+      "away_team_batting": {
+        "season": 2025,
+        "games_played": 49,
+        "ops": 0.827,
+        "avg": 0.302,
+        "obp": 0.382,
+        "slg": 0.445,
+        "runs_per_game": 0.51,
+        "note": "2025 full season"
+      },
+      "home_lineup": {},
+      "away_lineup": {},
+      "home_platoon": {},
+      "away_platoon": {},
+      "home_bullpen_fatigue": {
+        "recent_usage": [
+          {
+            "name": "Nick Mears",
+            "pitches": 8,
+            "ip": 1.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Daniel Lynch IV",
+            "pitches": 9,
+            "ip": 1.0,
+            "days_ago": 2
+          },
+          {
+            "name": "John Schreiber",
+            "pitches": 15,
+            "ip": 1.0,
+            "days_ago": 2
+          }
+        ],
+        "high_usage_count": 0,
+        "fatigued_arms": [],
+        "fatigue_level": "FRESH"
+      },
+      "away_bullpen_fatigue": {
+        "recent_usage": [
+          {
+            "name": "Justin Topa",
+            "pitches": 10,
+            "ip": 0.2,
+            "days_ago": 2
+          },
+          {
+            "name": "Taylor Rogers",
+            "pitches": 14,
+            "ip": 1.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Kody Funderburk",
+            "pitches": 26,
+            "ip": 1.1,
+            "days_ago": 2
+          }
+        ],
+        "high_usage_count": 1,
+        "fatigued_arms": [
+          "Kody Funderburk"
+        ],
+        "fatigue_level": "MODERATE"
+      },
+      "home_injuries": [],
+      "away_injuries": [],
+      "home_team_splits": {
+        "home": {
+          "ops": 0.707,
+          "runs_per_game": 3.72,
+          "games": 81
+        },
+        "away": {
+          "ops": 0.704,
+          "runs_per_game": 4.32,
+          "games": 81
+        }
+      },
+      "away_team_splits": {
+        "home": {
+          "ops": 0.722,
+          "runs_per_game": 4.36,
+          "games": 81
+        },
+        "away": {
+          "ops": 0.694,
+          "runs_per_game": 4.01,
+          "games": 81
+        }
+      },
+      "home_streak": {},
+      "away_streak": {}
+    },
+    {
+      "game_pk": 823970,
+      "home": "Los Angeles Dodgers",
+      "away": "Cleveland Guardians",
+      "home_id": 119,
+      "away_id": 114,
+      "game_time": "2026-04-02T00:20:00Z",
+      "home_sp": "Yoshinobu Yamamoto",
+      "away_sp": "Gavin Williams",
+      "venue": "UNIQLO Field at Dodger Stadium",
+      "status": "Scheduled",
+      "live_score": null,
+      "hp_ump": "",
+      "odds": {
+        "moneyline": {
+          "Cleveland Guardians": 227,
+          "Los Angeles Dodgers": -255
+        },
+        "total": {
+          "over": 100,
+          "under": -110,
+          "line": "8.0"
+        },
+        "runline": {
+          "Cleveland Guardians": {
+            "price": 103,
+            "point": 1.5
+          },
+          "Los Angeles Dodgers": {
+            "price": -120,
+            "point": -1.5
+          }
+        }
+      },
+      "weather": {
+        "temp_f": 69,
+        "wind_mph": 25.1,
+        "wind_dir": "WSW",
+        "precip_pct": 0,
+        "wind_impact": "25.1 mph WSW \u2014 crosswind"
+      },
+      "park_factor": {
+        "runs": 0.97,
+        "hr": 0.95,
+        "note": "Pitcher lean"
+      },
+      "ump_stats": {
+        "name": "TBD",
+        "rpg": 8.8,
+        "k_pct": 0.22,
+        "note": "Unknown \u2014 using league average"
+      },
+      "home_sp_stats": {
+        "player_id": 808967,
+        "season": 2025,
+        "gs": 30,
+        "ip": 173.2,
+        "era": 2.49,
+        "whip": 0.99,
+        "k9": 10.44,
+        "bb9": 3.07,
+        "gs_2026": 1,
+        "era_2026": 3.0,
+        "note": "Primarily 2025 (1 2026 starts)",
+        "recent_form": {
+          "starts": 1,
+          "era_last3": 3.0,
+          "k9_last3": 9.0,
+          "bb9_last3": 0.0,
+          "ip_per_start": 6.0
+        },
+        "form_flag": "SMALL SAMPLE (1 starts) \u2014 recent form not reliable",
+        "splits": {
+          "home_era": 3.0,
+          "home_k9": 9.0
+        },
+        "relevant_split": "Home ERA: 3.0 K/9: 9.0"
+      },
+      "away_sp_stats": {
+        "player_id": 668909,
+        "season": 2025,
+        "gs": 31,
+        "ip": 167.2,
+        "era": 3.06,
+        "whip": 1.27,
+        "k9": 9.31,
+        "bb9": 4.47,
+        "gs_2026": 1,
+        "era_2026": 5.4,
+        "note": "Primarily 2025 (1 2026 starts)",
+        "recent_form": {
+          "starts": 1,
+          "era_last3": 5.4,
+          "k9_last3": 12.6,
+          "bb9_last3": 10.8,
+          "ip_per_start": 5.0
+        },
+        "form_flag": "SMALL SAMPLE (1 starts) \u2014 recent form not reliable",
+        "splits": {
+          "away_era": 5.4,
+          "away_k9": 12.6
+        },
+        "relevant_split": "Away ERA: 5.4 K/9: 12.6"
+      },
+      "home_team_pitching": {
+        "season": 2026,
+        "team_era": 0.0,
+        "team_whip": 0.0,
+        "team_k9": 9.0,
+        "note": "2026 YTD"
+      },
+      "away_team_pitching": {},
+      "home_team_batting": {
+        "season": 2025,
+        "games_played": 147,
+        "ops": 0.869,
+        "avg": 0.295,
+        "obp": 0.367,
+        "slg": 0.502,
+        "runs_per_game": 0.55,
+        "note": "2025 full season"
+      },
+      "away_team_batting": {
+        "season": 2025,
+        "games_played": 6,
+        "ops": 0.833,
+        "avg": 0.333,
+        "obp": 0.5,
+        "slg": 0.333,
+        "runs_per_game": 0.83,
+        "note": "2025 full season"
+      },
+      "home_lineup": {
+        "team": "Los Angeles Dodgers",
+        "batters": []
+      },
+      "away_lineup": {
+        "team": "Cleveland Guardians",
+        "batters": []
+      },
+      "home_platoon": {},
+      "away_platoon": {},
+      "home_bullpen_fatigue": {
+        "recent_usage": [
+          {
+            "name": "Alex Vesia",
+            "pitches": 14,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Edwin D\u00edaz",
+            "pitches": 33,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Jack Dreyer",
+            "pitches": 15,
+            "ip": 1.0,
+            "days_ago": 1
+          },
+          {
+            "name": "Tanner Scott",
+            "pitches": 16,
+            "ip": 1.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Justin Wrobleski",
+            "pitches": 60,
+            "ip": 4.0,
+            "days_ago": 2
+          }
+        ],
+        "high_usage_count": 2,
+        "fatigued_arms": [
+          "Edwin D\u00edaz",
+          "Justin Wrobleski"
+        ],
+        "fatigue_level": "SEVERE"
+      },
+      "away_bullpen_fatigue": {
+        "recent_usage": [
+          {
+            "name": "Matt Festa",
+            "pitches": 29,
+            "ip": 1.1,
+            "days_ago": 1
+          },
+          {
+            "name": "Kolby Allard",
+            "pitches": 55,
+            "ip": 2.2,
+            "days_ago": 1
+          },
+          {
+            "name": "Shawn Armstrong",
+            "pitches": 12,
+            "ip": 0.2,
+            "days_ago": 2
+          },
+          {
+            "name": "Cade Smith",
+            "pitches": 29,
+            "ip": 1.0,
+            "days_ago": 2
+          },
+          {
+            "name": "Erik Sabrowski",
+            "pitches": 20,
+            "ip": 1.1,
+            "days_ago": 2
+          }
+        ],
+        "high_usage_count": 4,
+        "fatigued_arms": [
+          "Matt Festa",
+          "Kolby Allard",
+          "Cade Smith",
+          "Erik Sabrowski"
+        ],
+        "fatigue_level": "SEVERE"
+      },
+      "home_injuries": [],
+      "away_injuries": [],
+      "home_team_splits": {
+        "home": {
+          "ops": 0.713,
+          "runs_per_game": 4.4,
+          "games": 5
+        }
+      },
+      "away_team_splits": {
+        "away": {
+          "ops": 0.574,
+          "runs_per_game": 3.0,
+          "games": 6
+        }
+      },
+      "home_streak": {},
+      "away_streak": {}
     }
   ]
 }
