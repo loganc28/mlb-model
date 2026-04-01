@@ -1,71 +1,11 @@
 {
   "date": "2026-04-01",
-  "generated_at": "2026-04-01T20:10:35.766427Z",
+  "generated_at": "2026-04-01T21:22:26.126964Z",
   "stats_date": "2026-04-01",
   "ai_model": "Claude Sonnet 4.5",
   "total_games": 15,
   "total_picks": 1,
   "picks": [
-    {
-      "game": "Washington Nationals @ Philadelphia Phillies",
-      "venue": "Citizens Bank Park",
-      "game_time": "2026-04-01T17:05:00Z",
-      "status": "In Progress",
-      "live_score": "Washington Nationals 5 - Philadelphia Phillies 3",
-      "away_sp": "Cade Cavalli",
-      "home_sp": "Cristopher S\u00e1nchez",
-      "hp_ump": "Tripp Gibson",
-      "bet_type": "SKIP",
-      "pick": "SKIP",
-      "line": "N/A",
-      "tier": "SKIP",
-      "units": 0.0,
-      "win_prob_pct": 0,
-      "implied_prob_pct": 0,
-      "ev_pct": 0,
-      "sp_analysis": "S\u00e1nchez season ERA 2.50, K/9 9.45, home split 0.0 ERA (15.0 K/9), recent 0.81 ERA. Cavalli season 4.25 ERA, away split 4.91 ERA, recent 2.93 ERA. SMALL SAMPLE flags on both \u2014 recent form unreliable.",
-      "lineup_analysis": "Washington OPS 0.845, Philadelphia OPS 0.812. No relevant lineup data available.",
-      "bullpen_note": "SEVERE fatigue both sides: Washington 3 arms, Philadelphia 5 arms fatigued.",
-      "injury_flags": "None",
-      "umpire_note": "Tripp Gibson 8.7 rpg, 23% K \u2014 neutral umpire.",
-      "park_note": "Citizens Bank Park 1.06 runs factor, 1.12 HR factor \u2014 hitter friendly.",
-      "weather_impact": "10.8 mph WNW \u2014 crosswind, temp 82F.",
-      "nrfi_analysis": "",
-      "key_edge": "Game already in progress \u2014 betting closed.",
-      "rationale": "",
-      "avoid_reason": "Status: In Progress. Game already started, live score 5-3. No bets allowed on games in progress per Rule 7.",
-      "flags": "Game In Progress"
-    },
-    {
-      "game": "Colorado Rockies @ Toronto Blue Jays",
-      "venue": "Rogers Centre",
-      "game_time": "2026-04-01T17:07:00Z",
-      "status": "In Progress",
-      "live_score": "Colorado Rockies 2 - Toronto Blue Jays 1",
-      "away_sp": "Kyle Freeland",
-      "home_sp": "Kevin Gausman",
-      "hp_ump": "Brian O'Nora",
-      "bet_type": "SKIP",
-      "pick": "SKIP",
-      "line": "N/A",
-      "tier": "SKIP",
-      "units": 0.0,
-      "win_prob_pct": 0,
-      "implied_prob_pct": 0,
-      "ev_pct": 0,
-      "sp_analysis": "Gausman season 3.59 ERA, K/9 8.81, home split 1.5 ERA (16.5 K/9), recent 0.75 ERA. Freeland season 4.98 ERA, away split 4.15 ERA, recent 2.97 ERA. SMALL SAMPLE flags on both.",
-      "lineup_analysis": "Colorado OPS 0.0 (no data), Toronto OPS 0.777. No meaningful lineup comparison.",
-      "bullpen_note": "SEVERE fatigue both sides: Colorado 3 arms, Toronto 5 arms fatigued.",
-      "injury_flags": "None",
-      "umpire_note": "Brian O'Nora 8.9 rpg, 22% K \u2014 neutral umpire.",
-      "park_note": "Rogers Centre 1.01 runs factor, 1.05 HR \u2014 dome neutral.",
-      "weather_impact": "Dome \u2014 weather irrelevant.",
-      "nrfi_analysis": "",
-      "key_edge": "Game already in progress \u2014 betting closed.",
-      "rationale": "",
-      "avoid_reason": "Status: In Progress. Game already started, live score 2-1. No bets allowed on games in progress per Rule 7.",
-      "flags": "Game In Progress"
-    },
     {
       "game": "New York Mets @ St. Louis Cardinals",
       "venue": "Busch Stadium",
@@ -83,108 +23,18 @@
       "win_prob_pct": 0,
       "implied_prob_pct": 0,
       "ev_pct": 0,
-      "sp_analysis": "Peralta season 2.70 ERA, K/9 10.42, recent 4.46 ERA (declining 1.76 runs). Liberatore season 4.21 ERA, home split 1.8 ERA, recent 1.64 ERA. SMALL SAMPLE flags on both.",
-      "lineup_analysis": "Mets OPS 0.0 (no data), Cardinals OPS 0.802. No meaningful lineup comparison.",
-      "bullpen_note": "Cardinals SEVERE fatigue (3 arms), Mets MODERATE fatigue (1 arm).",
+      "sp_analysis": "Peralta season ERA 2.7, K/9 10.42 vs Liberatore season ERA 4.21, K/9 7.26. Recent form unreliable (both SMALL SAMPLE flags). Liberatore home split 1.8 ERA is elite but extremely small sample.",
+      "lineup_analysis": "Cardinals OPS 0.802 vs Mets OPS 0.000 (insufficient data).",
+      "bullpen_note": "Mets MODERATE (1 arm). Cardinals SEVERE (3 arms: Stanek, Svanson, Soriano).",
       "injury_flags": "None",
-      "umpire_note": "Nic Lentz 8.8 rpg \u2014 neutral (league average).",
-      "park_note": "Busch Stadium 0.97 runs factor, 0.92 HR \u2014 pitcher lean.",
-      "weather_impact": "17.0 mph E \u2014 crosswind, 61F, 100% rain chance.",
+      "umpire_note": "Nic Lentz 8.8 rpg, 22% K \u2014 Neutral",
+      "park_note": "Busch Stadium runs factor 0.97, HR 0.92 \u2014 Pitcher lean",
+      "weather_impact": "23.3 mph NE blowing IN from CF (UNDER lean) at 64F with 100% precip",
       "nrfi_analysis": "",
-      "key_edge": "Game already in progress \u2014 betting closed.",
+      "key_edge": "Game already In Progress",
       "rationale": "",
-      "avoid_reason": "Status: In Progress. Game already started, live score 1-1. No bets allowed on games in progress per Rule 7.",
-      "flags": "Game In Progress, Rain 100%"
-    },
-    {
-      "game": "Tampa Bay Rays @ Milwaukee Brewers",
-      "venue": "American Family Field",
-      "game_time": "2026-04-01T17:40:00Z",
-      "status": "In Progress",
-      "live_score": "Tampa Bay Rays 2 - Milwaukee Brewers 4",
-      "away_sp": "Drew Rasmussen",
-      "home_sp": "Jacob Misiorowski",
-      "hp_ump": "CB Bucknor",
-      "bet_type": "SKIP",
-      "pick": "SKIP",
-      "line": "N/A",
-      "tier": "SKIP",
-      "units": 0.0,
-      "win_prob_pct": 0,
-      "implied_prob_pct": 0,
-      "ev_pct": 0,
-      "sp_analysis": "Rasmussen season 2.76 ERA, away split 1.8 ERA, recent 1.8 ERA. Misiorowski season 4.36 ERA, home split 1.8 ERA, recent 2.45 ERA. SMALL SAMPLE flags on both.",
-      "lineup_analysis": "Tampa Bay OPS 0.671 (weak), Milwaukee OPS 0.0 (no data).",
-      "bullpen_note": "SEVERE fatigue both sides: Tampa 2 arms, Milwaukee 3 arms fatigued.",
-      "injury_flags": "None",
-      "umpire_note": "CB Bucknor 9.4 rpg, 20% K \u2014 high run umpire (+1 OVER lean).",
-      "park_note": "American Family Field 1.03 runs factor, 1.06 HR \u2014 dome, slight hitter lean.",
-      "weather_impact": "Dome \u2014 weather irrelevant.",
-      "nrfi_analysis": "",
-      "key_edge": "Game already in progress \u2014 betting closed.",
-      "rationale": "",
-      "avoid_reason": "Status: In Progress. Game already started, live score 2-4. No bets allowed on games in progress per Rule 7.",
-      "flags": "Game In Progress"
-    },
-    {
-      "game": "Boston Red Sox @ Houston Astros",
-      "venue": "Daikin Park",
-      "game_time": "2026-04-01T18:10:00Z",
-      "status": "In Progress",
-      "live_score": "Boston Red Sox 2 - Houston Astros 6",
-      "away_sp": "Garrett Crochet",
-      "home_sp": "Mike Burrows",
-      "hp_ump": "Bruce Dreckman",
-      "bet_type": "SKIP",
-      "pick": "SKIP",
-      "line": "N/A",
-      "tier": "SKIP",
-      "units": 0.0,
-      "win_prob_pct": 0,
-      "implied_prob_pct": 0,
-      "ev_pct": 0,
-      "sp_analysis": "Crochet season 2.59 ERA, away split 0.0 ERA, recent 3.27 ERA. Burrows season 3.94 ERA, home split 7.94 ERA (vulnerable), recent 6.18 ERA. SMALL SAMPLE flags on both.",
-      "lineup_analysis": "Boston OPS 0.859 (strong), Houston OPS 0.727.",
-      "bullpen_note": "SEVERE fatigue both sides: Boston 3 arms, Houston 2 arms fatigued.",
-      "injury_flags": "None",
-      "umpire_note": "Bruce Dreckman 8.9 rpg, 22% K \u2014 neutral umpire.",
-      "park_note": "Daikin Park 0.98 runs factor, 1.02 HR \u2014 dome neutral.",
-      "weather_impact": "Dome \u2014 weather irrelevant.",
-      "nrfi_analysis": "",
-      "key_edge": "Game already in progress \u2014 betting closed.",
-      "rationale": "",
-      "avoid_reason": "Status: In Progress. Game already started, live score 2-6. No bets allowed on games in progress per Rule 7.",
-      "flags": "Game In Progress"
-    },
-    {
-      "game": "Los Angeles Angels @ Chicago Cubs",
-      "venue": "Wrigley Field",
-      "game_time": "2026-04-01T18:20:00Z",
-      "status": "In Progress",
-      "live_score": "Los Angeles Angels 2 - Chicago Cubs 5",
-      "away_sp": "Yusei Kikuchi",
-      "home_sp": "Matthew Boyd",
-      "hp_ump": "David Rackley",
-      "bet_type": "SKIP",
-      "pick": "SKIP",
-      "line": "N/A",
-      "tier": "SKIP",
-      "units": 0.0,
-      "win_prob_pct": 0,
-      "implied_prob_pct": 0,
-      "ev_pct": 0,
-      "sp_analysis": "Boyd season 3.21 ERA, home split 14.73 ERA (VOLATILE), recent 7.5 ERA (declining 4.29 runs). Kikuchi season 3.99 ERA, away split 4.15 ERA, recent 6.85 ERA (declining 2.86 runs). SMALL SAMPLE flags on both.",
-      "lineup_analysis": "Angels OPS 0.0 (no data), Cubs OPS 0.739.",
-      "bullpen_note": "SEVERE fatigue both sides: Angels 3 arms, Cubs 3 arms fatigued.",
-      "injury_flags": "None",
-      "umpire_note": "David Rackley 8.5 rpg, 24% K \u2014 pitcher friendly (-1 UNDER lean).",
-      "park_note": "Wrigley Field 1.04 runs factor, 1.02 HR \u2014 wind-dependent.",
-      "weather_impact": "32.2 mph NE \u2014 crosswind, temp 38F (cold suppresses scoring).",
-      "nrfi_analysis": "",
-      "key_edge": "Game already in progress \u2014 betting closed.",
-      "rationale": "",
-      "avoid_reason": "Status: In Progress. Game already started, live score 2-5. No bets allowed on games in progress per Rule 7.",
-      "flags": "Game In Progress"
+      "avoid_reason": "Game status is In Progress. Cannot place bets on live games per rules.",
+      "flags": "In Progress, 100% rain"
     },
     {
       "game": "Detroit Tigers @ Arizona Diamondbacks",
@@ -203,78 +53,78 @@
       "win_prob_pct": 0,
       "implied_prob_pct": 0,
       "ev_pct": 0,
-      "sp_analysis": "Skubal season 2.21 ERA, K/9 11.12, away split 0.0 ERA, recent 1.29 ERA (elite). Gallen season 4.83 ERA, recent 6.0 ERA (declining 1.17 runs). SMALL SAMPLE flags on both.",
-      "lineup_analysis": "Detroit OPS 0.616 (weak), Arizona OPS 0.851 (strong).",
-      "bullpen_note": "SEVERE fatigue both sides: Detroit 3 arms, Arizona 2 arms fatigued.",
+      "sp_analysis": "Skubal season ERA 2.21, K/9 11.12, away split 0.0 ERA vs Gallen season ERA 4.83, K/9 8.20. Skubal recent 0.75 ERA but SMALL SAMPLE. Gallen recent 3.6 ERA.",
+      "lineup_analysis": "Tigers OPS 0.616 vs Diamondbacks OPS 0.851. Massive lineup advantage to Arizona.",
+      "bullpen_note": "Tigers SEVERE (3 arms: Vest, Hurter, De Jesus). Diamondbacks SEVERE (2 arms: Hoffmann, Ross).",
       "injury_flags": "None",
-      "umpire_note": "Adam Hamari 9.2 rpg, 21% K \u2014 slight OVER lean (+1 point).",
-      "park_note": "Chase Field 1.02 runs factor, 1.04 HR \u2014 dome neutral.",
-      "weather_impact": "Dome \u2014 weather irrelevant.",
+      "umpire_note": "Adam Hamari 9.2 rpg \u2014 Slight OVER lean",
+      "park_note": "Chase Field runs factor 1.02, HR 1.04 \u2014 Neutral dome",
+      "weather_impact": "Dome \u2014 weather irrelevant",
       "nrfi_analysis": "",
-      "key_edge": "Game already in progress \u2014 betting closed.",
+      "key_edge": "Game already In Progress",
       "rationale": "",
-      "avoid_reason": "Status: In Progress. Game already started, live score 0-1. No bets allowed on games in progress per Rule 7.",
-      "flags": "Game In Progress"
+      "avoid_reason": "Game status is In Progress. Cannot place bets on live games per rules.",
+      "flags": "In Progress"
     },
     {
       "game": "San Francisco Giants @ San Diego Padres",
       "venue": "Petco Park",
       "game_time": "2026-04-01T20:10:00Z",
-      "status": "Warmup",
-      "live_score": "San Francisco Giants 0 - San Diego Padres 0",
+      "status": "In Progress",
+      "live_score": "San Francisco Giants 0 - San Diego Padres 1",
       "away_sp": "Adrian Houser",
       "home_sp": "Nick Pivetta",
       "hp_ump": "Ryan Additon",
       "bet_type": "SKIP",
       "pick": "SKIP",
-      "line": "-400",
+      "line": "N/A",
       "tier": "SKIP",
-      "units": 0,
-      "win_prob_pct": 80,
-      "implied_prob_pct": 56,
-      "ev_pct": 15.0,
-      "sp_analysis": "Pivetta season 2.87 ERA, K/9 9.44, home split 18.0 ERA (SMALL SAMPLE 1 start \u2014 unreliable). Houser season 3.31 ERA, away split 3.7 ERA, recent 4.5 ERA. SMALL SAMPLE flags make recent form unreliable, use season stats.",
-      "lineup_analysis": "Giants OPS 0.0 (no data), Padres OPS 0.719. Low offensive environment expected.",
-      "bullpen_note": "SEVERE fatigue both sides: Giants 2 arms, Padres 3 arms fatigued. Does not affect NRFI (1st inning only).",
+      "units": 0.0,
+      "win_prob_pct": 0,
+      "implied_prob_pct": 0,
+      "ev_pct": 0,
+      "sp_analysis": "Houser season ERA 3.31, away split 3.7 ERA vs Pivetta season ERA 2.87, home split 18.0 ERA. Pivetta recent 6.75 ERA but SMALL SAMPLE.",
+      "lineup_analysis": "Giants OPS 0.000 (no data) vs Padres OPS 0.719.",
+      "bullpen_note": "Giants SEVERE (2 arms: Brubaker, Walker). Padres SEVERE (3 arms: Hart, Morgan, Marinaccio).",
       "injury_flags": "None",
-      "umpire_note": "Ryan Additon 9.1 rpg, 22% K \u2014 slight OVER lean for full game, neutral for NRFI.",
-      "park_note": "Petco Park 0.88 runs factor, 0.82 HR \u2014 elite pitcher park (+1 NRFI point).",
-      "weather_impact": "26.3 mph W \u2014 crosswind, temp 71F.",
-      "nrfi_analysis": "NRFI prob 80.0%, YRFI prob 20.0%. Away SP NRFI score 1.058, Home SP NRFI score 1.284. Both pitchers have elite NRFI profiles. Pivetta K/9 9.44 (above 8.5), BB/9 2.48 (below 3.0). Houser K/9 6.62 (below threshold but still solid), BB/9 2.74 (acceptable). Petco Park factor 0.88 strongly supports NRFI. Model fair price -400 vs typical book -130 creates massive EV edge.",
-      "key_edge": "NRFI model probability 80% in elite pitcher park \u2014 24% EV vs typical -130 book price.",
-      "rationale": "NRFI model shows 80% probability with fair price -400. Petco Park's 0.88 runs factor is elite pitcher-friendly environment. Both SPs have strong NRFI scores (1.058 and 1.284). Early season with SMALL SAMPLE flags means season stats are most reliable, and both pitchers have sub-4.00 ERAs. Typical book offers NRFI around -130 for average games, creating 24% EV when our model shows -400 fair value.",
-      "avoid_reason": "ML odds -400.0 exceed -180 cap \u2014 negative EV at this juice",
-      "flags": "SMALL SAMPLE recent form both SPs"
+      "umpire_note": "Ryan Additon 9.1 rpg \u2014 Slight OVER lean",
+      "park_note": "Petco Park runs factor 0.88, HR 0.82 \u2014 Elite pitcher park",
+      "weather_impact": "24.1 mph W crosswind at 69F",
+      "nrfi_analysis": "",
+      "key_edge": "Game already In Progress",
+      "rationale": "",
+      "avoid_reason": "Game status is In Progress. Cannot place bets on live games per rules.",
+      "flags": "In Progress"
     },
     {
       "game": "New York Yankees @ Seattle Mariners",
       "venue": "T-Mobile Park",
       "game_time": "2026-04-01T20:10:00Z",
-      "status": "Warmup",
-      "live_score": "New York Yankees 0 - Seattle Mariners 0",
+      "status": "In Progress",
+      "live_score": "New York Yankees 1 - Seattle Mariners 0",
       "away_sp": "Cam Schlittler",
       "home_sp": "George Kirby",
       "hp_ump": "Lance Barrett",
       "bet_type": "SKIP",
       "pick": "SKIP",
-      "line": "-400",
+      "line": "N/A",
       "tier": "SKIP",
-      "units": 0,
-      "win_prob_pct": 80,
-      "implied_prob_pct": 80,
+      "units": 0.0,
+      "win_prob_pct": 0,
+      "implied_prob_pct": 0,
       "ev_pct": 0,
-      "sp_analysis": "Schlittler season 2.96 ERA/10.36 K9, away split 0.00 ERA/14.12 K9 in 1 start. Kirby season 4.21 ERA/9.79 K9, home split 1.50 ERA/9.00 K9 in 1 start. Both pitchers showing elite recent form but SMALL SAMPLE flags present.",
-      "lineup_analysis": "Yankees OPS 1.145 elite but early season inflated. Mariners OPS 0.815 moderate. No confirmed injuries.",
-      "bullpen_note": "Yankees MODERATE (Blackburn fatigued). Mariners MODERATE (Wilcox fatigued). Neutral fatigue.",
+      "sp_analysis": "Schlittler season ERA 2.96, away split 0.0 ERA vs Kirby season ERA 4.21, home split 1.5 ERA. Kirby recent 1.64 ERA but SMALL SAMPLE.",
+      "lineup_analysis": "Yankees OPS 1.145 (elite) vs Mariners OPS 0.815.",
+      "bullpen_note": "Yankees MODERATE (1 arm: Blackburn). Mariners MODERATE (1 arm: Wilcox).",
       "injury_flags": "None",
-      "umpire_note": "Barrett 8.5 rpg, 24% K \u2014 pitcher friendly lean",
-      "park_note": "T-Mobile 0.93 runs factor, 0.91 HR factor \u2014 pitcher friendly",
-      "weather_impact": "6.9 mph SE \u2014 crosswind. 48F cold suppresses offense.",
-      "nrfi_analysis": "NRFI prob 80% vs YRFI 20%. Schlittler K/9 10.36, BB/9 3.82. Kirby K/9 9.79, BB/9 2.07. Park factor 0.93 pitcher friendly. Ump 8.5 rpg supports NRFI. Fair price -400 matches typical book pricing, minimal edge but high confidence setup.",
-      "key_edge": "80% NRFI probability with elite K rates (10.36/9.79), pitcher park (0.93), cold weather (48F), pitcher-friendly ump (8.5 rpg)",
-      "rationale": "Both starters show elite strikeout ability and recent dominance despite small samples. Pitcher-friendly park and cold weather suppress first inning scoring. Barrett's low 8.5 rpg adds confirmation. NRFI at fair value but meets 80% threshold for high-confidence recommendation.",
-      "avoid_reason": "ML odds -400.0 exceed -180 cap \u2014 negative EV at this juice",
-      "flags": "100% precip chance \u2014 monitor for delay. SMALL SAMPLE on both SPs."
+      "umpire_note": "Lance Barrett 8.5 rpg, 24% K \u2014 Pitcher friendly",
+      "park_note": "T-Mobile Park runs factor 0.93, HR 0.91 \u2014 Pitcher friendly",
+      "weather_impact": "5.5 mph SSE blowing OUT to CF at 48F with 100% precip",
+      "nrfi_analysis": "",
+      "key_edge": "Game already In Progress",
+      "rationale": "",
+      "avoid_reason": "Game status is In Progress. Cannot place bets on live games per rules.",
+      "flags": "In Progress, 100% rain"
     },
     {
       "game": "Minnesota Twins @ Kansas City Royals",
@@ -293,48 +143,48 @@
       "win_prob_pct": 0,
       "implied_prob_pct": 0,
       "ev_pct": 0,
-      "sp_analysis": "Ryan season 3.42 ERA/10.21 K9, away split 0.00 ERA/12.35 K9 in 1 start. Cameron season 2.99 ERA/7.43 K9, home split 2.93 ERA/8.04 K9, recent 3.10 ERA but SMALL SAMPLE (3 starts).",
-      "lineup_analysis": "Twins OPS 0.827 vs Royals OPS 0.852 \u2014 minimal gap. No confirmed injuries.",
-      "bullpen_note": "Twins MODERATE (Funderburk fatigued). Royals FRESH \u2014 bullpen edge to KC.",
+      "sp_analysis": "Ryan season ERA 3.42, away split 0.0 ERA, K/9 12.35 vs Cameron season ERA 2.99, home split 2.93 ERA, recent 3.1 ERA (SMALL SAMPLE). Minimal SP gap.",
+      "lineup_analysis": "Twins OPS 0.827 vs Royals OPS 0.852. Near identical offensive profiles.",
+      "bullpen_note": "Twins MODERATE (1 arm: Funderburk). Royals FRESH (0 arms fatigued).",
       "injury_flags": "None",
-      "umpire_note": "Fletcher 8.8 rpg \u2014 league average neutral",
-      "park_note": "Kauffman 0.97 runs factor \u2014 neutral to slight pitcher lean",
-      "weather_impact": "20.8 mph ENE \u2014 crosswind. 57F moderate temps.",
+      "umpire_note": "Andy Fletcher 8.8 rpg \u2014 Neutral",
+      "park_note": "Kauffman Stadium runs factor 0.97, HR 0.90 \u2014 Pitcher friendly",
+      "weather_impact": "21.4 mph ENE crosswind at 59F with 100% precip",
       "nrfi_analysis": "",
-      "key_edge": "",
+      "key_edge": "No clear edge identified",
       "rationale": "",
-      "avoid_reason": "100% precip chance creates postponement risk. SP ERA gap only 0.43 \u2014 insufficient edge. Both lineups weak OPS below 0.860. SMALL SAMPLE flags on both pitchers make recent form unreliable. Total at 9.5 has no directional edge with crosswind and neutral umpire. ML at -160 overpriced for marginal SP quality difference. No qualifying bet meets EV threshold.",
-      "flags": "100% precip chance \u2014 high postponement risk. SMALL SAMPLE on both SPs."
+      "avoid_reason": "SP ERA gap only 0.43 \u2014 insufficient edge. Total 9.5 is extreme and contradicts pitcher-friendly park (0.97 runs factor). Royals fresh bullpen provides slight advantage but not enough for positive EV. NRFI prob only 63.8% (below threshold). 100% rain risk.",
+      "flags": "100% rain"
     },
     {
       "game": "Cleveland Guardians @ Los Angeles Dodgers",
       "venue": "UNIQLO Field at Dodger Stadium",
       "game_time": "2026-04-02T00:20:00Z",
-      "status": "Scheduled",
-      "live_score": null,
+      "status": "Pre-Game",
+      "live_score": "Cleveland Guardians 0 - Los Angeles Dodgers 0",
       "away_sp": "Gavin Williams",
       "home_sp": "Yoshinobu Yamamoto",
-      "hp_ump": "TBD",
-      "bet_type": "Total OVER",
-      "pick": "OVER 8.0",
-      "line": "100",
-      "tier": "B",
-      "units": 1.0,
-      "win_prob_pct": 54,
-      "implied_prob_pct": 50,
+      "hp_ump": "Quinn Wolcott",
+      "bet_type": "Total UNDER",
+      "pick": "UNDER 8.0",
+      "line": "-110",
+      "tier": "C",
+      "units": 0.5,
+      "win_prob_pct": 56,
+      "implied_prob_pct": 52,
       "ev_pct": 4,
-      "sp_analysis": "Williams season 3.06 ERA/9.31 K9, away split 5.40 ERA/12.60 K9 in 1 start \u2014 DECLINING on road. Yamamoto season 2.49 ERA/10.44 K9, home split 3.00 ERA/9.00 K9 in 1 start. Williams away split shows 2.34 ERA inflation from season mark.",
-      "lineup_analysis": "Guardians OPS 0.833 vs Dodgers OPS 0.869 \u2014 both above league average. No confirmed injuries.",
-      "bullpen_note": "Guardians SEVERE (4 arms: Festa, Allard, Smith, Sabrowski fatigued). Dodgers SEVERE (2 arms: D\u00edaz, Wrobleski fatigued). Both bullpens compromised heavily favors OVER.",
+      "sp_analysis": "Yamamoto season ERA 2.49, K/9 10.44, home split 3.0 ERA, recent 3.0 ERA vs Williams season ERA 3.06, away split 5.4 ERA, recent 5.4 ERA. Williams recent form shows significant decline from season norm.",
+      "lineup_analysis": "Guardians OPS 0.833 vs Dodgers OPS 0.869. Both teams solid but not elite offenses.",
+      "bullpen_note": "Guardians SEVERE (4 arms: Festa, Allard, Smith, Sabrowski). Dodgers SEVERE (2 arms: D\u00edaz, Wrobleski). Heavy bullpen usage both sides creates uncertainty but not OVER lean due to SP quality.",
       "injury_flags": "None",
-      "umpire_note": "TBD \u2014 using 8.8 league average, neutral",
-      "park_note": "Dodger Stadium 0.97 runs factor \u2014 slight pitcher lean but close to neutral",
-      "weather_impact": "25.1 mph WSW \u2014 crosswind. 69F warm temps support offense.",
+      "umpire_note": "Quinn Wolcott 8.8 rpg \u2014 Neutral",
+      "park_note": "Dodger Stadium runs factor 0.97, HR 0.95 \u2014 Pitcher lean",
+      "weather_impact": "28.2 mph SW crosswind at 69F",
       "nrfi_analysis": "",
-      "key_edge": "Both bullpens SEVERE fatigue (6 combined arms) with Williams showing 5.40 road ERA vs 3.06 season ERA",
-      "rationale": "Williams' road split (5.40 ERA) significantly worse than season ERA creates SP vulnerability. Both teams facing SEVERE bullpen fatigue (6 combined fatigued arms) heavily supports late-inning scoring. Warm 69F temps aid offense despite neutral park factor. Plus money OVER at 100 provides fair value with dual bullpen fatigue and Williams road decline.",
+      "key_edge": "Pitcher-friendly park (0.97 runs factor) combined with Yamamoto's elite strikeout ability (10.44 K/9)",
+      "rationale": "Dodger Stadium pitcher lean (0.97 runs factor) provides foundation. Yamamoto 10.44 K/9 and 2.49 ERA is elite SP quality. Both bullpens SEVERE fatigue creates game flow uncertainty but does not override park and primary SP edge. Total 8.0 is elevated for this park environment.",
       "avoid_reason": "",
-      "flags": "SMALL SAMPLE on both SPs. Umpire TBD \u2014 monitor assignment."
+      "flags": "Both SMALL SAMPLE on recent form"
     },
     {
       "game": "Athletics @ Atlanta Braves",
@@ -427,6 +277,66 @@
       "no_display": true
     },
     {
+      "game": "Washington Nationals @ Philadelphia Phillies",
+      "venue": "Citizens Bank Park",
+      "game_time": "2026-04-01T17:05:00Z",
+      "status": "Final",
+      "live_score": "Washington Nationals 5 - Philadelphia Phillies 6",
+      "away_sp": "Cade Cavalli",
+      "home_sp": "Cristopher S\u00e1nchez",
+      "hp_ump": "Tripp Gibson",
+      "bet_type": "SKIP",
+      "pick": "SKIP",
+      "line": "N/A",
+      "tier": "SKIP",
+      "units": 0,
+      "win_prob_pct": 0,
+      "implied_prob_pct": 0,
+      "ev_pct": 0,
+      "sp_analysis": "",
+      "lineup_analysis": "",
+      "bullpen_note": "",
+      "injury_flags": "None",
+      "umpire_note": "",
+      "park_note": "",
+      "weather_impact": "",
+      "key_edge": "",
+      "rationale": "",
+      "avoid_reason": "No odds data available",
+      "flags": "",
+      "no_display": true
+    },
+    {
+      "game": "Colorado Rockies @ Toronto Blue Jays",
+      "venue": "Rogers Centre",
+      "game_time": "2026-04-01T17:07:00Z",
+      "status": "Final",
+      "live_score": "Colorado Rockies 2 - Toronto Blue Jays 1",
+      "away_sp": "Kyle Freeland",
+      "home_sp": "Kevin Gausman",
+      "hp_ump": "Brian O'Nora",
+      "bet_type": "SKIP",
+      "pick": "SKIP",
+      "line": "N/A",
+      "tier": "SKIP",
+      "units": 0,
+      "win_prob_pct": 0,
+      "implied_prob_pct": 0,
+      "ev_pct": 0,
+      "sp_analysis": "",
+      "lineup_analysis": "",
+      "bullpen_note": "",
+      "injury_flags": "None",
+      "umpire_note": "",
+      "park_note": "",
+      "weather_impact": "",
+      "key_edge": "",
+      "rationale": "",
+      "avoid_reason": "No odds data available",
+      "flags": "",
+      "no_display": true
+    },
+    {
       "game": "Chicago White Sox @ Miami Marlins",
       "venue": "loanDepot park",
       "game_time": "2026-04-01T17:10:00Z",
@@ -435,6 +345,96 @@
       "away_sp": "Shane Smith",
       "home_sp": "Sandy Alcantara",
       "hp_ump": "Mike Muchlinski",
+      "bet_type": "SKIP",
+      "pick": "SKIP",
+      "line": "N/A",
+      "tier": "SKIP",
+      "units": 0,
+      "win_prob_pct": 0,
+      "implied_prob_pct": 0,
+      "ev_pct": 0,
+      "sp_analysis": "",
+      "lineup_analysis": "",
+      "bullpen_note": "",
+      "injury_flags": "None",
+      "umpire_note": "",
+      "park_note": "",
+      "weather_impact": "",
+      "key_edge": "",
+      "rationale": "",
+      "avoid_reason": "No odds data available",
+      "flags": "",
+      "no_display": true
+    },
+    {
+      "game": "Tampa Bay Rays @ Milwaukee Brewers",
+      "venue": "American Family Field",
+      "game_time": "2026-04-01T17:40:00Z",
+      "status": "Final",
+      "live_score": "Tampa Bay Rays 2 - Milwaukee Brewers 8",
+      "away_sp": "Drew Rasmussen",
+      "home_sp": "Jacob Misiorowski",
+      "hp_ump": "CB Bucknor",
+      "bet_type": "SKIP",
+      "pick": "SKIP",
+      "line": "N/A",
+      "tier": "SKIP",
+      "units": 0,
+      "win_prob_pct": 0,
+      "implied_prob_pct": 0,
+      "ev_pct": 0,
+      "sp_analysis": "",
+      "lineup_analysis": "",
+      "bullpen_note": "",
+      "injury_flags": "None",
+      "umpire_note": "",
+      "park_note": "",
+      "weather_impact": "",
+      "key_edge": "",
+      "rationale": "",
+      "avoid_reason": "No odds data available",
+      "flags": "",
+      "no_display": true
+    },
+    {
+      "game": "Boston Red Sox @ Houston Astros",
+      "venue": "Daikin Park",
+      "game_time": "2026-04-01T18:10:00Z",
+      "status": "Final",
+      "live_score": "Boston Red Sox 4 - Houston Astros 6",
+      "away_sp": "Garrett Crochet",
+      "home_sp": "Mike Burrows",
+      "hp_ump": "Bruce Dreckman",
+      "bet_type": "SKIP",
+      "pick": "SKIP",
+      "line": "N/A",
+      "tier": "SKIP",
+      "units": 0,
+      "win_prob_pct": 0,
+      "implied_prob_pct": 0,
+      "ev_pct": 0,
+      "sp_analysis": "",
+      "lineup_analysis": "",
+      "bullpen_note": "",
+      "injury_flags": "None",
+      "umpire_note": "",
+      "park_note": "",
+      "weather_impact": "",
+      "key_edge": "",
+      "rationale": "",
+      "avoid_reason": "No odds data available",
+      "flags": "",
+      "no_display": true
+    },
+    {
+      "game": "Los Angeles Angels @ Chicago Cubs",
+      "venue": "Wrigley Field",
+      "game_time": "2026-04-01T18:20:00Z",
+      "status": "Final",
+      "live_score": "Los Angeles Angels 2 - Chicago Cubs 6",
+      "away_sp": "Yusei Kikuchi",
+      "home_sp": "Matthew Boyd",
+      "hp_ump": "David Rackley",
       "bet_type": "SKIP",
       "pick": "SKIP",
       "line": "N/A",
@@ -474,10 +474,10 @@
       "odds": {},
       "weather": {
         "temp_f": 82,
-        "wind_mph": 19.5,
-        "wind_dir": "SSW",
+        "wind_mph": 16.4,
+        "wind_dir": "S",
         "precip_pct": 0,
-        "wind_impact": "19.5 mph SSW \u2014 blowing OUT to CF (OVER lean)"
+        "wind_impact": "16.4 mph S \u2014 blowing OUT to CF (OVER lean)"
       },
       "park_factor": {
         "runs": 1.02,
@@ -711,11 +711,11 @@
       "hp_ump": "Manny Gonzalez",
       "odds": {},
       "weather": {
-        "temp_f": 87,
-        "wind_mph": 12.7,
-        "wind_dir": "WSW",
-        "precip_pct": 0,
-        "wind_impact": "12.7 mph WSW \u2014 blowing OUT to CF (OVER lean)"
+        "temp_f": 81,
+        "wind_mph": 13.7,
+        "wind_dir": "ENE",
+        "precip_pct": 100,
+        "wind_impact": "13.7 mph ENE \u2014 blowing IN from CF (UNDER lean)"
       },
       "park_factor": {
         "runs": 1.0,
@@ -940,11 +940,11 @@
       "hp_ump": "Rob Drake",
       "odds": {},
       "weather": {
-        "temp_f": 72,
-        "wind_mph": 17.5,
-        "wind_dir": "WNW",
+        "temp_f": 63,
+        "wind_mph": 11.7,
+        "wind_dir": "NE",
         "precip_pct": 100,
-        "wind_impact": "17.5 mph WNW \u2014 crosswind"
+        "wind_impact": "11.7 mph NE \u2014 blowing IN from CF"
       },
       "park_factor": {
         "runs": 1.12,
@@ -1170,36 +1170,16 @@
       "home_sp": "Cristopher S\u00e1nchez",
       "away_sp": "Cade Cavalli",
       "venue": "Citizens Bank Park",
-      "status": "In Progress",
-      "live_score": "Washington Nationals 5 - Philadelphia Phillies 3",
+      "status": "Final",
+      "live_score": "Washington Nationals 5 - Philadelphia Phillies 6",
       "hp_ump": "Tripp Gibson",
-      "odds": {
-        "moneyline": {
-          "Philadelphia Phillies": 450,
-          "Washington Nationals": -488
-        },
-        "total": {
-          "over": 230,
-          "under": -200,
-          "line": "8.5"
-        },
-        "runline": {
-          "Philadelphia Phillies": {
-            "price": 265,
-            "point": 1.5
-          },
-          "Washington Nationals": {
-            "price": -220,
-            "point": -1.5
-          }
-        }
-      },
+      "odds": {},
       "weather": {
-        "temp_f": 82,
-        "wind_mph": 10.8,
-        "wind_dir": "WNW",
-        "precip_pct": 0,
-        "wind_impact": "10.8 mph WNW \u2014 crosswind"
+        "temp_f": 77,
+        "wind_mph": 21.3,
+        "wind_dir": "NE",
+        "precip_pct": 100,
+        "wind_impact": "21.3 mph NE \u2014 blowing IN from CF (UNDER lean)"
       },
       "park_factor": {
         "runs": 1.06,
@@ -1234,10 +1214,10 @@
         },
         "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
         "splits": {
-          "home_era": 0.0,
-          "home_k9": 15.0
+          "home_era": 0.79,
+          "home_k9": 13.78
         },
-        "relevant_split": "Home ERA: 0.0 K/9: 15.0"
+        "relevant_split": "Home ERA: 0.79 K/9: 13.78"
       },
       "away_sp_stats": {
         "player_id": 676917,
@@ -1260,10 +1240,10 @@
         },
         "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
         "splits": {
-          "away_era": 4.91,
-          "away_k9": 14.06
+          "away_era": 2.79,
+          "away_k9": 7.83
         },
-        "relevant_split": "Away ERA: 4.91 K/9: 14.06"
+        "relevant_split": "Away ERA: 2.79 K/9: 7.83"
       },
       "home_team_pitching": {
         "season": 2025,
@@ -1397,16 +1377,16 @@
       "away_injuries": [],
       "home_team_splits": {
         "home": {
-          "ops": 0.609,
-          "runs_per_game": 3.4,
-          "games": 5
+          "ops": 0.674,
+          "runs_per_game": 3.83,
+          "games": 6
         }
       },
       "away_team_splits": {
         "away": {
-          "ops": 0.788,
-          "runs_per_game": 6.6,
-          "games": 5
+          "ops": 0.773,
+          "runs_per_game": 6.33,
+          "games": 6
         }
       },
       "home_streak": {},
@@ -1422,30 +1402,10 @@
       "home_sp": "Kevin Gausman",
       "away_sp": "Kyle Freeland",
       "venue": "Rogers Centre",
-      "status": "In Progress",
+      "status": "Final",
       "live_score": "Colorado Rockies 2 - Toronto Blue Jays 1",
       "hp_ump": "Brian O'Nora",
-      "odds": {
-        "moneyline": {
-          "Colorado Rockies": -180,
-          "Toronto Blue Jays": 172
-        },
-        "total": {
-          "over": 175,
-          "under": 166,
-          "line": "4.5"
-        },
-        "runline": {
-          "Colorado Rockies": {
-            "price": 310,
-            "point": -1.5
-          },
-          "Toronto Blue Jays": {
-            "price": -195,
-            "point": 1.0
-          }
-        }
-      },
+      "odds": {},
       "weather": {
         "temp_f": "Dome",
         "wind_mph": 0,
@@ -1486,10 +1446,10 @@
         },
         "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
         "splits": {
-          "home_era": 1.5,
-          "home_k9": 16.5
+          "home_era": 0.75,
+          "home_k9": 15.75
         },
-        "relevant_split": "Home ERA: 1.5 K/9: 16.5"
+        "relevant_split": "Home ERA: 0.75 K/9: 15.75"
       },
       "away_sp_stats": {
         "player_id": 607536,
@@ -1512,10 +1472,10 @@
         },
         "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
         "splits": {
-          "away_era": 4.15,
-          "away_k9": 4.39
+          "away_era": 2.89,
+          "away_k9": 7.91
         },
-        "relevant_split": "Away ERA: 4.15 K/9: 4.39"
+        "relevant_split": "Away ERA: 2.89 K/9: 7.91"
       },
       "home_team_pitching": {
         "season": 2026,
@@ -1658,16 +1618,16 @@
       "away_injuries": [],
       "home_team_splits": {
         "home": {
-          "ops": 0.815,
-          "runs_per_game": 5.2,
-          "games": 5
+          "ops": 0.753,
+          "runs_per_game": 4.5,
+          "games": 6
         }
       },
       "away_team_splits": {
         "away": {
-          "ops": 0.681,
-          "runs_per_game": 4.4,
-          "games": 5
+          "ops": 0.637,
+          "runs_per_game": 4.0,
+          "games": 6
         }
       },
       "home_streak": {},
@@ -1907,31 +1867,31 @@
       "hp_ump": "Nic Lentz",
       "odds": {
         "moneyline": {
-          "New York Mets": -106,
-          "St. Louis Cardinals": -104
+          "New York Mets": 145,
+          "St. Louis Cardinals": 120
         },
         "total": {
-          "over": -105,
-          "under": -104,
-          "line": "4.5"
+          "over": 110,
+          "under": 110,
+          "line": "3.5"
         },
         "runline": {
           "New York Mets": {
-            "price": 260,
+            "price": 333,
             "point": -1.5
           },
           "St. Louis Cardinals": {
-            "price": -220,
+            "price": -148,
             "point": 1.0
           }
         }
       },
       "weather": {
-        "temp_f": 61,
-        "wind_mph": 17.0,
-        "wind_dir": "E",
+        "temp_f": 64,
+        "wind_mph": 23.3,
+        "wind_dir": "NE",
         "precip_pct": 100,
-        "wind_impact": "17.0 mph E \u2014 crosswind"
+        "wind_impact": "23.3 mph NE \u2014 blowing IN from CF (UNDER lean)"
       },
       "park_factor": {
         "runs": 0.97,
@@ -2138,30 +2098,10 @@
       "home_sp": "Jacob Misiorowski",
       "away_sp": "Drew Rasmussen",
       "venue": "American Family Field",
-      "status": "In Progress",
-      "live_score": "Tampa Bay Rays 2 - Milwaukee Brewers 4",
+      "status": "Final",
+      "live_score": "Tampa Bay Rays 2 - Milwaukee Brewers 8",
       "hp_ump": "CB Bucknor",
-      "odds": {
-        "moneyline": {
-          "Milwaukee Brewers": -10000,
-          "Tampa Bay Rays": 2200
-        },
-        "total": {
-          "over": 126,
-          "under": 110,
-          "line": "7.5"
-        },
-        "runline": {
-          "Milwaukee Brewers": {
-            "price": 140,
-            "point": -3.5
-          },
-          "Tampa Bay Rays": {
-            "price": 100,
-            "point": 2.5
-          }
-        }
-      },
+      "odds": {},
       "weather": {
         "temp_f": "Dome",
         "wind_mph": 0,
@@ -2202,10 +2142,10 @@
         },
         "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
         "splits": {
-          "home_era": 1.8,
-          "home_k9": 19.8
+          "home_era": 2.45,
+          "home_k9": 14.73
         },
-        "relevant_split": "Home ERA: 1.8 K/9: 19.8"
+        "relevant_split": "Home ERA: 2.45 K/9: 14.73"
       },
       "away_sp_stats": {
         "player_id": 656876,
@@ -2229,9 +2169,9 @@
         "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
         "splits": {
           "away_era": 1.8,
-          "away_k9": 3.6
+          "away_k9": 9.0
         },
-        "relevant_split": "Away ERA: 1.8 K/9: 3.6"
+        "relevant_split": "Away ERA: 1.8 K/9: 9.0"
       },
       "home_team_pitching": {
         "season": 2026,
@@ -2365,16 +2305,16 @@
       "away_injuries": [],
       "home_team_splits": {
         "home": {
-          "ops": 0.858,
-          "runs_per_game": 7.4,
-          "games": 5
+          "ops": 0.826,
+          "runs_per_game": 7.5,
+          "games": 6
         }
       },
       "away_team_splits": {
         "away": {
-          "ops": 0.768,
-          "runs_per_game": 5.6,
-          "games": 5
+          "ops": 0.739,
+          "runs_per_game": 5.0,
+          "games": 6
         }
       },
       "home_streak": {},
@@ -2390,30 +2330,10 @@
       "home_sp": "Mike Burrows",
       "away_sp": "Garrett Crochet",
       "venue": "Daikin Park",
-      "status": "In Progress",
-      "live_score": "Boston Red Sox 2 - Houston Astros 6",
+      "status": "Final",
+      "live_score": "Boston Red Sox 4 - Houston Astros 6",
       "hp_ump": "Bruce Dreckman",
-      "odds": {
-        "moneyline": {
-          "Boston Red Sox": 3000,
-          "Houston Astros": -10000
-        },
-        "total": {
-          "over": 118,
-          "under": 107,
-          "line": "9.5"
-        },
-        "runline": {
-          "Boston Red Sox": {
-            "price": 105,
-            "point": 4.0
-          },
-          "Houston Astros": {
-            "price": 195,
-            "point": -4.5
-          }
-        }
-      },
+      "odds": {},
       "weather": {
         "temp_f": "Dome",
         "wind_mph": 0,
@@ -2454,10 +2374,10 @@
         },
         "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
         "splits": {
-          "home_era": 7.94,
-          "home_k9": 10.38
+          "home_era": 5.91,
+          "home_k9": 10.59
         },
-        "relevant_split": "Home ERA: 7.94 K/9: 10.38"
+        "relevant_split": "Home ERA: 5.91 K/9: 10.59"
       },
       "away_sp_stats": {
         "player_id": 676979,
@@ -2480,10 +2400,10 @@
         },
         "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
         "splits": {
-          "away_era": 0.0,
-          "away_k9": 12.0
+          "away_era": 3.27,
+          "away_k9": 12.27
         },
-        "relevant_split": "Away ERA: 0.0 K/9: 12.0"
+        "relevant_split": "Away ERA: 3.27 K/9: 12.27"
       },
       "home_team_pitching": {
         "season": 2025,
@@ -2578,16 +2498,16 @@
       "away_injuries": [],
       "home_team_splits": {
         "home": {
-          "ops": 0.829,
-          "runs_per_game": 6.5,
-          "games": 6
+          "ops": 0.83,
+          "runs_per_game": 6.43,
+          "games": 7
         }
       },
       "away_team_splits": {
         "away": {
-          "ops": 0.629,
-          "runs_per_game": 2.6,
-          "games": 5
+          "ops": 0.642,
+          "runs_per_game": 2.83,
+          "games": 6
         }
       },
       "home_streak": {},
@@ -2603,36 +2523,16 @@
       "home_sp": "Matthew Boyd",
       "away_sp": "Yusei Kikuchi",
       "venue": "Wrigley Field",
-      "status": "In Progress",
-      "live_score": "Los Angeles Angels 2 - Chicago Cubs 5",
+      "status": "Final",
+      "live_score": "Los Angeles Angels 2 - Chicago Cubs 6",
       "hp_ump": "David Rackley",
-      "odds": {
-        "moneyline": {
-          "Chicago Cubs": -5000,
-          "Los Angeles Angels": 1700
-        },
-        "total": {
-          "over": 102,
-          "under": -118,
-          "line": "8.5"
-        },
-        "runline": {
-          "Chicago Cubs": {
-            "price": 154,
-            "point": -3.5
-          },
-          "Los Angeles Angels": {
-            "price": 125,
-            "point": 3.0
-          }
-        }
-      },
+      "odds": {},
       "weather": {
-        "temp_f": 38,
-        "wind_mph": 32.2,
-        "wind_dir": "NE",
+        "temp_f": 41,
+        "wind_mph": 23.2,
+        "wind_dir": "ENE",
         "precip_pct": 0,
-        "wind_impact": "32.2 mph NE \u2014 crosswind"
+        "wind_impact": "23.2 mph ENE \u2014 crosswind"
       },
       "park_factor": {
         "runs": 1.04,
@@ -2667,10 +2567,10 @@
         },
         "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
         "splits": {
-          "home_era": 14.73,
-          "home_k9": 19.69
+          "home_era": 6.75,
+          "home_k9": 16.81
         },
-        "relevant_split": "Home ERA: 14.73 K/9: 19.69"
+        "relevant_split": "Home ERA: 6.75 K/9: 16.81"
       },
       "away_sp_stats": {
         "player_id": 579328,
@@ -2693,10 +2593,10 @@
         },
         "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
         "splits": {
-          "away_era": 4.15,
-          "away_k9": 6.59
+          "away_era": 6.52,
+          "away_k9": 7.83
         },
-        "relevant_split": "Away ERA: 4.15 K/9: 6.59"
+        "relevant_split": "Away ERA: 6.52 K/9: 7.83"
       },
       "home_team_pitching": {
         "season": 2026,
@@ -2807,16 +2707,16 @@
       "away_injuries": [],
       "home_team_splits": {
         "home": {
-          "ops": 0.666,
-          "runs_per_game": 4.8,
-          "games": 5
+          "ops": 0.682,
+          "runs_per_game": 5.0,
+          "games": 6
         }
       },
       "away_team_splits": {
         "away": {
-          "ops": 0.745,
-          "runs_per_game": 4.83,
-          "games": 6
+          "ops": 0.688,
+          "runs_per_game": 4.43,
+          "games": 7
         }
       },
       "home_streak": {},
@@ -2837,21 +2737,21 @@
       "hp_ump": "Adam Hamari",
       "odds": {
         "moneyline": {
-          "Arizona Diamondbacks": -182,
-          "Detroit Tigers": 160
+          "Arizona Diamondbacks": -250,
+          "Detroit Tigers": 375
         },
         "total": {
-          "over": -103,
-          "under": -115,
-          "line": "7.5"
+          "over": 105,
+          "under": 118,
+          "line": "2.5"
         },
         "runline": {
           "Arizona Diamondbacks": {
-            "price": 124,
+            "price": 210,
             "point": -1.5
           },
           "Detroit Tigers": {
-            "price": 105,
+            "price": 128,
             "point": 1.0
           }
         }
@@ -2889,10 +2789,10 @@
         "note": "Primarily 2025 (1 2026 starts)",
         "recent_form": {
           "starts": 2,
-          "era_last3": 6.0,
-          "k9_last3": 3.0,
-          "bb9_last3": 3.0,
-          "ip_per_start": 3.0
+          "era_last3": 3.6,
+          "k9_last3": 3.6,
+          "bb9_last3": 1.8,
+          "ip_per_start": 5.0
         },
         "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
         "splits": {
@@ -2914,10 +2814,10 @@
         "note": "Primarily 2025 (1 2026 starts)",
         "recent_form": {
           "starts": 2,
-          "era_last3": 1.29,
-          "k9_last3": 7.71,
+          "era_last3": 0.75,
+          "k9_last3": 6.0,
           "bb9_last3": 0.0,
-          "ip_per_start": 3.5
+          "ip_per_start": 6.0
         },
         "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
         "splits": {
@@ -3103,36 +3003,36 @@
       "home_sp": "Nick Pivetta",
       "away_sp": "Adrian Houser",
       "venue": "Petco Park",
-      "status": "Warmup",
-      "live_score": "San Francisco Giants 0 - San Diego Padres 0",
+      "status": "In Progress",
+      "live_score": "San Francisco Giants 0 - San Diego Padres 1",
       "hp_ump": "Ryan Additon",
       "odds": {
         "moneyline": {
-          "San Diego Padres": -148,
-          "San Francisco Giants": 134
+          "San Diego Padres": -230,
+          "San Francisco Giants": 253
         },
         "total": {
-          "over": 100,
-          "under": 100,
-          "line": "8.0"
+          "over": -112,
+          "under": 122,
+          "line": "4.5"
         },
         "runline": {
           "San Diego Padres": {
-            "price": 144,
+            "price": 120,
             "point": -1.5
           },
           "San Francisco Giants": {
-            "price": -120,
+            "price": 105,
             "point": 1.0
           }
         }
       },
       "weather": {
-        "temp_f": 71,
-        "wind_mph": 26.3,
+        "temp_f": 69,
+        "wind_mph": 24.1,
         "wind_dir": "W",
         "precip_pct": 0,
-        "wind_impact": "26.3 mph W \u2014 crosswind"
+        "wind_impact": "24.1 mph W \u2014 crosswind"
       },
       "park_factor": {
         "runs": 0.88,
@@ -3159,13 +3059,13 @@
         "era_2026": 18.0,
         "note": "Primarily 2025 (1 2026 starts)",
         "recent_form": {
-          "starts": 1,
-          "era_last3": 18.0,
-          "k9_last3": 12.0,
-          "bb9_last3": 9.0,
-          "ip_per_start": 3.0
+          "starts": 2,
+          "era_last3": 6.75,
+          "k9_last3": 13.5,
+          "bb9_last3": 5.62,
+          "ip_per_start": 4.0
         },
-        "form_flag": "SMALL SAMPLE (1 starts) \u2014 recent form not reliable",
+        "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
         "splits": {
           "home_era": 18.0,
           "home_k9": 12.0
@@ -3183,13 +3083,12 @@
         "bb9": 2.74,
         "note": "2025 only (no 2026 starts yet)",
         "recent_form": {
-          "starts": 3,
-          "era_last3": 4.5,
-          "k9_last3": 4.5,
-          "bb9_last3": 3.0,
-          "ip_per_start": 6.0
+          "starts": 1,
+          "era_last3": 0.0,
+          "k9_last3": 6.75,
+          "bb9_last3": 0.0,
+          "ip_per_start": 4.0
         },
-        "form_flag": "SMALL SAMPLE (3 starts) \u2014 recent form not reliable",
         "splits": {
           "home_era": 2.77,
           "home_k9": 5.19,
@@ -3223,142 +3122,8 @@
         "note": "2025 full season"
       },
       "away_team_batting": {},
-      "home_lineup": {
-        "team": "San Diego Padres",
-        "batters": [
-          {
-            "name": "Fernando Tatis Jr.",
-            "pos": "RF",
-            "bats": "",
-            "avg": 0.235,
-            "ops": 0.644
-          },
-          {
-            "name": "Xander Bogaerts",
-            "pos": "SS",
-            "bats": "",
-            "avg": 0.2,
-            "ops": 0.45
-          },
-          {
-            "name": "Jackson Merrill",
-            "pos": "CF",
-            "bats": "",
-            "avg": 0.222,
-            "ops": 0.744
-          },
-          {
-            "name": "Manny Machado",
-            "pos": "3B",
-            "bats": "",
-            "avg": 0.2,
-            "ops": 0.667
-          },
-          {
-            "name": "Ram\u00f3n Laureano",
-            "pos": "DH",
-            "bats": "",
-            "avg": 0.357,
-            "ops": 1.043
-          },
-          {
-            "name": "Jake Cronenworth",
-            "pos": "2B",
-            "bats": "",
-            "avg": 0.167,
-            "ops": 0.417
-          },
-          {
-            "name": "Gavin Sheets",
-            "pos": "1B",
-            "bats": "",
-            "avg": 0.071,
-            "ops": 0.142
-          },
-          {
-            "name": "Freddy Fermin",
-            "pos": "C",
-            "bats": "",
-            "avg": 0.1,
-            "ops": 0.282
-          },
-          {
-            "name": "Bryce Johnson",
-            "pos": "LF",
-            "bats": "",
-            "avg": 0.0,
-            "ops": 0.0
-          }
-        ]
-      },
-      "away_lineup": {
-        "team": "San Francisco Giants",
-        "batters": [
-          {
-            "name": "Willy Adames",
-            "pos": "SS",
-            "bats": "",
-            "avg": 0.3,
-            "ops": 0.8
-          },
-          {
-            "name": "Rafael Devers",
-            "pos": "DH",
-            "bats": "",
-            "avg": 0.263,
-            "ops": 0.649
-          },
-          {
-            "name": "Heliot Ramos",
-            "pos": "LF",
-            "bats": "",
-            "avg": 0.222,
-            "ops": 0.578
-          },
-          {
-            "name": "Luis Arraez",
-            "pos": "2B",
-            "bats": "",
-            "avg": 0.211,
-            "ops": 0.449
-          },
-          {
-            "name": "Matt Chapman",
-            "pos": "3B",
-            "bats": "",
-            "avg": 0.222,
-            "ops": 0.722
-          },
-          {
-            "name": "Jung Hoo Lee",
-            "pos": "RF",
-            "bats": "",
-            "avg": 0.222,
-            "ops": 0.689
-          },
-          {
-            "name": "Harrison Bader",
-            "pos": "CF",
-            "bats": "",
-            "avg": 0.158,
-            "ops": 0.526
-          },
-          {
-            "name": "Patrick Bailey",
-            "pos": "C",
-            "bats": "",
-            "avg": 0.125,
-            "ops": 0.347
-          },
-          {
-            "name": "Casey Schmitt",
-            "pos": "1B",
-            "bats": "",
-            "avg": 0.188,
-            "ops": 0.528
-          }
-        ]
-      },
+      "home_lineup": {},
+      "away_lineup": {},
       "home_platoon": {},
       "away_platoon": {},
       "home_bullpen_fatigue": {
@@ -3488,36 +3253,36 @@
       "home_sp": "George Kirby",
       "away_sp": "Cam Schlittler",
       "venue": "T-Mobile Park",
-      "status": "Warmup",
-      "live_score": "New York Yankees 0 - Seattle Mariners 0",
+      "status": "In Progress",
+      "live_score": "New York Yankees 1 - Seattle Mariners 0",
       "hp_ump": "Lance Barrett",
       "odds": {
         "moneyline": {
-          "New York Yankees": 105,
-          "Seattle Mariners": -115
+          "New York Yankees": -230,
+          "Seattle Mariners": 230
         },
         "total": {
-          "over": 105,
-          "under": 105,
-          "line": "7.0"
+          "over": -105,
+          "under": 104,
+          "line": "3.5"
         },
         "runline": {
           "New York Yankees": {
-            "price": 180,
+            "price": 120,
             "point": -1.5
           },
           "Seattle Mariners": {
-            "price": 185,
-            "point": -1.5
+            "price": 105,
+            "point": 1.0
           }
         }
       },
       "weather": {
         "temp_f": 48,
-        "wind_mph": 6.9,
-        "wind_dir": "SE",
+        "wind_mph": 5.5,
+        "wind_dir": "SSE",
         "precip_pct": 100,
-        "wind_impact": "6.9 mph SE \u2014 crosswind"
+        "wind_impact": "5.5 mph SSE \u2014 blowing OUT to CF"
       },
       "park_factor": {
         "runs": 0.93,
@@ -3544,13 +3309,13 @@
         "era_2026": 1.5,
         "note": "Primarily 2025 (1 2026 starts)",
         "recent_form": {
-          "starts": 1,
-          "era_last3": 1.5,
+          "starts": 2,
+          "era_last3": 1.64,
           "k9_last3": 9.0,
-          "bb9_last3": 3.0,
-          "ip_per_start": 6.0
+          "bb9_last3": 2.45,
+          "ip_per_start": 5.5
         },
-        "form_flag": "SMALL SAMPLE (1 starts) \u2014 recent form not reliable",
+        "form_flag": "SMALL SAMPLE (2 starts) \u2014 recent form not reliable",
         "splits": {
           "home_era": 1.5,
           "home_k9": 9.0
@@ -3570,11 +3335,11 @@
         "era_2026": 0.0,
         "note": "Primarily 2025 (1 2026 starts)",
         "recent_form": {
-          "starts": 1,
+          "starts": 2,
           "era_last3": 0.0,
-          "k9_last3": 14.12,
+          "k9_last3": 11.58,
           "bb9_last3": 0.0,
-          "ip_per_start": 5.1
+          "ip_per_start": 5.0
         },
         "splits": {
           "away_era": 0.0,
@@ -3616,142 +3381,8 @@
         "runs_per_game": 0.9,
         "note": "2025 full season"
       },
-      "home_lineup": {
-        "team": "Seattle Mariners",
-        "batters": [
-          {
-            "name": "Brendan Donovan",
-            "pos": "3B",
-            "bats": "",
-            "avg": 0.429,
-            "ops": 1.3
-          },
-          {
-            "name": "Cal Raleigh",
-            "pos": "C",
-            "bats": "",
-            "avg": 0.143,
-            "ops": 0.44
-          },
-          {
-            "name": "Julio Rodr\u00edguez",
-            "pos": "CF",
-            "bats": "",
-            "avg": 0.091,
-            "ops": 0.322
-          },
-          {
-            "name": "Josh Naylor",
-            "pos": "1B",
-            "bats": "",
-            "avg": 0.043,
-            "ops": 0.197
-          },
-          {
-            "name": "Randy Arozarena",
-            "pos": "LF",
-            "bats": "",
-            "avg": 0.25,
-            "ops": 0.773
-          },
-          {
-            "name": "Luke Raley",
-            "pos": "RF",
-            "bats": "",
-            "avg": 0.286,
-            "ops": 1.262
-          },
-          {
-            "name": "Dominic Canzone",
-            "pos": "DH",
-            "bats": "",
-            "avg": 0.273,
-            "ops": 1.294
-          },
-          {
-            "name": "Cole Young",
-            "pos": "2B",
-            "bats": "",
-            "avg": 0.333,
-            "ops": 0.935
-          },
-          {
-            "name": "Leo Rivas",
-            "pos": "SS",
-            "bats": "",
-            "avg": 0.2,
-            "ops": 0.573
-          }
-        ]
-      },
-      "away_lineup": {
-        "team": "New York Yankees",
-        "batters": [
-          {
-            "name": "Trent Grisham",
-            "pos": "CF",
-            "bats": "",
-            "avg": 0.235,
-            "ops": 0.728
-          },
-          {
-            "name": "Aaron Judge",
-            "pos": "RF",
-            "bats": "",
-            "avg": 0.15,
-            "ops": 0.64
-          },
-          {
-            "name": "Cody Bellinger",
-            "pos": "LF",
-            "bats": "",
-            "avg": 0.333,
-            "ops": 0.873
-          },
-          {
-            "name": "Ben Rice",
-            "pos": "DH",
-            "bats": "",
-            "avg": 0.357,
-            "ops": 0.971
-          },
-          {
-            "name": "Paul Goldschmidt",
-            "pos": "1B",
-            "bats": "",
-            "avg": 0.2,
-            "ops": 0.6
-          },
-          {
-            "name": "Jazz Chisholm Jr.",
-            "pos": "2B",
-            "bats": "",
-            "avg": 0.158,
-            "ops": 0.358
-          },
-          {
-            "name": "Amed Rosario",
-            "pos": "3B",
-            "bats": "",
-            "avg": 0.0,
-            "ops": 0.0
-          },
-          {
-            "name": "Austin Wells",
-            "pos": "C",
-            "bats": "",
-            "avg": 0.154,
-            "ops": 0.368
-          },
-          {
-            "name": "Jos\u00e9 Caballero",
-            "pos": "SS",
-            "bats": "",
-            "avg": 0.222,
-            "ops": 0.485
-          }
-        ]
-      },
+      "home_lineup": {},
+      "away_lineup": {},
       "home_platoon": {},
       "away_platoon": {},
       "home_bullpen_fatigue": {
@@ -3904,11 +3535,11 @@
         }
       },
       "weather": {
-        "temp_f": 57,
-        "wind_mph": 20.8,
+        "temp_f": 59,
+        "wind_mph": 21.4,
         "wind_dir": "ENE",
         "precip_pct": 100,
-        "wind_impact": "20.8 mph ENE \u2014 crosswind"
+        "wind_impact": "21.4 mph ENE \u2014 crosswind"
       },
       "park_factor": {
         "runs": 0.97,
@@ -4101,36 +3732,36 @@
       "home_sp": "Yoshinobu Yamamoto",
       "away_sp": "Gavin Williams",
       "venue": "UNIQLO Field at Dodger Stadium",
-      "status": "Scheduled",
-      "live_score": null,
-      "hp_ump": "",
+      "status": "Pre-Game",
+      "live_score": "Cleveland Guardians 0 - Los Angeles Dodgers 0",
+      "hp_ump": "Quinn Wolcott",
       "odds": {
         "moneyline": {
-          "Cleveland Guardians": 227,
-          "Los Angeles Dodgers": -255
+          "Cleveland Guardians": 231,
+          "Los Angeles Dodgers": -260
         },
         "total": {
-          "over": 100,
+          "over": -104,
           "under": -110,
           "line": "8.0"
         },
         "runline": {
           "Cleveland Guardians": {
-            "price": 103,
+            "price": 110,
             "point": 1.5
           },
           "Los Angeles Dodgers": {
-            "price": -120,
-            "point": -1.5
+            "price": 100,
+            "point": -2.0
           }
         }
       },
       "weather": {
         "temp_f": 69,
-        "wind_mph": 25.1,
-        "wind_dir": "WSW",
+        "wind_mph": 28.2,
+        "wind_dir": "SW",
         "precip_pct": 0,
-        "wind_impact": "25.1 mph WSW \u2014 crosswind"
+        "wind_impact": "28.2 mph SW \u2014 crosswind"
       },
       "park_factor": {
         "runs": 0.97,
@@ -4138,10 +3769,10 @@
         "note": "Pitcher lean"
       },
       "ump_stats": {
-        "name": "TBD",
+        "name": "Quinn Wolcott",
         "rpg": 8.8,
         "k_pct": 0.22,
-        "note": "Unknown \u2014 using league average"
+        "note": "No data \u2014 using league average"
       },
       "home_sp_stats": {
         "player_id": 808967,
@@ -4223,14 +3854,8 @@
         "runs_per_game": 0.83,
         "note": "2025 full season"
       },
-      "home_lineup": {
-        "team": "Los Angeles Dodgers",
-        "batters": []
-      },
-      "away_lineup": {
-        "team": "Cleveland Guardians",
-        "batters": []
-      },
+      "home_lineup": {},
+      "away_lineup": {},
       "home_platoon": {},
       "away_platoon": {},
       "home_bullpen_fatigue": {
