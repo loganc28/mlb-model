@@ -1184,6 +1184,12 @@ BET TYPE:
   any +1.5 pick — that implies near-certainty which doesn't exist in baseball. The underdog
   covers +1.5 roughly 60-65% of the time even in strong matchups. Be conservative.
   -1.5 win prob should be 45-60% maximum — winning by 2+ is much harder than winning outright.
+  CRITICAL — RUN LINE PRICING: The game data contains a "run_line" dict keyed by TEAM NAME.
+  Always read the price for the SPECIFIC TEAM you are betting. The underdog team +1.5 will
+  always have a NEGATIVE price (e.g. -120 to -160). The favorite team +1.5 does NOT exist —
+  only the underdog gets +1.5. Never assign a positive price to an underdog +1.5 pick or a
+  negative price greater than -200 to a +1.5 pick. If the run_line data shows a team at
+  +1.5 with a price worse than -200, that is a data error — skip the run line and use ML instead.
 - Total OVER: Fatigued bullpens + hitter park OR out-blowing wind + warm temp.
 - Total UNDER: Elite dual SPs + pitcher park + fresh pens. Wind IN adds to edge.
 - F5 Total OVER/UNDER: Use when SP quality gap is strong but bullpen fatigue on one side creates uncertainty for full game. F5 isolates the SP edge.
@@ -1415,6 +1421,29 @@ def enforce_ev_rules(picks):
         elif p["tier"] == "C": p["units"] = 0.5
         elif p["tier"] in ("WATCH","SKIP"): p["units"] = 0
 
+        # Validate run line price matches actual odds data
+        if bet_type == "Run Line" and p.get("game"):
+            game_key = p.get("game","").replace(" @ ","@")
+            # Find the game in the original summarized data
+            pick_str = p.get("pick","").upper()
+            stated_line = str(p.get("line","")).replace("+","")
+            try:
+                stated_price = float(stated_line)
+                # If price is more negative than -300 on +1.5, that's almost certainly wrong
+                # Underdog +1.5 should never be more than -200
+                if "+1.5" in pick_str and stated_price < -200:
+                    print("LINE ERROR: "+p.get("game","")+" — "+pick_str+" showing "+str(p.get("line",""))+" which is impossible for underdog +1.5. Downgrading to WATCH.")
+                    p["tier"] = "WATCH"
+                    p["units"] = 0
+                    p["avoid_reason"] = "Line validation failed — price inconsistent with run line direction"
+                # Favorite -1.5 should never be plus money
+                if "-1.5" in pick_str and stated_price > 0:
+                    print("LINE ERROR: "+p.get("game","")+" — "+pick_str+" showing +"+str(p.get("line",""))+" which is impossible for favorite -1.5. Downgrading to WATCH.")
+                    p["tier"] = "WATCH"
+                    p["units"] = 0
+                    p["avoid_reason"] = "Line validation failed — price inconsistent with run line direction"
+            except: pass
+
         enforced.append(p)
 
     # No daily unit cap — EV and scoring rubric are the only filters
@@ -1627,10 +1656,16 @@ def summarize_game(g):
             "f5_line": odds.get("f5_total",{}).get("line",""),
             "f5_over": odds.get("f5_total",{}).get("over",""),
             "f5_under": odds.get("f5_total",{}).get("under",""),
-            "rl_away": odds.get("runline",{}).get(g["away"],{}).get("price",""),
-            "rl_away_pt": odds.get("runline",{}).get(g["away"],{}).get("point",""),
-            "rl_home": odds.get("runline",{}).get(g["home"],{}).get("price",""),
-            "rl_home_pt": odds.get("runline",{}).get(g["home"],{}).get("point",""),
+            "run_line": {
+                g["away"]: {
+                    "price": odds.get("runline",{}).get(g["away"],{}).get("price",""),
+                    "point": odds.get("runline",{}).get(g["away"],{}).get("point",""),
+                },
+                g["home"]: {
+                    "price": odds.get("runline",{}).get(g["home"],{}).get("price",""),
+                    "point": odds.get("runline",{}).get(g["home"],{}).get("point",""),
+                },
+            },
             "has_odds": bool(odds.get("moneyline") or odds.get("total")),
         },
         "platoon": {
