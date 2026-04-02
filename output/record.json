@@ -573,7 +573,7 @@
       "close_line": "",
       "tier": "WATCH",
       "units": 0,
-      "ev_pct": 3.2,
+      "ev_pct": 2.2,
       "result": "",
       "units_result": 0
     }
@@ -595,6 +595,9 @@
     "Line moved 15+ cents on Seattle Mariners",
     "Rain 50%+ at Kansas City Royals",
     "Line moved 15+ cents on Cleveland Guardians",
-    "Line moved 15+ cents on Los Angeles Dodgers"
+    "Line moved 15+ cents on Los Angeles Dodgers",
+    "Rain 50%+ at Kansas City Royals",
+    "Line moved 15+ cents on Arizona Diamondbacks",
+    "Rain 50%+ at Chicago White Sox"
   ]
 }
