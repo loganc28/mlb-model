@@ -2392,6 +2392,21 @@ def build_record_html(record):
 
     pending = [p for p in picks if not p.get("result") and p.get("tier") != "WATCH"]
 
+    # Loss reason breakdown
+    REASON_LABELS = {
+        "SP_OUTPERFORMED": "SP Outperformed",
+        "BULLPEN_HELD":    "Bullpen Held",
+        "LINEUP_DIFF":     "Lineup Diff",
+        "WEATHER_WRONG":   "Weather Wrong",
+        "PURE_VARIANCE":   "Variance",
+        "BAD_DATA":        "Bad Data",
+    }
+    loss_reasons = {}
+    for p in settled:
+        if p.get("result") == "L" and p.get("loss_reason"):
+            r = p["loss_reason"]
+            loss_reasons[r] = loss_reasons.get(r, 0) + 1
+
     def stat_row(label, d):
         w=d["W"]; l=d["L"]; p=d.get("P",0); tot=w+l+p
         wr = round(w/tot*100,1) if tot else 0
@@ -2425,12 +2440,27 @@ def build_record_html(record):
                 clv_str = ("+" if clv>0 else "")+str(int(clv))
             except: pass
         final_score = p.get("final_score","")
+        loss_reason = p.get("loss_reason","")
         # WATCH picks always show 0u
         if t == "WATCH":
             ur = 0
         ur_color = "var(--green)" if ur>=0 else "var(--red)"
         clv_color = "var(--green)" if clv_str.startswith('+') else "var(--red)" if clv_str.startswith('-') else "var(--muted)"
         tier_dot = '<span class="tier-dot '+t+'"></span>' if t in ("MAX","A","B","C","WATCH") else ""
+        # Loss reason badge — only show on losses
+        REASON_LABELS = {
+            "SP_OUTPERFORMED": "SP Outperformed",
+            "BULLPEN_HELD":    "Bullpen Held",
+            "LINEUP_DIFF":     "Lineup Diff",
+            "WEATHER_WRONG":   "Weather Wrong",
+            "PURE_VARIANCE":   "Variance",
+            "BAD_DATA":        "Bad Data",
+        }
+        reason_html = ""
+        if res == "L" and loss_reason:
+            label = REASON_LABELS.get(loss_reason, loss_reason)
+            reason_html = (' <span style="font-size:9px;background:#F04B4B15;color:#F04B4BAA;'
+                          'padding:1px 6px;border-radius:4px;border:1px solid #F04B4B25">'+label+'</span>')
         return ('<tr>'
                 '<td style="color:var(--muted);font-family:\'DM Mono\',monospace;font-size:11px">'+p.get("date","")+'</td>'
                 '<td style="font-weight:600">'+p.get("pick","")+'</td>'
@@ -2440,7 +2470,7 @@ def build_record_html(record):
                 '<td style="font-family:\'DM Mono\',monospace;font-size:11px;color:var(--muted)">'+str(close_l)+'</td>'
                 '<td style="font-family:\'DM Mono\',monospace;font-size:11px;color:'+clv_color+'">'+clv_str+'</td>'
                 '<td style="font-size:11px;color:var(--muted)">'+str(final_score)+'</td>'
-                '<td><span class="badge '+rl+'">'+rl+'</span></td>'
+                '<td><span class="badge '+rl+'">'+rl+'</span>'+reason_html+'</td>'
                 '<td style="font-family:\'DM Mono\',monospace;font-weight:600;color:'+ur_color+'">'
                 +('+'if ur>=0 else '')+str(round(ur,2))+'u</td></tr>')
 
@@ -2521,6 +2551,15 @@ def build_record_html(record):
             '<table><thead><tr><th>Tier</th><th>Record</th><th>Win %</th><th>Units</th></tr></thead><tbody>'+tier_rows+'</tbody></table>'
             '<div class="section-label">Performance by Bet Type</div>'
             '<table><thead><tr><th>Type</th><th>Record</th><th>Win %</th><th>Units</th></tr></thead><tbody>'+bt_rows+'</tbody></table>'
+            +( ('<div class="section-label">Loss Breakdown</div>'
+               '<table><thead><tr><th>Reason</th><th>Count</th><th>% of Losses</th></tr></thead><tbody>'
+               +"".join(
+                   '<tr><td style="font-weight:600">'+REASON_LABELS.get(r,r)+'</td>'
+                   '<td style="text-align:center;font-family:\'DM Mono\',monospace">'+str(c)+'</td>'
+                   '<td style="text-align:center;color:var(--muted)">'+str(round(c/len(losses)*100,1))+'%</td></tr>'
+                   for r,c in sorted(loss_reasons.items(), key=lambda x: -x[1])
+               )
+               +'</tbody></table>') if loss_reasons and losses else '')+
             '<div class="section-label">Pick History</div>'
             '<table><thead><tr>'
             '<th>Date</th><th>Pick</th><th>Game</th><th>Tier</th><th>Open</th><th>Close</th><th>CLV</th><th>Score</th><th>Result</th><th>Units</th>'
@@ -3353,39 +3392,41 @@ def main():
         key = p.get("game","")+TODAY
         if key not in existing_keys:
             record["picks"].append({
-                "date":     TODAY,
-                "game":     p.get("game",""),
-                "pick":     p.get("pick",""),
-                "bet_type": p.get("bet_type",""),
-                "home_sp":  p.get("home_sp",""),
-                "away_sp":  p.get("away_sp",""),
-                "line":     p.get("line",""),
-                "open_line":p.get("line",""),
-                "close_line":"",
-                "tier":     p.get("tier",""),
-                "units":    p.get("units",0),
-                "ev_pct":   p.get("ev_pct",0),
-                "result":   "",
+                "date":        TODAY,
+                "game":        p.get("game",""),
+                "pick":        p.get("pick",""),
+                "bet_type":    p.get("bet_type",""),
+                "home_sp":     p.get("home_sp",""),
+                "away_sp":     p.get("away_sp",""),
+                "line":        p.get("line",""),
+                "open_line":   p.get("line",""),
+                "close_line":  "",
+                "tier":        p.get("tier",""),
+                "units":       p.get("units",0),
+                "ev_pct":      p.get("ev_pct",0),
+                "result":      "",
                 "units_result": 0,
+                "loss_reason": "",
             })
     for p in [x for x in picks if x.get("tier")=="WATCH"]:
         key = p.get("game","")+TODAY+"W"
         if key not in existing_keys:
             record["picks"].append({
-                "date":     TODAY,
-                "game":     p.get("game",""),
-                "pick":     p.get("pick","")+" (WATCH)",
-                "bet_type": p.get("bet_type",""),
-                "home_sp":  p.get("home_sp",""),
-                "away_sp":  p.get("away_sp",""),
-                "line":     p.get("line",""),
-                "open_line":p.get("line",""),
-                "close_line":"",
-                "tier":     "WATCH",
-                "units":    0,
-                "ev_pct":   p.get("ev_pct",0),
-                "result":   "",
+                "date":        TODAY,
+                "game":        p.get("game",""),
+                "pick":        p.get("pick","")+" (WATCH)",
+                "bet_type":    p.get("bet_type",""),
+                "home_sp":     p.get("home_sp",""),
+                "away_sp":     p.get("away_sp",""),
+                "line":        p.get("line",""),
+                "open_line":   p.get("line",""),
+                "close_line":  "",
+                "tier":        "WATCH",
+                "units":       0,
+                "ev_pct":      p.get("ev_pct",0),
+                "result":      "",
                 "units_result": 0,
+                "loss_reason": "",
             })
     record["updated"] = TODAY
     save_record(record)
