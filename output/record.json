@@ -1,6 +1,22 @@
 {
   "picks": [
     {
+      "date": "2026-04-02",
+      "game": "Atlanta Braves @ Arizona Diamondbacks",
+      "pick": "Braves ML (WATCH)",
+      "bet_type": "ML",
+      "home_sp": "Zac Gallen",
+      "away_sp": "Chris Sale",
+      "line": "-112",
+      "open_line": "-112",
+      "close_line": "",
+      "tier": "WATCH",
+      "units": 0,
+      "ev_pct": 2,
+      "result": "",
+      "units_result": 0
+    },
+    {
       "date": "2026-04-01",
       "game": "Pittsburgh Pirates @ Cincinnati Reds",
       "pick": "OVER 7.5",
@@ -49,7 +65,8 @@
       "ev_pct": 2.8,
       "result": "L",
       "units_result": 0.0,
-      "final_score": "Boston Red Sox 4 - Houston Astros 6"
+      "final_score": "Boston Red Sox 4 - Houston Astros 6",
+      "loss_reason": "SP_OUTPERFORMED"
     },
     {
       "date": "2026-04-01",
@@ -81,9 +98,8 @@
       "tier": "WATCH",
       "units": 0,
       "ev_pct": 8.0,
-      "result": "L",
-      "units_result": -0.0,
-      "final_score": "New York Yankees 5 - Seattle Mariners 3"
+      "result": "",
+      "units_result": 0
     },
     {
       "date": "2026-04-01",
@@ -117,7 +133,8 @@
       "ev_pct": 4,
       "result": "L",
       "units_result": -0.5,
-      "final_score": "Los Angeles Dodgers 4 - Cleveland Guardians 1"
+      "final_score": "Los Angeles Dodgers 4 - Cleveland Guardians 1",
+      "loss_reason": "SP_OUTPERFORMED"
     },
     {
       "date": "2026-03-31",
@@ -168,7 +185,8 @@
       "ev_pct": 3,
       "result": "L",
       "units_result": -0.5,
-      "final_score": "New York Mets 0 - St. Louis Cardinals 3"
+      "final_score": "New York Mets 0 - St. Louis Cardinals 3",
+      "loss_reason": "SP_OUTPERFORMED"
     },
     {
       "date": "2026-03-31",
@@ -202,7 +220,8 @@
       "ev_pct": 2,
       "result": "L",
       "units_result": 0.0,
-      "final_score": "Colorado Rockies 1 - Toronto Blue Jays 5"
+      "final_score": "Colorado Rockies 1 - Toronto Blue Jays 5",
+      "loss_reason": "PURE_VARIANCE"
     },
     {
       "date": "2026-03-31",
@@ -253,7 +272,8 @@
       "ev_pct": 8,
       "result": "L",
       "units_result": -1.0,
-      "final_score": "Cincinnati Reds 2 - Pittsburgh Pirates 0"
+      "final_score": "Cincinnati Reds 2 - Pittsburgh Pirates 0",
+      "loss_reason": "SP_OUTPERFORMED"
     },
     {
       "date": "2026-03-30",
@@ -321,7 +341,8 @@
       "ev_pct": 7,
       "result": "L",
       "units_result": -1.5,
-      "final_score": "Kansas City Royals 4 - Atlanta Braves 1"
+      "final_score": "Kansas City Royals 4 - Atlanta Braves 1",
+      "loss_reason": "SP_OUTPERFORMED"
     },
     {
       "date": "2026-03-29",
@@ -355,7 +376,8 @@
       "ev_pct": 9,
       "result": "L",
       "units_result": -1.5,
-      "final_score": "Cleveland Guardians 0 - Seattle Mariners 8"
+      "final_score": "Cleveland Guardians 0 - Seattle Mariners 8",
+      "loss_reason": "PURE_VARIANCE"
     },
     {
       "date": "2026-03-29",
@@ -372,7 +394,8 @@
       "ev_pct": 3,
       "result": "L",
       "units_result": 0.0,
-      "final_score": "Colorado Rockies 3 - Miami Marlins 4"
+      "final_score": "Colorado Rockies 3 - Miami Marlins 4",
+      "loss_reason": "SP_OUTPERFORMED"
     },
     {
       "date": "2026-03-29",
@@ -406,7 +429,8 @@
       "ev_pct": 4,
       "result": "L",
       "units_result": -1.0,
-      "final_score": "Washington Nationals 2 - Chicago Cubs 10"
+      "final_score": "Washington Nationals 2 - Chicago Cubs 10",
+      "loss_reason": "SP_OUTPERFORMED"
     },
     {
       "date": "2026-03-28",
@@ -440,7 +464,8 @@
       "ev_pct": 4,
       "result": "L",
       "units_result": -0.5,
-      "final_score": "Texas Rangers 5 - Philadelphia Phillies 4"
+      "final_score": "Texas Rangers 5 - Philadelphia Phillies 4",
+      "loss_reason": "PURE_VARIANCE"
     },
     {
       "date": "2026-03-28",
@@ -457,7 +482,8 @@
       "ev_pct": 5,
       "result": "L",
       "units_result": -1.0,
-      "final_score": "Boston Red Sox 5 - Cincinnati Reds 6"
+      "final_score": "Boston Red Sox 5 - Cincinnati Reds 6",
+      "loss_reason": "PURE_VARIANCE"
     },
     {
       "date": "2026-03-28",
@@ -474,7 +500,8 @@
       "ev_pct": 12,
       "result": "L",
       "units_result": -1.5,
-      "final_score": "Pittsburgh Pirates 2 - New York Mets 4"
+      "final_score": "Pittsburgh Pirates 2 - New York Mets 4",
+      "loss_reason": "SP_OUTPERFORMED"
     },
     {
       "date": "2026-03-28",
@@ -508,7 +535,8 @@
       "ev_pct": 7,
       "result": "L",
       "units_result": -1.5,
-      "final_score": "Kansas City Royals 2 - Atlanta Braves 6"
+      "final_score": "Kansas City Royals 2 - Atlanta Braves 6",
+      "loss_reason": "PURE_VARIANCE"
     },
     {
       "date": "2026-03-28",
@@ -576,7 +604,8 @@
       "ev_pct": 6,
       "result": "L",
       "units_result": -1.0,
-      "final_score": "Cleveland Guardians 6 - Seattle Mariners 5"
+      "final_score": "Cleveland Guardians 6 - Seattle Mariners 5",
+      "loss_reason": "BAD_DATA"
     },
     {
       "date": "2026-03-28",
@@ -594,30 +623,8 @@
       "result": "W",
       "units_result": 0.0,
       "final_score": "Colorado Rockies 3 - Miami Marlins 4"
-    },
-    {
-      "date": "2026-04-02",
-      "game": "Atlanta Braves @ Arizona Diamondbacks",
-      "pick": "Atlanta Braves ML",
-      "bet_type": "ML",
-      "home_sp": "Ryne Nelson",
-      "away_sp": "Reynaldo L\u00f3pez",
-      "line": "-118",
-      "open_line": "-118",
-      "close_line": "",
-      "tier": "B",
-      "units": 1.0,
-      "ev_pct": 7,
-      "result": "",
-      "units_result": 0
     }
   ],
   "updated": "2026-04-02",
-  "ai_model": "Claude Sonnet 4.6",
-  "regen_reasons": [
-    "SP scratch: Zac Gallen \u2192 Ryne Nelson",
-    "SP scratch: Chris Sale \u2192 Reynaldo L\u00f3pez",
-    "Line moved 40+ cents on Arizona Diamondbacks",
-    "Rain 80%+ at Chicago White Sox"
-  ]
+  "ai_model": "Claude Sonnet 4.5"
 }
