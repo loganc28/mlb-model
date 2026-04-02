@@ -557,11 +557,28 @@
       "tier": "C",
       "units": 0.5,
       "ev_pct": 4,
+      "result": "W",
+      "units_result": 0.455,
+      "final_score": "Cleveland Guardians 4 - Los Angeles Dodgers 1"
+    },
+    {
+      "date": "2026-04-02",
+      "game": "Atlanta Braves @ Arizona Diamondbacks",
+      "pick": "Braves ML (WATCH)",
+      "bet_type": "ML",
+      "home_sp": "Ryne Nelson",
+      "away_sp": "Reynaldo L\u00f3pez",
+      "line": "-112",
+      "open_line": "-112",
+      "close_line": "",
+      "tier": "WATCH",
+      "units": 0,
+      "ev_pct": 3.2,
       "result": "",
       "units_result": 0
     }
   ],
-  "updated": "2026-04-01",
+  "updated": "2026-04-02",
   "ai_model": "Claude Sonnet 4.5",
   "regen_reasons": [
     "Rain 50%+ at Baltimore Orioles",
