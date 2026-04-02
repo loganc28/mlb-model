@@ -148,11 +148,7 @@ UMP_DATA = {
     "Ramon De Jesus":   {"rpg":8.8,"k_pct":0.22,"bb_pct":0.08,"note":"Neutral"},
     "Brennan Miller":   {"rpg":8.9,"k_pct":0.22,"bb_pct":0.08,"note":"Neutral"},
     "Carlos Torres":    {"rpg":9.1,"k_pct":0.21,"bb_pct":0.09,"note":"Slight over lean"},
-    "Roberto Ortiz":    {"rpg":9.0,"k_pct":0.22,"bb_pct":0.09,"note":"Neutral"},
     "Chris Segal":      {"rpg":8.6,"k_pct":0.24,"bb_pct":0.07,"note":"Pitcher friendly"},
-    "Ryan Blakney":     {"rpg":9.1,"k_pct":0.22,"bb_pct":0.09,"note":"Slight over lean"},
-    "Gabe Morales":     {"rpg":8.6,"k_pct":0.24,"bb_pct":0.07,"note":"Pitcher friendly"},
-    "Roberto Ortiz":    {"rpg":9.0,"k_pct":0.22,"bb_pct":0.09,"note":"Neutral"},
     "Phil Cuzzi":       {"rpg":9.1,"k_pct":0.22,"bb_pct":0.09,"note":"Slight over lean"},
     "Tripp Gibson":     {"rpg":8.7,"k_pct":0.23,"bb_pct":0.08,"note":"Neutral"},
     "Jim Reynolds":     {"rpg":9.0,"k_pct":0.22,"bb_pct":0.09,"note":"Neutral"},
@@ -1259,7 +1255,7 @@ def _try_claude(user_msg):
             "https://api.anthropic.com/v1/messages",
             headers={"x-api-key":ANTHROPIC_KEY,"anthropic-version":"2023-06-01",
                      "content-type":"application/json"},
-            json={"model":"claude-sonnet-4-5","max_tokens":8000,
+            json={"model":"claude-sonnet-4-6","max_tokens":8000,
                   "system":SYSTEM_PROMPT,
                   "messages":[{"role":"user","content":user_msg}]},
             timeout=180
@@ -1270,7 +1266,7 @@ def _try_claude(user_msg):
         raw = r.json()["content"][0]["text"]
         picks = _parse_ai_response(raw)
         print("Claude returned "+str(len(picks))+" picks")
-        return picks, "Claude Sonnet 4.5"
+        return picks, "Claude Sonnet 4.6"
     except Exception as e:
         print("Claude failed: "+str(e))
         return None, None
@@ -1745,8 +1741,6 @@ def call_ai(games_with_data):
 
     # Hard cap: no more than 3 total (OVER/UNDER) active picks per slate
     # Prevents model from defaulting entirely to totals
-    total_picks = [p for p in all_picks if p.get("tier") in ("MAX","A","B","C")
-                   and "OVER" in p.get("bet_type","").upper() or "UNDER" in p.get("bet_type","").upper()]
     if len([p for p in all_picks if p.get("tier") in ("MAX","A","B","C")
             and ("OVER" in p.get("bet_type","").upper() or "UNDER" in p.get("bet_type","").upper())]) > 3:
         # Keep highest EV totals up to 3, downgrade rest to WATCH
@@ -2363,8 +2357,13 @@ def build_record_html(record):
             try:
                 ol = float(str(p["open_line"]).replace("+",""))
                 cl = float(str(p["close_line"]).replace("+",""))
-                # Positive CLV = we got better number than closing line
-                clv = ol - cl if ol < 0 else cl - ol
+                # Positive CLV = we got a better number than closing line
+                # Negative odds: -110 open vs -120 close = +10 CLV (line moved against us, we got better)
+                # Positive odds: +130 open vs +120 close = +10 CLV (line moved against us, we got better)
+                if ol < 0:
+                    clv = cl - ol  # e.g. -120 - (-110) = -10 (bad), -110 - (-120) = +10 (good)
+                else:
+                    clv = ol - cl  # e.g. +130 - +120 = +10 (good), +120 - +130 = -10 (bad)
                 clvs.append(clv)
             except: pass
         avg_clv = round(sum(clvs)/len(clvs),1) if clvs else 0
@@ -3216,9 +3215,9 @@ def main():
         gd["home_team_splits"]      = home_splits
         gd["away_team_splits"]      = away_splits
 
-        # Team momentum/streak (fetched via standings, not per-team endpoint)
-        gd["home_streak"] = {}
-        gd["away_streak"] = {}
+        # Team momentum/streak
+        gd["home_streak"] = fetch_team_streak(g["home_id"])
+        gd["away_streak"] = fetch_team_streak(g["away_id"])
 
         games_with_data.append(gd)
 
@@ -3302,7 +3301,7 @@ def main():
             # Only remove picks for games affected by triggers
             affected_games = set()
             for reason in regen_reasons:
-                if "SP SCRATCH:" in reason:
+                if "SP scratch:" in reason:
                     # Extract game from trigger — format "SP SCRATCH: OldSP → NewSP (Team)"
                     for gd in games_with_data:
                         team_name = reason.split("(")[-1].replace(")","").strip()
@@ -3390,7 +3389,6 @@ def main():
         "total_games":  len(games),
         "total_picks":  len(active),
         "picks":        picks,
-        "raw_games_data": games_with_data,
     }
 
     (OUTPUT_DIR/"picks.json").write_text(json.dumps(output, indent=2))
