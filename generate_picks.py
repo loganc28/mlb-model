@@ -3226,7 +3226,7 @@ def main():
     # Smart regeneration logic:
     # - First run of the day: always generate fresh picks
     # - Subsequent runs: only regenerate if a trigger condition is met
-    # - Trigger conditions: SP scratch, rain 50%+, line moved 15+ cents
+    # - Trigger conditions: SP scratch, rain 80%+, line moved 40+ cents
     # - Otherwise: keep locked picks, just update scores
 
     # Only lock picks that were actually generated today (have home_sp/away_sp fields)
@@ -3245,8 +3245,8 @@ def main():
             game_key = gd["away"]+"@"+gd["home"]
             # Check rain 50%+
             precip = gd.get("weather",{}).get("precip_pct",0)
-            if precip and int(precip) >= 50:
-                triggers.append("Rain 50%+ at "+gd["home"])
+            if precip and int(precip) >= 80:
+                triggers.append("Rain 80%+ at "+gd["home"])
             # Check SP scratch — SP changed from what was in locked picks
             for lp in locked_picks:
                 if gd["away"]+" @ "+gd["home"] == lp.get("game",""):
@@ -3256,7 +3256,7 @@ def main():
                         triggers.append("SP scratch: "+old_home_sp+" → "+gd["home_sp"])
                     if old_away_sp and old_away_sp != gd["away_sp"] and gd["away_sp"] != "TBD":
                         triggers.append("SP scratch: "+old_away_sp+" → "+gd["away_sp"])
-            # Check line movement 15+ cents
+            # Check line movement 40+ cents (15 was too sensitive — normal market movement)
             new_odds = gd.get("odds",{})
             for lp in locked_picks:
                 if gd["away"]+" @ "+gd["home"] == lp.get("game",""):
@@ -3264,8 +3264,8 @@ def main():
                         old_line = float(str(lp.get("open_line","0")).replace("+",""))
                         new_ml = new_odds.get("moneyline",{})
                         for team, price in new_ml.items():
-                            if abs(float(price) - old_line) >= 15:
-                                triggers.append("Line moved 15+ cents on "+team)
+                            if abs(float(price) - old_line) >= 40:
+                                triggers.append("Line moved 40+ cents on "+team)
                     except: pass
         return triggers
 
