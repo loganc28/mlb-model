@@ -31,6 +31,15 @@ TODAY           = datetime.date.today().isoformat()
 STATS_CACHE     = OUTPUT_DIR / "stats_cache.json"
 RECORD_FILE     = OUTPUT_DIR / "record.json"
 
+# ── HARD LOCK: Exit immediately if picks already generated today ───────────────
+# This runs before ANY other logic. Lock file is written after successful generation.
+LOCK_FILE = OUTPUT_DIR / ("picks_locked_" + TODAY + ".txt")
+if LOCK_FILE.exists() and not FORCE_REGEN:
+    print(f"[LOCK] picks_locked_{TODAY}.txt exists — picks already generated today. Exiting.")
+    print("[LOCK] Use FORCE_REGENERATE=yes to override.")
+    import sys; sys.exit(0)
+# ──────────────────────────────────────────────────────────────────────────────
+
 # ── Stadium data: coordinates + outfield facing direction (degrees from N) ────
 # Wind blowing FROM this direction = blowing OUT (toward OF)
 # Wind blowing TO this direction = blowing IN (from OF)
@@ -3231,12 +3240,16 @@ def main():
 
     # Only lock picks that were actually generated today (have home_sp/away_sp fields)
     # Seeded picks from record.json manual entry don't have these fields
+    # Check lock file first — most reliable way to prevent regeneration
+    LOCK_FILE = OUTPUT_DIR / ("picks_locked_"+TODAY+".txt")
+    lock_file_exists = LOCK_FILE.exists()
+    
     today_picks = [p for p in record.get("picks",[])
                    if p.get("date")==TODAY 
                    and p.get("tier") in ("MAX","A","B","C","WATCH")]
-    picks_locked = len(today_picks) > 0
+    picks_locked = len(today_picks) > 0 or lock_file_exists
     if picks_locked:
-        print("Picks already in record.json for "+TODAY+" ("+str(len(today_picks))+" picks). Locking.")
+        print("Picks locked for "+TODAY+" (lock_file="+str(lock_file_exists)+", record_picks="+str(len(today_picks))+"). Skipping generation.")
 
     # Check trigger conditions for regeneration
     def should_regenerate(locked_picks, new_game_data, old_odds):
@@ -3363,6 +3376,11 @@ def main():
             })
     record["updated"] = TODAY
     save_record(record)
+    
+    # Write lock file to prevent 3PM run from regenerating
+    if not FORCE_REGEN:
+        LOCK_FILE.write_text("Picks generated "+TODAY+" at "+datetime.datetime.utcnow().isoformat())
+        print("Lock file written: "+str(LOCK_FILE))
 
     output = {
         "date":         TODAY,
