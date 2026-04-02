@@ -3302,8 +3302,13 @@ def main():
             force_regen = len(regen_reasons) > 0
             if force_regen:
                 print("REGENERATING picks — triggers: "+", ".join(regen_reasons))
+                # Write notification file for workflow to send push
+                notif = "🔄 MLB Model Regenerating\n" + "\n".join("• "+r for r in regen_reasons)
+                (OUTPUT_DIR/"notify.txt").write_text(notif)
             else:
                 print("Picks locked for "+TODAY+" ("+str(len(today_picks))+" picks). No triggers. Keeping locked picks.")
+                # Write clean notification so workflow knows to send locked confirmation
+                (OUTPUT_DIR/"notify.txt").write_text("LOCKED")
 
     if not picks_locked or force_regen or FORCE_REGEN:
         if force_regen:
