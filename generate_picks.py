@@ -3269,11 +3269,20 @@ def main():
                     if old_away_sp and old_away_sp != gd["away_sp"] and gd["away_sp"] != "TBD":
                         triggers.append("SP scratch: "+old_away_sp+" → "+gd["away_sp"])
             # Check line movement 40+ cents (15 was too sensitive — normal market movement)
+            # Only check games not yet started — no point regenerating a game already in progress
+            game_status = gd.get("status","")
+            if game_status in ("In Progress","Live","Final","Game Over","Completed"):
+                continue
             new_odds = gd.get("odds",{})
             for lp in locked_picks:
                 if gd["away"]+" @ "+gd["home"] == lp.get("game",""):
+                    # Only trigger on picks made today — not yesterday's settled picks
+                    if lp.get("result"):
+                        continue
                     try:
                         old_line = float(str(lp.get("open_line","0")).replace("+",""))
+                        if old_line == 0:
+                            continue
                         new_ml = new_odds.get("moneyline",{})
                         for team, price in new_ml.items():
                             if abs(float(price) - old_line) >= 40:
