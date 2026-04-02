@@ -48,7 +48,7 @@
       "ev_pct": 10.0,
       "result": "W",
       "units_result": 1.06,
-      "final_score": "Washington Nationals 5 - Philadelphia Phillies 3"
+      "final_score": "Washington Nationals 5 - Philadelphia Phillies 6"
     },
     {
       "date": "2026-04-01",
@@ -81,9 +81,10 @@
       "tier": "WATCH",
       "units": 0,
       "ev_pct": 0,
-      "result": "W",
+      "result": "L",
       "units_result": 0.0,
-      "final_score": "Detroit Tigers 3 - Arizona Diamondbacks 2"
+      "final_score": "Detroit Tigers 0 - Arizona Diamondbacks 1",
+      "loss_reason": "SP_OUTPERFORMED"
     },
     {
       "date": "2026-04-01",
@@ -99,7 +100,8 @@
       "units": 0,
       "ev_pct": 8.0,
       "result": "",
-      "units_result": 0
+      "units_result": 0,
+      "final_score": "New York Yankees 5 - Seattle Mariners 3"
     },
     {
       "date": "2026-04-01",
@@ -111,11 +113,11 @@
       "line": "-107",
       "open_line": "-107",
       "close_line": "",
-      "tier": "C",
-      "units": 0.5,
+      "tier": "WATCH",
+      "units": 0,
       "ev_pct": 2.0,
       "result": "W",
-      "units_result": 0.467,
+      "units_result": 0.0,
       "final_score": "Cleveland Guardians 4 - Los Angeles Dodgers 1"
     },
     {
@@ -203,7 +205,7 @@
       "ev_pct": 5,
       "result": "W",
       "units_result": 0.59,
-      "final_score": "Chicago Cubs 0 - Los Angeles Angels 2 (NRFI: 0-0 after 1)"
+      "final_score": "Los Angeles Angels 2 - Chicago Cubs 0 (NRFI: 0-0 after 1)"
     },
     {
       "date": "2026-03-31",
