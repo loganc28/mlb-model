@@ -1074,13 +1074,6 @@ def fetch_odds():
 
             odds_map[away+"@"+home] = {"moneyline":ml,"total":total,"runline":runline}
         print("Fetched odds for "+str(len(odds_map))+" games")
-
-        # Fetch real NRFI/YRFI lines per event — parallel to avoid sequential slowdown
-        nrfi_map = fetch_nrfi_odds(event_ids)
-        for key, nrfi in nrfi_map.items():
-            if key in odds_map:
-                odds_map[key]["nrfi"] = nrfi
-
         return odds_map
     except Exception as e:
         print("Odds error: "+str(e))
@@ -1350,7 +1343,7 @@ def _try_claude(user_msg):
             json={"model":"claude-sonnet-4-6","max_tokens":16000,
                   "system":SYSTEM_PROMPT,
                   "messages":[{"role":"user","content":user_msg}]},
-            timeout=300
+            timeout=180
         )
         if not r.ok:
             print("Claude error: "+r.text[:300])
@@ -1798,8 +1791,8 @@ def call_ai(games_with_data):
         return [], "None"
     summarized = [summarize_game(g) for g in bettable]
 
-    # Split into batches of 2 to minimize payload and reduce timeout risk
-    BATCH_SIZE = 2
+    # Split into batches of 4 to stay within token limits
+    BATCH_SIZE = 4
     all_picks = []
     model_used = "None"
 
