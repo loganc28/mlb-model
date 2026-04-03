@@ -473,7 +473,7 @@ def fetch_team_batting(season):
         if not team: continue
         g = int(stat.get("gamesPlayed",1) or 1)
         runs = int(stat.get("runs",0) or 0)
-        if g < 10 and season == 2026: continue
+        if g < 5 and season == 2026: continue
         ops = safe_float(stat.get("ops"))
         if ops > 1.2: continue
         result[team] = {
@@ -513,17 +513,20 @@ def fetch_team_home_away_splits(team_id, season):
     _SPLITS_CACHE[cache_key] = result
     return result
 
+STATS_CACHE_VERSION = "v2"  # bump when fetch logic changes to force cache refresh
+
 def fetch_and_cache_stats():
     if STATS_CACHE.exists():
         try:
             cached = json.loads(STATS_CACHE.read_text())
-            if cached.get("date") == TODAY:
+            if cached.get("date") == TODAY and cached.get("version") == STATS_CACHE_VERSION:
                 print("Using cached stats")
                 return cached
         except: pass
     print("Fetching fresh stats...")
     stats = {
         "date":TODAY,
+        "version":STATS_CACHE_VERSION,
         "sp_2025":fetch_sp_stats_bulk(2025),
         "sp_2026":fetch_sp_stats_bulk(2026),
         "team_pitching_2025":fetch_team_pitching(2025),
