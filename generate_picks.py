@@ -3398,10 +3398,13 @@ def main():
         triggers = []
         for gd in new_game_data:
             game_key = gd["away"]+"@"+gd["home"]
-            # Check rain 50%+
+            # Check rain 80%+
             precip = gd.get("weather",{}).get("precip_pct",0)
-            if precip and int(precip) >= 80:
-                triggers.append("Rain 80%+ at "+gd["home"])
+            try:
+                if precip and int(precip) >= 80:
+                    triggers.append("Rain 80%+ at "+gd["home"])
+            except (ValueError, TypeError):
+                pass
             # Check SP scratch — SP changed from what was in locked picks
             for lp in locked_picks:
                 if gd["away"]+" @ "+gd["home"] == lp.get("game",""):
