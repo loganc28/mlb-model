@@ -18,117 +18,61 @@ body{font-family:"DM Sans",sans-serif;background:var(--bg);color:var(--text);pad
 .meta{font-size:12px;color:var(--muted);margin-bottom:1.5rem;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .meta a{color:var(--blue);text-decoration:none;font-weight:500}
 .divider{color:var(--faint)}
-.refresh-btn{background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:11px;padding:3px 10px;border-radius:6px;cursor:pointer}
-.refresh-btn:hover{color:var(--text)}
-.status-bar{display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap}
+.rbtn{background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:11px;padding:3px 10px;border-radius:6px;cursor:pointer}
+.rbtn:hover{color:var(--text)}
+.sb{display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap}
 .pill{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;font-family:"DM Mono",monospace}
 .pill.live{background:#F04B4B18;color:var(--red);border:1px solid #F04B4B30;animation:blink 2s infinite}
 .pill.final{background:#8A909918;color:var(--muted);border:1px solid #8A909930}
-.pill.upcoming{background:#4B9CF518;color:var(--blue);border:1px solid #4B9CF530}
+.pill.soon{background:#4B9CF518;color:var(--blue);border:1px solid #4B9CF530}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.5}}
-.section-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:1.25rem 0 .6rem;display:flex;align-items:center;gap:8px}
-.section-label::after{content:"";flex:1;height:1px;background:var(--border)}
-.games{display:flex;flex-direction:column;gap:8px}
+.slbl{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:1.25rem 0 .6rem;display:flex;align-items:center;gap:8px}
+.slbl::after{content:"";flex:1;height:1px;background:var(--border)}
+.glist{display:flex;flex-direction:column;gap:8px}
 
-/* Card */
-.gc{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
-.gc.haspick{border-color:#F5C84240}
-.gc.islive{border-color:#F04B4B30}
-.gc-top{padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;border-left:3px solid transparent}
-.gc.haspick .gc-top{border-left-color:var(--gold)}
-.gc.islive .gc-top{border-left-color:var(--red)}
-.gc-top:hover{background:var(--surface2)}
-.t-away{flex:1}.t-home{flex:1;text-align:right}
+/* Card shell — never rebuilt after first render */
+.gc{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .2s}
+.gc.hp{border-color:#F5C84240}
+.gc.lv{border-color:#F04B4B30}
+
+/* Top row — click to expand */
+.gct{padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;border-left:3px solid transparent;transition:background .15s}
+.gc.hp .gct{border-left-color:var(--gold)}
+.gc.lv .gct{border-left-color:var(--red)}
+.gct:hover{background:var(--surface2)}
+.ta{flex:1}.th{flex:1;text-align:right}
 .tn{font-size:15px;font-weight:700;font-family:"Syne",sans-serif}
-.sp{font-size:10px;color:var(--muted);margin-top:2px}
-.center{flex:0 0 110px;text-align:center}
-.scores{font-family:"Syne",sans-serif;font-size:24px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:6px;line-height:1}
-.sc.dim{color:var(--muted)}.sc-sep{color:var(--faint);font-size:16px;font-weight:400}
-.ginfo{font-size:10px;font-family:"DM Mono",monospace;margin-top:3px}
-.ginfo.live{color:var(--red)}.ginfo.upcoming{color:var(--blue)}.ginfo.final{color:var(--muted)}
-.arrow{font-size:11px;color:var(--faint);flex-shrink:0;transition:transform .2s}
-.gc.open .arrow{transform:rotate(180deg)}
-.pick-banner{background:#F5C84210;border-top:1px solid #F5C84220;padding:5px 14px;font-size:11px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.pt{font-family:"DM Mono",monospace;font-weight:700;color:var(--gold)}
-.pd{color:var(--text)}.pl{color:var(--muted);font-family:"DM Mono",monospace}.pu{color:var(--gold);font-family:"DM Mono",monospace}
-.gc-body{display:none}
-.gc.open .gc-body{display:block}
+.spp{font-size:10px;color:var(--muted);margin-top:2px}
+.cc{flex:0 0 110px;text-align:center}
+.sc{font-family:"Syne",sans-serif;font-size:24px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:6px;line-height:1}
+.sd{color:var(--muted)}.ss{color:var(--faint);font-size:16px;font-weight:400}
+.gi{font-size:10px;font-family:"DM Mono",monospace;margin-top:3px}
+.gi.lv{color:var(--red)}.gi.up{color:var(--blue)}.gi.fn{color:var(--muted)}
+.arr{font-size:11px;color:var(--faint);flex-shrink:0;transition:transform .2s}
+.gc.op .arr{transform:rotate(180deg)}
 
-/* Line score */
-.ls{padding:10px 14px 8px}
-.lst{width:100%;border-collapse:collapse;font-family:"DM Mono",monospace;font-size:11px;margin-bottom:6px}
+/* Pick banner */
+.pkb{background:#F5C84210;border-top:1px solid #F5C84220;padding:5px 14px;font-size:11px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pkt{font-family:"DM Mono",monospace;font-weight:700;color:var(--gold)}
+.pkd{color:var(--text)}.pkl{color:var(--muted);font-family:"DM Mono",monospace}.pku{color:var(--gold);font-family:"DM Mono",monospace}
+
+/* Body — toggled by .op class, never destroyed */
+.gcb{display:none;padding:10px 14px 14px}
+.gc.op .gcb{display:block}
+
+/* Line score table */
+.lst{width:100%;border-collapse:collapse;font-family:"DM Mono",monospace;font-size:11px}
 .lst th{color:var(--muted);text-align:center;padding:3px;border-bottom:1px solid var(--border);font-weight:500;min-width:18px}
-.lst th.tn2{text-align:left;min-width:36px}
+.lst th.tn3{text-align:left;min-width:36px}
 .lst td{text-align:center;padding:3px}
-.lst td.tn2{text-align:left;color:var(--muted)}
-.lst td.cur{background:var(--surface2);color:var(--gold)}
+.lst td.tn3{text-align:left;color:var(--muted)}
+.lst td.ci{background:var(--surface2);color:var(--gold);font-weight:600}
 .lst .sep{border-left:1px solid var(--border)}
+.lst td.sep{font-weight:700}
 
-/* Pitch view toggle */
-.pv-bar{padding:0 14px 10px;display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
-.pv-bar:hover .pv-lbl{color:var(--text)}
-.tog{width:30px;height:17px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;position:relative;transition:background .2s;flex-shrink:0}
-.tog.on{background:#22C87A25;border-color:#22C87A50}
-.tog::after{content:"";position:absolute;width:11px;height:11px;background:var(--faint);border-radius:50%;top:2px;left:2px;transition:all .2s}
-.tog.on::after{background:var(--green);left:15px}
-.pv-lbl{font-size:11px;color:var(--muted);transition:color .15s}
-
-/* Pitch view panel */
-.pv-panel{display:none;padding:0 14px 14px}
-.pv-panel.on{display:block}
-
-/* Matchup header */
-.pv-header{background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px}
-.pv-team{font-size:11px;color:var(--muted);font-weight:600;font-family:"DM Mono",monospace}
-.pv-pitcher{font-size:13px;font-weight:600}
-.pv-batter{font-size:13px;font-weight:600;text-align:right}
-.pv-mid{text-align:center;flex:1}
-.pv-count{font-family:"Syne",sans-serif;font-size:18px;font-weight:800;color:var(--text)}
-.pv-outs{font-size:10px;color:var(--muted);margin-top:2px;font-family:"DM Mono",monospace}
-
-/* Diamond */
-.pv-diamond-wrap{display:flex;justify-content:center;margin-bottom:10px}
-.diamond{width:70px;height:70px;position:relative}
-.diamond-base{width:20px;height:20px;border:2px solid var(--faint);transform:rotate(45deg);position:absolute;background:transparent;transition:background .2s}
-.diamond-base.on{background:var(--gold);border-color:var(--gold)}
-.db-2{top:0;left:25px}
-.db-3{top:25px;left:2px}
-.db-1{top:25px;left:48px}
-.db-h{top:50px;left:25px;border-color:var(--surface2);background:var(--surface2)}
-
-/* Strike zone */
-.pv-main{display:flex;gap:12px;align-items:flex-start}
-.zone-wrap{flex-shrink:0}
-.zone-label{font-size:9px;color:var(--muted);text-align:center;margin-bottom:4px;font-family:"DM Mono",monospace;text-transform:uppercase;letter-spacing:.06em}
-.strike-zone{width:96px;height:108px;border:2px solid var(--muted);border-radius:2px;position:relative;background:rgba(255,255,255,.02)}
-.zone-grid{position:absolute;inset:0;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr)}
-.zone-cell{border:1px solid rgba(255,255,255,.06)}
-.pitch-dot{position:absolute;width:14px;height:14px;border-radius:50%;transform:translate(-50%,-50%);border:2px solid rgba(0,0,0,.4);cursor:default;transition:opacity .3s}
-.pitch-dot.strike{background:var(--red)}
-.pitch-dot.ball{background:var(--green)}
-.pitch-dot.foul{background:var(--gold)}
-.pitch-dot.dim{opacity:.3}
-.pitch-dot.latest{width:18px;height:18px;box-shadow:0 0 8px currentColor;z-index:10}
-
-/* Pitch list */
-.pitch-list{flex:1;min-width:0}
-.pitch-item{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--border);font-size:11px}
-.pitch-item:last-child{border:none}
-.pitch-num{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;font-family:"DM Mono",monospace}
-.pitch-num.strike{background:#F04B4B25;color:var(--red);border:1px solid #F04B4B40}
-.pitch-num.ball{background:#22C87A25;color:var(--green);border:1px solid #22C87A40}
-.pitch-num.foul{background:#F5C84225;color:var(--gold);border:1px solid #F5C84240}
-.pitch-result{font-weight:600;flex-shrink:0;width:52px;font-size:10px}
-.pitch-result.strike{color:var(--red)}
-.pitch-result.ball{color:var(--green)}
-.pitch-result.foul{color:var(--gold)}
-.pitch-type{color:var(--muted);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10px}
-.pitch-velo{font-family:"DM Mono",monospace;color:var(--text);font-size:10px;flex-shrink:0}
-
-.pv-msg{color:var(--faint);font-size:11px;font-style:italic;padding:8px 0}
-
-/* Last result banner */
-.last-result{background:var(--surface2);border-radius:6px;padding:6px 10px;margin-bottom:8px;font-size:11px;color:var(--text);font-weight:600;border-left:3px solid var(--gold)}
+/* Last play */
+.lplay{margin-top:8px;background:var(--surface2);border-radius:6px;padding:6px 10px;font-size:11px;color:var(--text);border-left:2px solid var(--gold);line-height:1.5;display:none}
+.lplay.on{display:block}
 
 .loading{text-align:center;padding:3rem;color:var(--muted)}
 footer{font-size:11px;color:var(--faint);margin-top:2rem;text-align:center;padding-bottom:2rem}
@@ -142,274 +86,191 @@ footer{font-size:11px;color:var(--faint);margin-top:2rem;text-align:center;paddi
   <a href="index.html">Today's picks</a><span class="divider">&middot;</span>
   <a href="record.html">Record</a><span class="divider">&middot;</span>
   <span id="upd" style="color:var(--muted)">Loading...</span>
-  <button class="refresh-btn" onclick="go()">↻ Refresh</button>
+  <button class="rbtn" onclick="hardRefresh()">↻ Refresh</button>
 </div>
-<div class="status-bar" id="sb"></div>
+<div class="sb" id="sb"></div>
 <div id="cont"><div class="loading">Loading scores...</div></div>
 <footer>Live data from MLB Stats API &middot; Auto-refreshes every 30 seconds</footer>
 
 <script>
-var PICKS={};
-var ABBR={'New York Yankees':'NYY','New York Mets':'NYM','Boston Red Sox':'BOS','Tampa Bay Rays':'TB','Baltimore Orioles':'BAL','Toronto Blue Jays':'TOR','Chicago White Sox':'CWS','Cleveland Guardians':'CLE','Detroit Tigers':'DET','Kansas City Royals':'KC','Minnesota Twins':'MIN','Houston Astros':'HOU','Los Angeles Angels':'LAA','Oakland Athletics':'OAK','Athletics':'ATH','Seattle Mariners':'SEA','Texas Rangers':'TEX','Atlanta Braves':'ATL','Miami Marlins':'MIA','Philadelphia Phillies':'PHI','Washington Nationals':'WSH','Chicago Cubs':'CHC','Cincinnati Reds':'CIN','Milwaukee Brewers':'MIL','Pittsburgh Pirates':'PIT','St. Louis Cardinals':'STL','Arizona Diamondbacks':'ARI','Colorado Rockies':'COL','Los Angeles Dodgers':'LAD','San Diego Padres':'SD','San Francisco Giants':'SF'};
+var PICKS = {};
+var ABBR = {'New York Yankees':'NYY','New York Mets':'NYM','Boston Red Sox':'BOS','Tampa Bay Rays':'TB','Baltimore Orioles':'BAL','Toronto Blue Jays':'TOR','Chicago White Sox':'CWS','Cleveland Guardians':'CLE','Detroit Tigers':'DET','Kansas City Royals':'KC','Minnesota Twins':'MIN','Houston Astros':'HOU','Los Angeles Angels':'LAA','Oakland Athletics':'OAK','Athletics':'ATH','Seattle Mariners':'SEA','Texas Rangers':'TEX','Atlanta Braves':'ATL','Miami Marlins':'MIA','Philadelphia Phillies':'PHI','Washington Nationals':'WSH','Chicago Cubs':'CHC','Cincinnati Reds':'CIN','Milwaukee Brewers':'MIL','Pittsburgh Pirates':'PIT','St. Louis Cardinals':'STL','Arizona Diamondbacks':'ARI','Colorado Rockies':'COL','Los Angeles Dodgers':'LAD','San Diego Padres':'SD','San Francisco Giants':'SF'};
 function ab(n){return ABBR[n]||(n.split(' ').pop().substring(0,3).toUpperCase());}
 function toET(iso){try{return new Date(iso).toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit'})+' ET';}catch(e){return '';}}
 function today(){return new Date().toLocaleDateString('en-CA',{timeZone:'America/New_York'});}
 
+var initialized = false;
+
 async function loadPicks(){
   try{
-    var r=await fetch('picks.json');if(!r.ok)return;
-    var d=await r.json();
+    var r = await fetch('picks.json');
+    if(!r.ok) return;
+    var d = await r.json();
     (d.picks||[]).forEach(p=>{
-      if(p.tier&&p.tier!=='SKIP'&&p.tier!=='WATCH'){
-        PICKS[p.game]={pick:p.pick.replace(/\(WATCH\)/,'').trim(),tier:p.tier,line:p.line,units:p.units};
+      if(p.tier && p.tier!=='SKIP' && p.tier!=='WATCH'){
+        PICKS[p.game] = {pick:p.pick.replace(/\(WATCH\)/,'').trim(), tier:p.tier, line:p.line, units:p.units};
       }
     });
   }catch(e){}
 }
-function findPick(away,home){return PICKS[away+' @ '+home]||PICKS[home+' @ '+away]||null;}
 
-async function go(){
-  document.getElementById('dlbl').textContent=today();
+function fp(a,h){return PICKS[a+' @ '+h]||PICKS[h+' @ '+a]||null;}
+
+async function tick(){
   try{
-    var r=await fetch('https://statsapi.mlb.com/api/v1/schedule?sportId=1&date='+today()+'&hydrate=linescore,team,probablePitcher');
-    var data=await r.json();
-    var games=[];
-    (data.dates||[]).forEach(dt=>dt.games.forEach(g=>games.push(g)));
-    render(games);
-    document.getElementById('upd').textContent='Updated '+new Date().toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit'})+' ET';
-  }catch(e){
-    document.getElementById('cont').innerHTML='<div class="loading" style="color:var(--red)">Failed to load.</div>';
-  }
+    var r = await fetch('https://statsapi.mlb.com/api/v1/schedule?sportId=1&date='+today()+'&hydrate=linescore,team,probablePitcher');
+    var d = await r.json();
+    var games = [];
+    (d.dates||[]).forEach(dt=>dt.games.forEach(g=>games.push(g)));
+
+    if(!initialized){
+      buildAll(games);
+      initialized = true;
+    } else {
+      games.forEach(g=>patchCard(g));
+      updateSB(games);
+    }
+
+    document.getElementById('upd').textContent = 'Updated '+new Date().toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit'})+' ET';
+  }catch(e){}
 }
 
-function render(games){
-  var live=[],final=[],upcoming=[];
+function hardRefresh(){
+  initialized = false;
+  document.getElementById('cont').innerHTML = '<div class="loading">Refreshing...</div>';
+  tick();
+}
+
+function updateSB(games){
+  var lv=0,fn=0,up=0;
   games.forEach(g=>{
     var s=g.status.abstractGameState;
-    if(s==='Live')live.push(g);
-    else if(s==='Final')final.push(g);
-    else upcoming.push(g);
+    if(s==='Live')lv++; else if(s==='Final')fn++; else up++;
   });
-  var sb='';
-  if(live.length)sb+='<span class="pill live">&#9679; '+live.length+' Live</span>';
-  if(final.length)sb+='<span class="pill final">'+final.length+' Final</span>';
-  if(upcoming.length)sb+='<span class="pill upcoming">'+upcoming.length+' Upcoming</span>';
-  document.getElementById('sb').innerHTML=sb;
-  var html='<div class="games">';
-  if(live.length){html+='<div class="section-label">Live Now</div>';live.forEach(g=>html+=card(g));}
-  if(upcoming.length){html+='<div class="section-label">Upcoming</div>';upcoming.forEach(g=>html+=card(g));}
-  if(final.length){html+='<div class="section-label">Final</div>';final.forEach(g=>html+=card(g));}
-  html+='</div>';
-  document.getElementById('cont').innerHTML=html;
+  var h='';
+  if(lv) h+='<span class="pill live">&#9679; '+lv+' Live</span>';
+  if(fn) h+='<span class="pill final">'+fn+' Final</span>';
+  if(up) h+='<span class="pill soon">'+up+' Upcoming</span>';
+  document.getElementById('sb').innerHTML = h;
 }
 
-function card(g){
-  var away=g.teams.away.team.name,home=g.teams.home.team.name;
-  var aS=g.teams.away.score,hS=g.teams.home.score;
-  var ls=g.linescore||{},inn=ls.innings||[];
-  var curI=ls.currentInning||0,innOrd=ls.currentInningOrdinal||'',isTop=ls.isTopInning;
-  var state=g.status.abstractGameState;
+// Patch only the dynamic parts — never touch .op class or expanded state
+function patchCard(g){
+  var gid = g.gamePk;
+  var el = document.getElementById('gc-'+gid);
+  if(!el) return;
+
+  var aS=g.teams.away.score, hS=g.teams.home.score;
+  var st=g.status.abstractGameState, ls=g.linescore||{}, inn=ls.innings||[];
+  var ci=ls.currentInning||0, io=ls.currentInningOrdinal||'', it=ls.isTopInning;
+  var isFin=st==='Final', isLiv=st==='Live', hasS=aS!==undefined&&aS!==null;
+
+  // Score
+  var sc = el.querySelector('.sc');
+  if(sc && hasS){
+    sc.innerHTML = '<span class="'+(isFin&&aS<hS?'sd':'')+'">'+(aS||0)+'</span>'
+      +'<span class="ss">:</span>'
+      +'<span class="'+(isFin&&hS<aS?'sd':'')+'">'+(hS||0)+'</span>';
+  }
+
+  // Game info line
+  var gi = el.querySelector('.gi');
+  if(gi){
+    if(isLiv){ gi.textContent=(it?'▲':'▼')+' '+io; gi.className='gi lv'; }
+    else if(isFin){ gi.textContent='Final'+(inn.length>9?'/'+inn.length:''); gi.className='gi fn'; }
+  }
+
+  // Live border
+  if(isLiv) el.classList.add('lv');
+
+  // Line score — safe to update because it's not interactive
+  var lsd = el.querySelector('.ls-dyn');
+  if(lsd) lsd.innerHTML = buildLS(inn, g.teams.away.team.name, g.teams.home.team.name, aS, hS, ci, st);
+}
+
+function buildAll(games){
+  document.getElementById('dlbl').textContent = today();
+  var lv=[],fn=[],up=[];
+  games.forEach(g=>{
+    var s=g.status.abstractGameState;
+    if(s==='Live')lv.push(g); else if(s==='Final')fn.push(g); else up.push(g);
+  });
+  updateSB(games);
+  var h='<div class="glist">';
+  if(lv.length){ h+='<div class="slbl">Live Now</div>'; lv.forEach(g=>h+=buildCard(g)); }
+  if(up.length){ h+='<div class="slbl">Upcoming</div>'; up.forEach(g=>h+=buildCard(g)); }
+  if(fn.length){ h+='<div class="slbl">Final</div>'; fn.forEach(g=>h+=buildCard(g)); }
+  h += '</div>';
+  document.getElementById('cont').innerHTML = h;
+}
+
+function buildCard(g){
+  var away=g.teams.away.team.name, home=g.teams.home.team.name;
+  var aS=g.teams.away.score, hS=g.teams.home.score;
+  var st=g.status.abstractGameState, ls=g.linescore||{}, inn=ls.innings||[];
+  var ci=ls.currentInning||0, io=ls.currentInningOrdinal||'', it=ls.isTopInning;
   var gid=g.gamePk;
-  var awayP=((g.teams.away.probablePitcher||{}).fullName||'TBD').split(' ').pop();
-  var homeP=((g.teams.home.probablePitcher||{}).fullName||'TBD').split(' ').pop();
-  var pick=findPick(away,home);
-  var isLive=state==='Live',isFinal=state==='Final';
-  var hasScore=aS!==undefined&&aS!==null;
-  var ginfo='',gcls='ginfo';
-  if(isLive){ginfo=(isTop?'▲':'▼')+' '+innOrd;gcls+=' live';}
-  else if(isFinal){ginfo='Final'+(inn.length>9?'/'+inn.length:'');gcls+=' final';}
-  else{ginfo='⏱ '+toET(g.gameDate);gcls+=' upcoming';}
-  var scoreHtml=hasScore
-    ?'<div class="scores"><span class="sc'+(isFinal&&aS<hS?' dim':'')+'">'+aS+'</span><span class="sc-sep">:</span><span class="sc'+(isFinal&&hS<aS?' dim':'')+'">'+hS+'</span></div>'
-    :'<div style="font-size:12px;color:var(--faint);font-family:\'DM Mono\',monospace">vs</div>';
-  var pb=pick?'<div class="pick-banner"><span class="pt">'+pick.tier+'</span><span class="pd">'+pick.pick+'</span><span class="pl">'+pick.line+'</span><span class="pu">'+pick.units+'u</span></div>':'';
-  var lsHtml=buildLS(inn,away,home,aS,hS,curI,state);
-  var pvHtml=(state!=='Preview'&&state!=='Scheduled'&&state!=='Pre-Game')
-    ?'<div class="pv-bar" onclick="togglePV(this,\''+gid+'\')"><div class="tog"></div><span class="pv-lbl">Pitch tracker</span></div><div class="pv-panel" data-loaded="0" data-gid="'+gid+'"></div>'
-    :'';
-  return '<div class="gc'+(pick?' haspick':'')+(isLive?' islive':'')+'" id="gc-'+gid+'">'
-    +'<div class="gc-top" onclick="toggleCard(\''+gid+'\')">'
-    +'<div class="t-away"><div class="tn">'+ab(away)+'</div><div class="sp">'+awayP+'</div></div>'
-    +'<div class="center">'+scoreHtml+'<div class="'+gcls+'">'+ginfo+'</div></div>'
-    +'<div class="t-home"><div class="tn">'+ab(home)+'</div><div class="sp">'+homeP+'</div></div>'
-    +'<span class="arrow">▾</span></div>'
-    +pb
-    +'<div class="gc-body"><div class="ls">'+lsHtml+'</div>'+pvHtml+'</div>'
+  var awP=((g.teams.away.probablePitcher||{}).fullName||'TBD').split(' ').pop();
+  var hmP=((g.teams.home.probablePitcher||{}).fullName||'TBD').split(' ').pop();
+  var pk=fp(away,home);
+  var isLiv=st==='Live', isFin=st==='Final', hasS=aS!==undefined&&aS!==null;
+
+  var scoreInner = hasS
+    ? '<span class="'+(isFin&&aS<hS?'sd':'')+'">'+(aS||0)+'</span><span class="ss">:</span><span class="'+(isFin&&hS<aS?'sd':'')+'">'+(hS||0)+'</span>'
+    : '<span style="font-size:12px;color:var(--faint)">vs</span>';
+  var giCls = isLiv?'gi lv':isFin?'gi fn':'gi up';
+  var giTxt = isLiv?(it?'▲':'▼')+' '+io : isFin?'Final'+(inn.length>9?'/'+inn.length:'') : '⏱ '+toET(g.gameDate);
+  var pkHtml = pk ? '<div class="pkb"><span class="pkt">'+pk.tier+'</span><span class="pkd">'+pk.pick+'</span><span class="pkl">'+pk.line+'</span><span class="pku">'+pk.units+'u</span></div>' : '';
+
+  return '<div class="gc'+(pk?' hp':'')+(isLiv?' lv':'')+'" id="gc-'+gid+'">'
+    +'<div class="gct" onclick="toggleCard(\''+gid+'\')">'
+      +'<div class="ta"><div class="tn">'+ab(away)+'</div><div class="spp">'+awP+'</div></div>'
+      +'<div class="cc"><div class="sc">'+scoreInner+'</div><div class="'+giCls+'">'+giTxt+'</div></div>'
+      +'<div class="th"><div class="tn">'+ab(home)+'</div><div class="spp">'+hmP+'</div></div>'
+      +'<span class="arr">▾</span>'
+    +'</div>'
+    +pkHtml
+    +'<div class="gcb">'
+      +'<div class="ls-dyn">'+buildLS(inn,away,home,aS,hS,ci,st)+'</div>'
+    +'</div>'
     +'</div>';
 }
 
 function toggleCard(gid){
-  var gc=document.getElementById('gc-'+gid);
-  if(gc)gc.classList.toggle('open');
+  var gc = document.getElementById('gc-'+gid);
+  if(gc) gc.classList.toggle('op');
 }
 
-function togglePV(barEl,gid){
-  var tog=barEl.querySelector('.tog');
-  var panel=barEl.nextElementSibling;
-  tog.classList.toggle('on');
-  panel.classList.toggle('on');
-  if(panel.dataset.loaded==='0'&&panel.classList.contains('on')){
-    panel.dataset.loaded='1';
-    panel.innerHTML='<div class="pv-msg">Loading pitch data...</div>';
-    loadPitches(gid,panel);
+function buildLS(inn, away, home, aT, hT, ci, st){
+  if(!inn.length && st!=='Live' && st!=='Final'){
+    return '<p style="font-size:11px;color:var(--faint);padding:4px 0">Game not started yet</p>';
   }
-}
+  var max = Math.max(9, inn.length);
+  var hdr = '<th class="tn3">Team</th>';
+  for(var i=1;i<=max;i++) hdr += '<th'+(i===ci?' class="ci"':'')+'>'+i+'</th>';
+  hdr += '<th class="sep">R</th>';
 
-async function loadPitches(gid,panel){
-  try{
-    var r=await fetch('https://statsapi.mlb.com/api/v1/game/'+gid+'/playByPlay');
-    var d=await r.json();
-    var allPlays=d.allPlays||[];
-    if(!allPlays.length){panel.innerHTML='<div class="pv-msg">No pitch data yet.</div>';return;}
-
-    // Get current at-bat (last play that has pitches)
-    var currentAB=null;
-    for(var i=allPlays.length-1;i>=0;i--){
-      if(allPlays[i].pitchIndex&&allPlays[i].pitchIndex.length>0){currentAB=allPlays[i];break;}
-    }
-    // Also get last completed play for result banner
-    var lastResult=null;
-    for(var i=allPlays.length-1;i>=0;i--){
-      var r2=allPlays[i].result;
-      if(r2&&r2.eventType&&r2.eventType!==''){lastResult=allPlays[i];break;}
-    }
-
-    if(!currentAB&&!lastResult){panel.innerHTML='<div class="pv-msg">No pitch data available.</div>';return;}
-
-    renderPitchView(panel,currentAB,lastResult,allPlays);
-  }catch(e){
-    panel.innerHTML='<div class="pv-msg">Could not load pitch data.</div>';
-  }
-}
-
-function renderPitchView(panel,ab,lastResult,allPlays){
-  if(!ab){
-    panel.innerHTML='<div class="pv-msg">Game complete.</div>';
-    return;
-  }
-
-  var about=ab.about||{};
-  var matchup=ab.matchup||{};
-  var pitcherName=(matchup.pitcher&&matchup.pitcher.fullName)||'—';
-  var batterName=(matchup.batter&&matchup.batter.fullName)||'—';
-  var pitchTeam=about.isTopInning?'away':'home';
-
-  // Count
-  var count=ab.count||{};
-  var balls=count.balls||0,strikes=count.strikes||0,outs=count.outs||0;
-
-  // Runners
-  var offense=ab.offense||{};
-  var r1=!!offense.first,r2=!!offense.second,r3=!!offense.third;
-
-  // Pitches
-  var pitchData=ab.playEvents||[];
-  var pitches=pitchData.filter(e=>e.isPitch);
-
-  // Last result banner
-  var resultBanner='';
-  if(lastResult&&lastResult.result&&lastResult.result.description){
-    resultBanner='<div class="last-result">'+lastResult.result.description+'</div>';
-  }
-
-  // Strike zone: 17in wide, roughly 1.5-3.5 ft height
-  // Map to 96x108px box
-  function pxX(x){return ((parseFloat(x||0)+0.85)/1.7)*96;}
-  function pxY(y){return (1-(parseFloat(y||0)-1.5)/2.0)*108;}
-
-  var dots='';
-  pitches.forEach(function(p,idx){
-    var pd=p.pitchData||{};
-    var coords=pd.coordinates||{};
-    var x=coords.pX,y=coords.pZ;
-    if(x===undefined||y===undefined)return;
-    var px=pxX(x),py=pxY(y);
-    var dt=(p.details||{}).type||{};
-    var code=(p.details||{}).code||'';
-    var isStrike=['S','C','F','T','L','O','M','Q','R'].indexOf(code)>=0;
-    var isBall=['B','I','P','V'].indexOf(code)>=0;
-    var isFoul=['F','T','L'].indexOf(code)>=0;
-    var cls=isFoul?'foul':isStrike?'strike':isBall?'ball':'ball';
-    var isLatest=idx===pitches.length-1;
-    dots+='<div class="pitch-dot '+cls+(isLatest?' latest':' dim')+'" style="left:'+px+'px;top:'+py+'px" title="'+(p.details&&p.details.description||'')+'"></div>';
-  });
-
-  // Pitch list (last 6, most recent first)
-  var recentPitches=pitches.slice(-6).reverse();
-  var listHtml=recentPitches.map(function(p,idx){
-    var details=p.details||{};
-    var code=details.code||'';
-    var type=details.type||{};
-    var typeName=type.description||details.description||'—';
-    var velo=(p.pitchData&&p.pitchData.startSpeed)?parseFloat(p.pitchData.startSpeed).toFixed(1)+'mph':'';
-    var isStrike=['S','C','T','L','O','M','Q','R'].indexOf(code)>=0;
-    var isBall=['B','I','P','V'].indexOf(code)>=0;
-    var isFoul=['F'].indexOf(code)>=0;
-    var resultTxt=isFoul?'FOUL':isStrike?'STRIKE':isBall?'BALL':'IN PLAY';
-    var cls=isFoul?'foul':isStrike?'strike':isBall?'ball':'foul';
-    var num=recentPitches.length-idx;
-    return '<div class="pitch-item">'
-      +'<div class="pitch-num '+cls+'">'+num+'</div>'
-      +'<span class="pitch-result '+cls+'">'+resultTxt+'</span>'
-      +'<span class="pitch-type">'+typeName+'</span>'
-      +(velo?'<span class="pitch-velo">'+velo+'</span>':'')
-      +'</div>';
-  }).join('');
-
-  panel.innerHTML=resultBanner
-    +'<div class="pv-header">'
-      +'<div><div class="pv-team">PITCHER</div><div class="pv-pitcher">'+pitcherName+'</div></div>'
-      +'<div class="pv-mid">'
-        +'<div class="pv-count">'+balls+' - '+strikes+'</div>'
-        +'<div class="pv-outs">'+outs+' out'+(outs!==1?'s':'')+'</div>'
-      +'</div>'
-      +'<div><div class="pv-team" style="text-align:right">BATTER</div><div class="pv-batter">'+batterName+'</div></div>'
-    +'</div>'
-    +'<div class="pv-diamond-wrap">'
-      +'<div class="diamond">'
-        +'<div class="diamond-base db-2'+(r2?' on':'')+'"></div>'
-        +'<div class="diamond-base db-3'+(r3?' on':'')+'"></div>'
-        +'<div class="diamond-base db-1'+(r1?' on':'')+'"></div>'
-        +'<div class="diamond-base db-h"></div>'
-      +'</div>'
-    +'</div>'
-    +'<div class="pv-main">'
-      +'<div class="zone-wrap">'
-        +'<div class="zone-label">Strike Zone</div>'
-        +'<div class="strike-zone">'
-          +'<div class="zone-grid"><div class="zone-cell"></div><div class="zone-cell"></div><div class="zone-cell"></div><div class="zone-cell"></div><div class="zone-cell"></div><div class="zone-cell"></div><div class="zone-cell"></div><div class="zone-cell"></div><div class="zone-cell"></div></div>'
-          +dots
-        +'</div>'
-      +'</div>'
-      +'<div class="pitch-list">'+(listHtml||'<div class="pv-msg">No pitches yet.</div>')+'</div>'
-    +'</div>';
-}
-
-function buildLS(innings,away,home,aTotal,hTotal,curInn,state){
-  if(!innings.length&&state!=='Live'&&state!=='Final'){
-    return '<div style="font-size:11px;color:var(--faint);padding:4px 0">Game not started yet</div>';
-  }
-  var max=Math.max(9,innings.length);
-  var hdr='<th class="tn2">Team</th>';
-  for(var i=1;i<=max;i++)hdr+='<th'+(i===curInn?' class="cur"':'')+'>'+i+'</th>';
-  hdr+='<th class="sep">R</th>';
-  function row(side,name,total){
-    var cells='<td class="tn2">'+ab(name)+'</td>';
+  function row(side, name, total){
+    var cells = '<td class="tn3">'+ab(name)+'</td>';
     for(var i=1;i<=max;i++){
-      var inn=innings[i-1];
-      var v=inn&&inn[side]!==undefined&&inn[side].runs!==undefined?inn[side].runs:'';
-      cells+='<td'+(i===curInn?' class="cur"':'')+'>'+v+'</td>';
+      var x=inn[i-1];
+      var v = x&&x[side]!==undefined&&x[side].runs!==undefined ? x[side].runs : '';
+      cells += '<td'+(i===ci?' class="ci"':'')+'>'+v+'</td>';
     }
-    cells+='<td class="sep" style="font-weight:600">'+(total!==undefined&&total!==null?total:'')+'</td>';
+    cells += '<td class="sep">'+(total!==undefined&&total!==null?total:'')+'</td>';
     return '<tr>'+cells+'</tr>';
   }
-  return '<table class="lst"><thead><tr>'+hdr+'</tr></thead><tbody>'+row('away',away,aTotal)+row('home',home,hTotal)+'</tbody></table>';
+
+  return '<table class="lst">'
+    +'<thead><tr>'+hdr+'</tr></thead>'
+    +'<tbody>'+row('away',away,aT)+row('home',home,hT)+'</tbody>'
+    +'</table>';
 }
 
 async function init(){
   await loadPicks();
-  await go();
-  setInterval(go,30000);
+  await tick();
+  setInterval(tick, 30000);
 }
 init();
 </script>
