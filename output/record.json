@@ -9,12 +9,13 @@
       "away_sp": "Chris Sale",
       "line": "-112",
       "open_line": "-112",
-      "close_line": "",
+      "close_line": "-131",
       "tier": "WATCH",
       "units": 0,
       "ev_pct": 2,
-      "result": "",
-      "units_result": 0
+      "result": "W",
+      "units_result": 0.0,
+      "final_score": "Atlanta Braves 17 - Arizona Diamondbacks 2"
     },
     {
       "date": "2026-04-01",
@@ -99,8 +100,8 @@
       "tier": "WATCH",
       "units": 0,
       "ev_pct": 8.0,
-      "result": "",
-      "units_result": 0,
+      "result": "L",
+      "units_result": -0.0,
       "final_score": "New York Yankees 5 - Seattle Mariners 3"
     },
     {
@@ -627,6 +628,6 @@
       "final_score": "Colorado Rockies 3 - Miami Marlins 4"
     }
   ],
-  "updated": "2026-04-02",
-  "ai_model": "Claude Sonnet 4.5"
+  "updated": "2026-04-03",
+  "ai_model": "None"
 }
