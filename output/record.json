@@ -15,7 +15,8 @@
       "ev_pct": 2,
       "result": "W",
       "units_result": 0.0,
-      "final_score": "Atlanta Braves 17 - Arizona Diamondbacks 2"
+      "final_score": "Atlanta Braves 17 - Arizona Diamondbacks 2",
+      "loss_reason": ""
     },
     {
       "date": "2026-04-01",
@@ -32,7 +33,8 @@
       "ev_pct": 4.1,
       "result": "W",
       "units_result": 0.926,
-      "final_score": "Pittsburgh Pirates 8 - Cincinnati Reds 3"
+      "final_score": "Pittsburgh Pirates 8 - Cincinnati Reds 3",
+      "loss_reason": ""
     },
     {
       "date": "2026-04-01",
@@ -49,7 +51,8 @@
       "ev_pct": 10.0,
       "result": "W",
       "units_result": 1.06,
-      "final_score": "Washington Nationals 5 - Philadelphia Phillies 6"
+      "final_score": "Washington Nationals 5 - Philadelphia Phillies 6",
+      "loss_reason": ""
     },
     {
       "date": "2026-04-01",
@@ -85,7 +88,7 @@
       "result": "L",
       "units_result": 0.0,
       "final_score": "Detroit Tigers 0 - Arizona Diamondbacks 1",
-      "loss_reason": "SP_OUTPERFORMED"
+      "loss_reason": "PURE_VARIANCE"
     },
     {
       "date": "2026-04-01",
@@ -101,8 +104,9 @@
       "units": 0,
       "ev_pct": 8.0,
       "result": "L",
-      "units_result": -0.0,
-      "final_score": "New York Yankees 5 - Seattle Mariners 3"
+      "units_result": 0.0,
+      "final_score": "New York Yankees 5 - Seattle Mariners 3",
+      "loss_reason": ""
     },
     {
       "date": "2026-04-01",
@@ -119,7 +123,8 @@
       "ev_pct": 2.0,
       "result": "W",
       "units_result": 0.0,
-      "final_score": "Cleveland Guardians 4 - Los Angeles Dodgers 1"
+      "final_score": "Cleveland Guardians 4 - Los Angeles Dodgers 1",
+      "loss_reason": ""
     },
     {
       "date": "2026-03-31",
@@ -154,7 +159,8 @@
       "ev_pct": 5,
       "result": "W",
       "units_result": 0.98,
-      "final_score": "New York Yankees 5 - Seattle Mariners 0"
+      "final_score": "New York Yankees 5 - Seattle Mariners 0",
+      "loss_reason": ""
     },
     {
       "date": "2026-03-31",
@@ -171,7 +177,8 @@
       "ev_pct": 3,
       "result": "W",
       "units_result": 0.485,
-      "final_score": "San Francisco Giants 9 - San Diego Padres 3"
+      "final_score": "San Francisco Giants 9 - San Diego Padres 3",
+      "loss_reason": ""
     },
     {
       "date": "2026-03-31",
@@ -206,7 +213,8 @@
       "ev_pct": 5,
       "result": "W",
       "units_result": 0.59,
-      "final_score": "Los Angeles Angels 2 - Chicago Cubs 0 (NRFI: 0-0 after 1)"
+      "final_score": "Los Angeles Angels 2 - Chicago Cubs 0 (NRFI: 0-0 after 1)",
+      "loss_reason": ""
     },
     {
       "date": "2026-03-31",
@@ -241,7 +249,8 @@
       "ev_pct": 2,
       "result": "W",
       "units_result": 0.0,
-      "final_score": "Chicago White Sox 2 - Miami Marlins 9"
+      "final_score": "Chicago White Sox 2 - Miami Marlins 9",
+      "loss_reason": ""
     },
     {
       "date": "2026-03-30",
@@ -258,7 +267,8 @@
       "ev_pct": 9,
       "result": "W",
       "units_result": 1.389,
-      "final_score": "Seattle Mariners 2 - New York Yankees 1"
+      "final_score": "Seattle Mariners 2 - New York Yankees 1",
+      "loss_reason": ""
     },
     {
       "date": "2026-03-30",
@@ -293,7 +303,8 @@
       "ev_pct": 10,
       "result": "W",
       "units_result": 1.12,
-      "final_score": "Cleveland Guardians 4 - Los Angeles Dodgers 2"
+      "final_score": "Cleveland Guardians 4 - Los Angeles Dodgers 2",
+      "loss_reason": ""
     },
     {
       "date": "2026-03-30",
@@ -310,7 +321,8 @@
       "ev_pct": 4,
       "result": "W",
       "units_result": 0.5,
-      "final_score": "San Francisco Giants 3 - San Diego Padres 2"
+      "final_score": "San Francisco Giants 3 - San Diego Padres 2",
+      "loss_reason": ""
     },
     {
       "date": "2026-03-29",
@@ -327,7 +339,8 @@
       "ev_pct": 4,
       "result": "W",
       "units_result": 0.893,
-      "final_score": "Texas Rangers 8 - Philadelphia Phillies 3"
+      "final_score": "Texas Rangers 8 - Philadelphia Phillies 3",
+      "loss_reason": ""
     },
     {
       "date": "2026-03-29",
@@ -362,7 +375,8 @@
       "ev_pct": 3,
       "result": "W",
       "units_result": 0.525,
-      "final_score": "Washington Nationals 6 - Chicago Cubs 3"
+      "final_score": "Washington Nationals 6 - Chicago Cubs 3",
+      "loss_reason": ""
     },
     {
       "date": "2026-03-29",
@@ -415,7 +429,8 @@
       "ev_pct": 2,
       "result": "W",
       "units_result": 0.0,
-      "final_score": "Tampa Bay Rays 11 - St. Louis Cardinals 7"
+      "final_score": "Tampa Bay Rays 11 - St. Louis Cardinals 7",
+      "loss_reason": ""
     },
     {
       "date": "2026-03-28",
@@ -450,7 +465,8 @@
       "ev_pct": 10,
       "result": "W",
       "units_result": 1.389,
-      "final_score": "Minnesota Twins 4 - Baltimore Orioles 1"
+      "final_score": "Minnesota Twins 4 - Baltimore Orioles 1",
+      "loss_reason": ""
     },
     {
       "date": "2026-03-28",
@@ -521,7 +537,8 @@
       "ev_pct": 4,
       "result": "W",
       "units_result": 0.99,
-      "final_score": "Los Angeles Angels 9 - Houston Astros 11"
+      "final_score": "Los Angeles Angels 9 - Houston Astros 11",
+      "loss_reason": ""
     },
     {
       "date": "2026-03-28",
@@ -556,7 +573,8 @@
       "ev_pct": 6,
       "result": "W",
       "units_result": 0.926,
-      "final_score": "New York Yankees 3 - San Francisco Giants 1"
+      "final_score": "New York Yankees 3 - San Francisco Giants 1",
+      "loss_reason": ""
     },
     {
       "date": "2026-03-28",
@@ -573,7 +591,8 @@
       "ev_pct": 11,
       "result": "W",
       "units_result": 2.885,
-      "final_score": "Detroit Tigers 0 - San Diego Padres 3"
+      "final_score": "Detroit Tigers 0 - San Diego Padres 3",
+      "loss_reason": ""
     },
     {
       "date": "2026-03-28",
@@ -590,7 +609,8 @@
       "ev_pct": 4,
       "result": "W",
       "units_result": 0.476,
-      "final_score": "Arizona Diamondbacks 2 - Los Angeles Dodgers 3"
+      "final_score": "Arizona Diamondbacks 2 - Los Angeles Dodgers 3",
+      "loss_reason": ""
     },
     {
       "date": "2026-03-28",
@@ -625,40 +645,7 @@
       "ev_pct": 2,
       "result": "W",
       "units_result": 0.0,
-      "final_score": "Colorado Rockies 3 - Miami Marlins 4"
-    },
-    {
-      "date": "2026-04-03",
-      "game": "New York Mets @ San Francisco Giants",
-      "pick": "NRFI (No Run First Inning)",
-      "bet_type": "NRFI",
-      "home_sp": "Tyler Mahle",
-      "away_sp": "Nolan McLean",
-      "line": "-135",
-      "open_line": "-135",
-      "close_line": "",
-      "tier": "A",
-      "units": 1.5,
-      "ev_pct": 15,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
-    },
-    {
-      "date": "2026-04-03",
-      "game": "Atlanta Braves @ Arizona Diamondbacks",
-      "pick": "OVER 9.0 \u2014 WATCH ONLY (WATCH)",
-      "bet_type": "WATCH",
-      "home_sp": "Eduardo Rodriguez",
-      "away_sp": "Grant Holmes",
-      "line": "-110",
-      "open_line": "-110",
-      "close_line": "",
-      "tier": "WATCH",
-      "units": 0,
-      "ev_pct": 4,
-      "result": "",
-      "units_result": 0,
+      "final_score": "Colorado Rockies 3 - Miami Marlins 4",
       "loss_reason": ""
     }
   ],
