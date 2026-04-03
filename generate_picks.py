@@ -1075,7 +1075,7 @@ def fetch_odds():
             odds_map[away+"@"+home] = {"moneyline":ml,"total":total,"runline":runline}
         print("Fetched odds for "+str(len(odds_map))+" games")
 
-        # Fetch real NRFI/YRFI lines per event
+        # Fetch real NRFI/YRFI lines per event — parallel to avoid sequential slowdown
         nrfi_map = fetch_nrfi_odds(event_ids)
         for key, nrfi in nrfi_map.items():
             if key in odds_map:
@@ -1088,24 +1088,18 @@ def fetch_odds():
 
 def fetch_nrfi_odds(event_ids):
     """
-    Fetch real NRFI/YRFI book lines for each game.
+    Fetch real NRFI/YRFI book lines for each game in parallel.
     Uses totals_1st_1_innings market (over/under 0.5 runs in 1st inning).
-    Over 0.5 = YRFI, Under 0.5 = NRFI.
-    Hard time budget: 30 seconds total to prevent hanging the run.
+    All games fetched simultaneously — max 10 seconds total wall time.
     """
     if not ODDS_API_KEY or not event_ids:
         return {}
-    import time
-    nrfi_map = {}
-    start_time = time.time()
-    MAX_TOTAL_SECONDS = 30  # hard budget — skip remaining games if exceeded
 
-    for game_key, event_id in event_ids.items():
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    def fetch_one(game_key, event_id):
         if not event_id:
-            continue
-        if time.time() - start_time > MAX_TOTAL_SECONDS:
-            print(f"NRFI fetch time budget exceeded — skipping remaining games")
-            break
+            return game_key, None
         try:
             r = requests.get(
                 f"https://api.the-odds-api.com/v4/sports/baseball_mlb/events/{event_id}/odds",
@@ -1116,10 +1110,10 @@ def fetch_nrfi_odds(event_ids):
                     "oddsFormat": "american",
                     "bookmakers": "draftkings,fanduel,betmgm,caesars,betonlineag",
                 },
-                timeout=4
+                timeout=6
             )
             if not r.ok:
-                continue
+                return game_key, None
             best_nrfi = None; best_yrfi = None
             for bm in r.json().get("bookmakers", []):
                 for market in bm.get("markets", []):
@@ -1135,13 +1129,25 @@ def fetch_nrfi_odds(event_ids):
                             if best_yrfi is None or price > best_yrfi:
                                 best_yrfi = price
             if best_nrfi or best_yrfi:
-                nrfi_map[game_key] = {
-                    "nrfi_price": best_nrfi,
-                    "yrfi_price": best_yrfi,
-                    "source": "book",
-                }
-        except Exception as e:
-            print(f"NRFI fetch error for {game_key}: {str(e)}")
+                return game_key, {"nrfi_price": best_nrfi, "yrfi_price": best_yrfi, "source": "book"}
+            return game_key, None
+        except Exception:
+            return game_key, None
+
+    nrfi_map = {}
+    try:
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            futures = {executor.submit(fetch_one, k, v): k for k, v in event_ids.items()}
+            for future in as_completed(futures, timeout=10):
+                try:
+                    game_key, result = future.result()
+                    if result:
+                        nrfi_map[game_key] = result
+                except Exception:
+                    pass
+    except Exception as e:
+        print(f"NRFI parallel fetch error: {str(e)}")
+
     if nrfi_map:
         print(f"Fetched real NRFI lines for {len(nrfi_map)} games")
     return nrfi_map
@@ -1344,7 +1350,7 @@ def _try_claude(user_msg):
             json={"model":"claude-sonnet-4-6","max_tokens":16000,
                   "system":SYSTEM_PROMPT,
                   "messages":[{"role":"user","content":user_msg}]},
-            timeout=180
+            timeout=300
         )
         if not r.ok:
             print("Claude error: "+r.text[:300])
@@ -1792,8 +1798,8 @@ def call_ai(games_with_data):
         return [], "None"
     summarized = [summarize_game(g) for g in bettable]
 
-    # Split into batches of 4 to stay within token limits
-    BATCH_SIZE = 4
+    # Split into batches of 2 to minimize payload and reduce timeout risk
+    BATCH_SIZE = 2
     all_picks = []
     model_used = "None"
 
