@@ -626,8 +626,42 @@
       "result": "W",
       "units_result": 0.0,
       "final_score": "Colorado Rockies 3 - Miami Marlins 4"
+    },
+    {
+      "date": "2026-04-03",
+      "game": "New York Mets @ San Francisco Giants",
+      "pick": "NRFI (No Run First Inning)",
+      "bet_type": "NRFI",
+      "home_sp": "Tyler Mahle",
+      "away_sp": "Nolan McLean",
+      "line": "-135",
+      "open_line": "-135",
+      "close_line": "",
+      "tier": "A",
+      "units": 1.5,
+      "ev_pct": 15,
+      "result": "",
+      "units_result": 0,
+      "loss_reason": ""
+    },
+    {
+      "date": "2026-04-03",
+      "game": "Atlanta Braves @ Arizona Diamondbacks",
+      "pick": "OVER 9.0 \u2014 WATCH ONLY (WATCH)",
+      "bet_type": "WATCH",
+      "home_sp": "Eduardo Rodriguez",
+      "away_sp": "Grant Holmes",
+      "line": "-110",
+      "open_line": "-110",
+      "close_line": "",
+      "tier": "WATCH",
+      "units": 0,
+      "ev_pct": 4,
+      "result": "",
+      "units_result": 0,
+      "loss_reason": ""
     }
   ],
   "updated": "2026-04-03",
-  "ai_model": "None"
+  "ai_model": "Claude Sonnet 4.6"
 }
