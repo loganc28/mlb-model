@@ -1336,28 +1336,39 @@ def _parse_ai_response(raw):
     if start >= 0 and end > start: raw = raw[start:end]
     return json.loads(raw.strip())
 
-def _try_claude(user_msg):
+def _try_claude(user_msg, retries=2):
     if not ANTHROPIC_KEY: return None, None
-    try:
-        r = requests.post(
-            "https://api.anthropic.com/v1/messages",
-            headers={"x-api-key":ANTHROPIC_KEY,"anthropic-version":"2023-06-01",
-                     "content-type":"application/json"},
-            json={"model":"claude-sonnet-4-6","max_tokens":16000,
-                  "system":SYSTEM_PROMPT,
-                  "messages":[{"role":"user","content":user_msg}]},
-            timeout=180
-        )
-        if not r.ok:
-            print("Claude error: "+r.text[:300])
-            return None, None
-        raw = r.json()["content"][0]["text"]
-        picks = _parse_ai_response(raw)
-        print("Claude returned "+str(len(picks))+" picks")
-        return picks, "Claude Sonnet 4.6"
-    except Exception as e:
-        print("Claude failed: "+str(e))
-        return None, None
+    import time
+    for attempt in range(retries):
+        try:
+            r = requests.post(
+                "https://api.anthropic.com/v1/messages",
+                headers={"x-api-key":ANTHROPIC_KEY,"anthropic-version":"2023-06-01",
+                         "content-type":"application/json"},
+                json={"model":"claude-sonnet-4-6","max_tokens":16000,
+                      "system":SYSTEM_PROMPT,
+                      "messages":[{"role":"user","content":user_msg}]},
+                timeout=180
+            )
+            if not r.ok:
+                print("Claude error: "+r.text[:300])
+                if attempt < retries - 1:
+                    print(f"Retrying in 15 seconds... (attempt {attempt+1}/{retries})")
+                    time.sleep(15)
+                    continue
+                return None, None
+            raw = r.json()["content"][0]["text"]
+            picks = _parse_ai_response(raw)
+            print("Claude returned "+str(len(picks))+" picks")
+            return picks, "Claude Sonnet 4.6"
+        except Exception as e:
+            print("Claude failed: "+str(e))
+            if attempt < retries - 1:
+                print(f"Retrying in 15 seconds... (attempt {attempt+1}/{retries})")
+                time.sleep(15)
+            else:
+                return None, None
+    return None, None
 
 def _try_groq(user_msg):
     if not GROQ_KEY: return None, None
