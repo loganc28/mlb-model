@@ -1091,14 +1091,21 @@ def fetch_nrfi_odds(event_ids):
     Fetch real NRFI/YRFI book lines for each game.
     Uses totals_1st_1_innings market (over/under 0.5 runs in 1st inning).
     Over 0.5 = YRFI, Under 0.5 = NRFI.
-    One API call per game — batches carefully to preserve credits.
+    Hard time budget: 30 seconds total to prevent hanging the run.
     """
     if not ODDS_API_KEY or not event_ids:
         return {}
+    import time
     nrfi_map = {}
+    start_time = time.time()
+    MAX_TOTAL_SECONDS = 30  # hard budget — skip remaining games if exceeded
+
     for game_key, event_id in event_ids.items():
         if not event_id:
             continue
+        if time.time() - start_time > MAX_TOTAL_SECONDS:
+            print(f"NRFI fetch time budget exceeded — skipping remaining games")
+            break
         try:
             r = requests.get(
                 f"https://api.the-odds-api.com/v4/sports/baseball_mlb/events/{event_id}/odds",
@@ -1109,7 +1116,7 @@ def fetch_nrfi_odds(event_ids):
                     "oddsFormat": "american",
                     "bookmakers": "draftkings,fanduel,betmgm,caesars,betonlineag",
                 },
-                timeout=10
+                timeout=4
             )
             if not r.ok:
                 continue
@@ -1121,7 +1128,6 @@ def fetch_nrfi_odds(event_ids):
                     for o in market.get("outcomes", []):
                         price = o.get("price")
                         name = o.get("name","").upper()
-                        # Under 0.5 = NRFI, Over 0.5 = YRFI
                         if name == "UNDER":
                             if best_nrfi is None or price > best_nrfi:
                                 best_nrfi = price
@@ -1660,6 +1666,8 @@ def summarize_game(g):
     odds = g.get("odds",{})
     home_rec = home_sp.get("recent_form",{})
     away_rec = away_sp.get("recent_form",{})
+    home_streak = g.get("home_streak",{})
+    away_streak = g.get("away_streak",{})
 
     return {
         "game": g["away"]+" @ "+g["home"],
@@ -1679,7 +1687,6 @@ def summarize_game(g):
             "form_flag": away_sp.get("form_flag",""),
             "relevant_split": away_sp.get("relevant_split",""),
             "recent_era": away_rec.get("era_last3",0),
-            "recent_k9": away_rec.get("k9_last3",0),
             "recent_starts": away_rec.get("starts",0),
         },
         "home_sp_stats": {
@@ -1691,24 +1698,21 @@ def summarize_game(g):
             "form_flag": home_sp.get("form_flag",""),
             "relevant_split": home_sp.get("relevant_split",""),
             "recent_era": home_rec.get("era_last3",0),
-            "recent_k9": home_rec.get("k9_last3",0),
             "recent_starts": home_rec.get("starts",0),
         },
         "away_team": {
             "ops": away_bat.get("ops",0),
-            "runs_pg": away_bat.get("runs_per_game",0),
-            "bullpen_era": away_pit.get("team_era",0),
             "bullpen_fatigue": away_bp.get("fatigue_level","UNKNOWN"),
-            "fatigued_arms": away_bp.get("fatigued_arms",[]),
-            "injuries": [i["name"]+" ("+i["pos"]+")" for i in g.get("away_injuries",[])[:3]],
+            "fatigued_arms": away_bp.get("fatigued_arms",[])[:3],
+            "injuries": [i["name"] for i in g.get("away_injuries",[])[:2]],
+            "streak": str(away_streak.get("streak_type",""))+str(away_streak.get("streak_number","")) if away_streak else "",
         },
         "home_team": {
             "ops": home_bat.get("ops",0),
-            "runs_pg": home_bat.get("runs_per_game",0),
-            "bullpen_era": home_pit.get("team_era",0),
             "bullpen_fatigue": home_bp.get("fatigue_level","UNKNOWN"),
-            "fatigued_arms": home_bp.get("fatigued_arms",[]),
-            "injuries": [i["name"]+" ("+i["pos"]+")" for i in g.get("home_injuries",[])[:3]],
+            "fatigued_arms": home_bp.get("fatigued_arms",[])[:3],
+            "injuries": [i["name"] for i in g.get("home_injuries",[])[:2]],
+            "streak": str(home_streak.get("streak_type",""))+str(home_streak.get("streak_number","")) if home_streak else "",
         },
         "umpire": {
             "name": ump.get("name",""),
@@ -1738,9 +1742,6 @@ def summarize_game(g):
             "total_line": odds.get("total",{}).get("line",""),
             "total_over": odds.get("total",{}).get("over",""),
             "total_under": odds.get("total",{}).get("under",""),
-            "f5_line": odds.get("f5_total",{}).get("line",""),
-            "f5_over": odds.get("f5_total",{}).get("over",""),
-            "f5_under": odds.get("f5_total",{}).get("under",""),
             "run_line": {
                 g["away"]: {
                     "price": odds.get("runline",{}).get(g["away"],{}).get("price",""),
@@ -1757,8 +1758,6 @@ def summarize_game(g):
             "home": g.get("home_platoon",{}).get("platoon_note",""),
             "away": g.get("away_platoon",{}).get("platoon_note",""),
         },
-        "home_streak": g.get("home_streak",{}),
-        "away_streak": g.get("away_streak",{}),
         "nrfi_data": {
             **estimate_nrfi_odds(
                 g.get("away_sp_stats",{}),
@@ -1793,8 +1792,8 @@ def call_ai(games_with_data):
         return [], "None"
     summarized = [summarize_game(g) for g in bettable]
 
-    # Split into batches of 6 to stay within token limits
-    BATCH_SIZE = 6
+    # Split into batches of 4 to stay within token limits
+    BATCH_SIZE = 4
     all_picks = []
     model_used = "None"
 
