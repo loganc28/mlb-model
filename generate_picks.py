@@ -1346,6 +1346,7 @@ def _try_claude(user_msg, retries=2):
                 headers={"x-api-key":ANTHROPIC_KEY,"anthropic-version":"2023-06-01",
                          "content-type":"application/json"},
                 json={"model":"claude-sonnet-4-6","max_tokens":16000,
+                      "temperature":0,
                       "system":SYSTEM_PROMPT,
                       "messages":[{"role":"user","content":user_msg}]},
                 timeout=180
@@ -1379,7 +1380,7 @@ def _try_groq(user_msg):
             json={"model":"llama-3.3-70b-versatile",
                   "messages":[{"role":"system","content":SYSTEM_PROMPT},
                                {"role":"user","content":user_msg}],
-                  "temperature":0.1,"max_tokens":8000},
+                  "temperature":0,"max_tokens":8000},
             timeout=90
         )
         if not r.ok:
