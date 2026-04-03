@@ -10,444 +10,287 @@
 :root{
   --bg:#0D0F11;--surface:#151719;--surface2:#1C1F22;--border:#272B2F;
   --text:#F0F2F4;--muted:#8A9099;--faint:#3A3F45;
-  --gold:#F5C842;--green:#22C87A;--red:#F04B4B;--blue:#4B9CF5;--purple:#9B72F5;
-  --orange:#F5A623;
+  --gold:#F5C842;--green:#22C87A;--red:#F04B4B;--blue:#4B9CF5;
 }
-body{font-family:"DM Sans",sans-serif;background:var(--bg);color:var(--text);padding:1.5rem 1rem;max-width:820px;margin:0 auto;min-height:100vh}
+body{font-family:"DM Sans",sans-serif;background:var(--bg);color:var(--text);padding:1.5rem 1rem;max-width:760px;margin:0 auto}
 .brand{font-family:"Syne",sans-serif;font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:2px}
-.page-title{font-family:"Syne",sans-serif;font-size:28px;font-weight:800;letter-spacing:-.02em;color:var(--text);margin-bottom:4px}
+.page-title{font-family:"Syne",sans-serif;font-size:28px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px}
 .meta{font-size:12px;color:var(--muted);margin-bottom:1.5rem;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .meta a{color:var(--blue);text-decoration:none;font-weight:500}
 .divider{color:var(--faint)}
-.refresh-btn{background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:11px;padding:3px 10px;border-radius:6px;cursor:pointer;font-family:"DM Sans",sans-serif;transition:all .15s}
-.refresh-btn:hover{color:var(--text);border-color:var(--faint)}
+.refresh-btn{background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:11px;padding:3px 10px;border-radius:6px;cursor:pointer}
+.refresh-btn:hover{color:var(--text)}
 
-/* Status bar */
 .status-bar{display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap}
-.status-pill{font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;font-family:"DM Mono",monospace}
-.status-pill.live{background:#F04B4B18;color:var(--red);border:1px solid #F04B4B30;animation:pulse 2s infinite}
-.status-pill.final{background:#8A909918;color:var(--muted);border:1px solid #8A909930}
-.status-pill.upcoming{background:#4B9CF518;color:var(--blue);border:1px solid #4B9CF530}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
-
-/* Game cards */
-.games-list{display:flex;flex-direction:column;gap:10px}
-.game-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;position:relative;transition:border-color .2s}
-.game-card.has-pick{border-color:#F5C84240}
-.game-card.has-pick::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gold)}
-.game-card.live-game{border-color:#F04B4B30}
-.game-card.live-game::before{background:var(--red)}
-
-/* Pick badge */
-.pick-badge{position:absolute;top:10px;right:12px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;font-family:"DM Mono",monospace;background:#F5C84218;color:var(--gold);border:1px solid #F5C84230;letter-spacing:.05em}
-
-/* Card header */
-.card-header{padding:12px 14px 10px;cursor:pointer;user-select:none}
-.game-teams{display:flex;align-items:center;gap:0;margin-bottom:8px}
-.team-block{flex:1}
-.team-name{font-size:14px;font-weight:600;line-height:1.2}
-.team-record{font-size:11px;color:var(--muted);font-family:"DM Mono",monospace;margin-top:1px}
-.score-block{text-align:center;padding:0 12px;min-width:80px}
-.score-display{font-family:"Syne",sans-serif;font-size:26px;font-weight:800;letter-spacing:-.02em;display:flex;align-items:center;gap:6px;justify-content:center}
-.score-sep{color:var(--faint);font-size:18px;font-weight:400}
-.score-num{line-height:1}
-.score-num.winning{color:var(--text)}
-.score-num.losing{color:var(--muted)}
-.game-status-row{display:flex;align-items:center;justify-content:space-between;margin-top:4px}
-.game-status{font-size:11px;font-family:"DM Mono",monospace}
-.game-status.live{color:var(--red)}
-.game-status.final{color:var(--muted)}
-.game-status.upcoming{color:var(--blue)}
-.toggle-hint{font-size:10px;color:var(--faint);display:flex;align-items:center;gap:4px}
-.toggle-hint svg{width:10px;height:10px;transition:transform .2s}
-.game-card.expanded .toggle-hint svg{transform:rotate(180deg)}
-
-/* Line score */
-.line-score-wrap{padding:0 14px;overflow:hidden;max-height:0;transition:max-height .3s ease}
-.game-card.expanded .line-score-wrap{max-height:400px}
-.line-score-table{width:100%;border-collapse:collapse;margin-bottom:10px;font-family:"DM Mono",monospace;font-size:11px}
-.line-score-table th{color:var(--muted);text-align:center;padding:4px 6px;font-weight:500;border-bottom:1px solid var(--border);min-width:24px}
-.line-score-table th.team-col{text-align:left;min-width:80px}
-.line-score-table td{text-align:center;padding:4px 6px;color:var(--text)}
-.line-score-table td.team-col{text-align:left;color:var(--muted);font-weight:500}
-.line-score-table td.current-inn{background:var(--surface2);color:var(--gold)}
-.line-score-table tr:last-child td{padding-bottom:8px}
-.totals-sep{border-left:1px solid var(--border)!important}
-
-/* Play by play toggle */
-.pbp-toggle{display:flex;align-items:center;gap:6px;margin-bottom:8px;cursor:pointer;user-select:none;width:fit-content}
-.pbp-toggle-btn{width:32px;height:18px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;position:relative;transition:background .2s}
-.pbp-toggle-btn.on{background:#22C87A40;border-color:#22C87A60}
-.pbp-toggle-btn::after{content:"";position:absolute;width:12px;height:12px;background:var(--muted);border-radius:50%;top:2px;left:2px;transition:all .2s}
-.pbp-toggle-btn.on::after{background:var(--green);transform:translateX(14px)}
-.pbp-toggle-label{font-size:11px;color:var(--muted)}
-
-/* Play by play list */
-.pbp-list{max-height:0;overflow:hidden;transition:max-height .3s ease}
-.pbp-list.visible{max-height:300px;overflow-y:auto}
-.pbp-item{display:flex;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px;line-height:1.4}
-.pbp-item:last-child{border-bottom:none}
-.pbp-inning{font-family:"DM Mono",monospace;color:var(--muted);min-width:40px;flex-shrink:0}
-.pbp-desc{color:var(--text);opacity:.85}
-.pbp-score{font-family:"DM Mono",monospace;color:var(--green);min-width:50px;flex-shrink:0;text-align:right}
-.pbp-empty{color:var(--faint);font-size:11px;padding:8px 0;font-style:italic}
-
-.card-footer{padding:0 14px 12px}
-
-/* Loading state */
-.loading{text-align:center;padding:3rem;color:var(--muted);font-size:14px}
-.loading-dot{display:inline-block;width:6px;height:6px;background:var(--muted);border-radius:50%;margin:0 3px;animation:bounce .8s infinite}
-.loading-dot:nth-child(2){animation-delay:.15s}
-.loading-dot:nth-child(3){animation-delay:.3s}
-@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.pill{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;font-family:"DM Mono",monospace}
+.pill.live{background:#F04B4B18;color:var(--red);border:1px solid #F04B4B30;animation:blink 2s infinite}
+.pill.final{background:#8A909918;color:var(--muted);border:1px solid #8A909930}
+.pill.upcoming{background:#4B9CF518;color:var(--blue);border:1px solid #4B9CF530}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.5}}
 
 .section-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:1.25rem 0 .6rem;display:flex;align-items:center;gap:8px}
 .section-label::after{content:"";flex:1;height:1px;background:var(--border)}
+.games{display:flex;flex-direction:column;gap:8px}
 
-footer{font-size:11px;color:var(--faint);margin-top:2rem;text-align:center;padding-bottom:2rem;line-height:1.8}
+/* Card */
+.gc{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.gc.haspick{border-color:#F5C84240}
+.gc.islive{border-color:#F04B4B30}
 
-/* Scrollbar */
-.pbp-list::-webkit-scrollbar{width:4px}
-.pbp-list::-webkit-scrollbar-track{background:transparent}
-.pbp-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+/* Top row */
+.gc-top{padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;border-left:3px solid transparent}
+.gc.haspick .gc-top{border-left-color:var(--gold)}
+.gc.islive .gc-top{border-left-color:var(--red)}
+.gc-top:hover{background:var(--surface2)}
+.t-away{flex:1}
+.t-home{flex:1;text-align:right}
+.tn{font-size:15px;font-weight:700;font-family:"Syne",sans-serif}
+.sp{font-size:10px;color:var(--muted);margin-top:2px}
+.center{flex:0 0 110px;text-align:center}
+.scores{font-family:"Syne",sans-serif;font-size:24px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:6px;line-height:1}
+.sc.dim{color:var(--muted)}
+.sc-sep{color:var(--faint);font-size:16px;font-weight:400}
+.ginfo{font-size:10px;font-family:"DM Mono",monospace;margin-top:3px}
+.ginfo.live{color:var(--red)}
+.ginfo.upcoming{color:var(--blue)}
+.ginfo.final{color:var(--muted)}
+.arrow{font-size:11px;color:var(--faint);flex-shrink:0;transition:transform .2s}
+.gc.open .arrow{transform:rotate(180deg)}
 
-@media(max-width:480px){
-  .score-display{font-size:22px}
-  .team-name{font-size:13px}
-}
+/* Pick banner */
+.pick-banner{background:#F5C84210;border-top:1px solid #F5C84220;padding:5px 14px;font-size:11px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pt{font-family:"DM Mono",monospace;font-weight:700;color:var(--gold)}
+.pd{color:var(--text)}
+.pl{color:var(--muted);font-family:"DM Mono",monospace}
+.pu{color:var(--gold);font-family:"DM Mono",monospace}
+
+/* Expandable body — NO overflow hidden so PBP scroll works */
+.gc-body{display:none}
+.gc.open .gc-body{display:block}
+
+/* Line score */
+.ls{padding:10px 14px 6px}
+.lst{width:100%;border-collapse:collapse;font-family:"DM Mono",monospace;font-size:11px;margin-bottom:4px}
+.lst th{color:var(--muted);text-align:center;padding:3px 3px;border-bottom:1px solid var(--border);font-weight:500;min-width:18px}
+.lst th.tn2{text-align:left;min-width:36px}
+.lst td{text-align:center;padding:3px 3px}
+.lst td.tn2{text-align:left;color:var(--muted)}
+.lst td.cur{background:var(--surface2);color:var(--gold)}
+.lst .sep{border-left:1px solid var(--border)}
+
+/* PBP section */
+.pbp-section{padding:0 14px 12px}
+.pbp-row{display:flex;align-items:center;gap:8px;cursor:pointer;padding:4px 0;user-select:none}
+.pbp-row:hover .pbp-lbl{color:var(--text)}
+.tog{width:30px;height:17px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;position:relative;transition:background .2s;flex-shrink:0}
+.tog.on{background:#22C87A25;border-color:#22C87A50}
+.tog::after{content:"";position:absolute;width:11px;height:11px;background:var(--faint);border-radius:50%;top:2px;left:2px;transition:all .2s}
+.tog.on::after{background:var(--green);left:15px}
+.pbp-lbl{font-size:11px;color:var(--muted);transition:color .15s}
+.pbp-content{display:none;max-height:260px;overflow-y:auto;border-top:1px solid var(--border);padding-top:8px;margin-top:4px}
+.pbp-content.on{display:block}
+.pbp-item{display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);font-size:11px}
+.pbp-item:last-child{border:none}
+.pbp-inn{font-family:"DM Mono",monospace;color:var(--muted);width:30px;flex-shrink:0}
+.pbp-txt{color:var(--text);opacity:.8;flex:1;line-height:1.4}
+.pbp-sc{font-family:"DM Mono",monospace;color:var(--green);width:40px;text-align:right;flex-shrink:0}
+.pbp-msg{color:var(--faint);font-size:11px;padding:6px 0;font-style:italic}
+.pbp-content::-webkit-scrollbar{width:3px}
+.pbp-content::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+.loading{text-align:center;padding:3rem;color:var(--muted)}
+footer{font-size:11px;color:var(--faint);margin-top:2rem;text-align:center;padding-bottom:2rem}
 </style>
 </head>
 <body>
-
 <div class="brand">MLB Betting Model</div>
 <div class="page-title">Live Scores</div>
 <div class="meta">
-  <span id="date-display">—</span>
+  <span id="dlbl"></span>
   <span class="divider">&middot;</span>
   <a href="index.html">Today's picks</a>
   <span class="divider">&middot;</span>
   <a href="record.html">Record</a>
   <span class="divider">&middot;</span>
-  <span id="last_update" style="color:var(--muted)">Loading...</span>
-  <button class="refresh-btn" onclick="loadScores()">↻ Refresh</button>
+  <span id="upd" style="color:var(--muted)">Loading...</span>
+  <button class="refresh-btn" onclick="go()">↻ Refresh</button>
 </div>
-
-<div class="status-bar" id="status-bar"></div>
-<div id="games-container"><div class="loading"><span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span></div></div>
-
+<div class="status-bar" id="sb"></div>
+<div id="cont"><div class="loading">Loading scores...</div></div>
 <footer>Live data from MLB Stats API &middot; Auto-refreshes every 30 seconds</footer>
 
 <script>
-// Active picks for today — auto-populated from picks.json
-var ACTIVE_PICKS = {};
+var PICKS={};
+var ABBR={'New York Yankees':'NYY','New York Mets':'NYM','Boston Red Sox':'BOS','Tampa Bay Rays':'TB','Baltimore Orioles':'BAL','Toronto Blue Jays':'TOR','Chicago White Sox':'CWS','Cleveland Guardians':'CLE','Detroit Tigers':'DET','Kansas City Royals':'KC','Minnesota Twins':'MIN','Houston Astros':'HOU','Los Angeles Angels':'LAA','Oakland Athletics':'OAK','Athletics':'ATH','Seattle Mariners':'SEA','Texas Rangers':'TEX','Atlanta Braves':'ATL','Miami Marlins':'MIA','Philadelphia Phillies':'PHI','Washington Nationals':'WSH','Chicago Cubs':'CHC','Cincinnati Reds':'CIN','Milwaukee Brewers':'MIL','Pittsburgh Pirates':'PIT','St. Louis Cardinals':'STL','Arizona Diamondbacks':'ARI','Colorado Rockies':'COL','Los Angeles Dodgers':'LAD','San Diego Padres':'SD','San Francisco Giants':'SF'};
 
-// Load today's picks to highlight games
-async function loadPicks() {
-  try {
-    const r = await fetch('picks.json');
-    if (!r.ok) return;
-    const data = await r.json();
-    (data.picks || []).forEach(p => {
-      if (p.tier && p.tier !== 'SKIP' && p.tier !== 'WATCH') {
-        var key = p.game;
-        ACTIVE_PICKS[key] = { pick: p.pick, tier: p.tier, line: p.line, units: p.units };
+function ab(n){return ABBR[n]||(n.split(' ').pop().substring(0,3).toUpperCase());}
+function toET(iso){try{return new Date(iso).toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit'})+' ET';}catch(e){return '';}}
+function today(){return new Date().toLocaleDateString('en-CA',{timeZone:'America/New_York'});}
+
+async function loadPicks(){
+  try{
+    var r=await fetch('picks.json');if(!r.ok)return;
+    var d=await r.json();
+    (d.picks||[]).forEach(p=>{
+      if(p.tier&&p.tier!=='SKIP'&&p.tier!=='WATCH'){
+        PICKS[p.game]={pick:p.pick.replace(/\(WATCH\)/,'').trim(),tier:p.tier,line:p.line,units:p.units};
       }
     });
-  } catch(e) {}
+  }catch(e){}
 }
 
-function toET(iso) {
-  if (!iso) return '';
-  try {
-    var d = new Date(iso);
-    return d.toLocaleTimeString('en-US', {timeZone:'America/New_York', hour:'numeric', minute:'2-digit'}) + ' ET';
-  } catch(e) { return iso.substring(11,16); }
-}
+function findPick(away,home){return PICKS[away+' @ '+home]||PICKS[home+' @ '+away]||null;}
 
-function getToday() {
-  return new Date().toLocaleDateString('en-CA', {timeZone:'America/New_York'});
-}
-
-function teamAbbr(name) {
-  var map = {
-    'New York Yankees':'NYY','New York Mets':'NYM','Boston Red Sox':'BOS',
-    'Tampa Bay Rays':'TB','Baltimore Orioles':'BAL','Toronto Blue Jays':'TOR',
-    'Chicago White Sox':'CWS','Cleveland Guardians':'CLE','Detroit Tigers':'DET',
-    'Kansas City Royals':'KC','Minnesota Twins':'MIN','Houston Astros':'HOU',
-    'Los Angeles Angels':'LAA','Oakland Athletics':'OAK','Athletics':'ATH',
-    'Seattle Mariners':'SEA','Texas Rangers':'TEX','Atlanta Braves':'ATL',
-    'Miami Marlins':'MIA','New York Mets':'NYM','Philadelphia Phillies':'PHI',
-    'Washington Nationals':'WSH','Chicago Cubs':'CHC','Cincinnati Reds':'CIN',
-    'Milwaukee Brewers':'MIL','Pittsburgh Pirates':'PIT','St. Louis Cardinals':'STL',
-    'Arizona Diamondbacks':'ARI','Colorado Rockies':'COL','Los Angeles Dodgers':'LAD',
-    'San Diego Padres':'SD','San Francisco Giants':'SF'
-  };
-  return map[name] || name.split(' ').pop().substring(0,3).toUpperCase();
-}
-
-function findPickForGame(away, home) {
-  var key1 = away + ' @ ' + home;
-  var key2 = home + ' @ ' + away;
-  return ACTIVE_PICKS[key1] || ACTIVE_PICKS[key2] || null;
-}
-
-async function loadScores() {
-  var today = getToday();
-  document.getElementById('date-display').textContent = today;
-
-  try {
-    var r = await fetch(
-      'https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=' + today +
-      '&hydrate=linescore(matchup,runners),team,probablePitcher,officials,decisions'
-    );
-    var data = await r.json();
-    var games = [];
-    (data.dates || []).forEach(d => d.games.forEach(g => games.push(g)));
-
-    renderGames(games);
-
-    var now = new Date().toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit'});
-    document.getElementById('last_update').textContent = 'Updated ' + now + ' ET';
-
-  } catch(e) {
-    document.getElementById('games-container').innerHTML =
-      '<div class="loading" style="color:var(--red)">Failed to load scores. Check connection.</div>';
+async function go(){
+  var d=today();
+  document.getElementById('dlbl').textContent=d;
+  try{
+    var r=await fetch('https://statsapi.mlb.com/api/v1/schedule?sportId=1&date='+d+'&hydrate=linescore,team,probablePitcher');
+    var data=await r.json();
+    var games=[];
+    (data.dates||[]).forEach(dt=>dt.games.forEach(g=>games.push(g)));
+    render(games);
+    document.getElementById('upd').textContent='Updated '+new Date().toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit'})+' ET';
+  }catch(e){
+    document.getElementById('cont').innerHTML='<div class="loading" style="color:var(--red)">Failed to load. Try refreshing.</div>';
   }
 }
 
-function renderGames(games) {
-  var live = [], final = [], upcoming = [];
-  games.forEach(g => {
-    var state = g.status.abstractGameState;
-    if (state === 'Live') live.push(g);
-    else if (state === 'Final') final.push(g);
+function render(games){
+  var live=[],final=[],upcoming=[];
+  games.forEach(g=>{
+    var s=g.status.abstractGameState;
+    if(s==='Live')live.push(g);
+    else if(s==='Final')final.push(g);
     else upcoming.push(g);
   });
 
-  // Status bar
-  var sb = document.getElementById('status-bar');
-  sb.innerHTML = '';
-  if (live.length) sb.innerHTML += '<span class="status-pill live">&#9679; ' + live.length + ' Live</span>';
-  if (final.length) sb.innerHTML += '<span class="status-pill final">' + final.length + ' Final</span>';
-  if (upcoming.length) sb.innerHTML += '<span class="status-pill upcoming">' + upcoming.length + ' Upcoming</span>';
+  var sb='';
+  if(live.length)sb+='<span class="pill live">&#9679; '+live.length+' Live</span>';
+  if(final.length)sb+='<span class="pill final">'+final.length+' Final</span>';
+  if(upcoming.length)sb+='<span class="pill upcoming">'+upcoming.length+' Upcoming</span>';
+  document.getElementById('sb').innerHTML=sb;
 
-  var html = '';
-
-  if (live.length) {
-    html += '<div class="section-label">Live Now</div>';
-    live.forEach(g => html += renderCard(g, 'live'));
-  }
-  if (upcoming.length) {
-    html += '<div class="section-label">Upcoming</div>';
-    upcoming.forEach(g => html += renderCard(g, 'upcoming'));
-  }
-  if (final.length) {
-    html += '<div class="section-label">Final</div>';
-    final.forEach(g => html += renderCard(g, 'final'));
-  }
-
-  document.getElementById('games-container').innerHTML = '<div class="games-list">' + html + '</div>';
-
-  // Attach toggle listeners
-  document.querySelectorAll('.card-header').forEach(h => {
-    h.addEventListener('click', function() {
-      var card = this.closest('.game-card');
-      card.classList.toggle('expanded');
-      // Load PBP if expanding and not loaded
-      var pbpList = card.querySelector('.pbp-list');
-      if (card.classList.contains('expanded') && pbpList && pbpList.dataset.loaded !== 'true') {
-        var gid = card.dataset.gameid;
-        if (gid) loadPBP(gid, pbpList);
-      }
-    });
-  });
-
-  // PBP toggle buttons
-  document.querySelectorAll('.pbp-toggle').forEach(t => {
-    t.addEventListener('click', function(e) {
-      e.stopPropagation();
-      var btn = this.querySelector('.pbp-toggle-btn');
-      var list = this.closest('.card-footer').querySelector('.pbp-list');
-      btn.classList.toggle('on');
-      list.classList.toggle('visible');
-    });
-  });
+  var html='<div class="games">';
+  if(live.length){html+='<div class="section-label">Live Now</div>';live.forEach(g=>html+=card(g));}
+  if(upcoming.length){html+='<div class="section-label">Upcoming</div>';upcoming.forEach(g=>html+=card(g));}
+  if(final.length){html+='<div class="section-label">Final</div>';final.forEach(g=>html+=card(g));}
+  html+='</div>';
+  document.getElementById('cont').innerHTML=html;
 }
 
-function renderCard(g, state) {
-  var away = g.teams.away.team.name;
-  var home = g.teams.home.team.name;
-  var awayScore = g.teams.away.score;
-  var homeScore = g.teams.home.score;
-  var linescore = g.linescore || {};
-  var innings = linescore.innings || [];
-  var currentInn = linescore.currentInning || 0;
-  var innOrd = linescore.currentInningOrdinal || '';
-  var isTopInn = linescore.isTopInning;
-  var gameId = g.gamePk;
+function card(g){
+  var away=g.teams.away.team.name,home=g.teams.home.team.name;
+  var aS=g.teams.away.score,hS=g.teams.home.score;
+  var ls=g.linescore||{},inn=ls.innings||[];
+  var curI=ls.currentInning||0,innOrd=ls.currentInningOrdinal||'',isTop=ls.isTopInning;
+  var state=g.status.abstractGameState;
+  var gid=g.gamePk;
+  var awayP=((g.teams.away.probablePitcher||{}).fullName||'TBD').split(' ').pop();
+  var homeP=((g.teams.home.probablePitcher||{}).fullName||'TBD').split(' ').pop();
+  var pick=findPick(away,home);
+  var isLive=state==='Live',isFinal=state==='Final';
+  var hasScore=aS!==undefined&&aS!==null;
 
-  var pick = findPickForGame(away, home);
-  var hasPick = !!pick;
+  // Game info
+  var ginfo='',gcls='ginfo';
+  if(isLive){ginfo=(isTop?'▲':'▼')+' '+innOrd;gcls+=' live';}
+  else if(isFinal){var ext=inn.length>9?'/'+inn.length:'';ginfo='Final'+ext;gcls+=' final';}
+  else{ginfo='⏱ '+toET(g.gameDate);gcls+=' upcoming';}
 
-  // Status text
-  var statusText = '', statusClass = '';
-  if (state === 'live') {
-    statusText = (isTopInn ? '▲' : '▼') + ' ' + innOrd;
-    statusClass = 'live';
-  } else if (state === 'final') {
-    statusText = 'Final' + (linescore.outs !== undefined && innings.length > 9 ? '/'+innings.length : '');
-    statusClass = 'final';
-  } else {
-    statusText = toET(g.gameDate);
-    statusClass = 'upcoming';
+  // Score
+  var scoreHtml='';
+  if(hasScore){
+    var aW=aS>hS,hW=hS>aS;
+    scoreHtml='<div class="scores"><span class="sc'+(isFinal&&!aW?' dim':'')+'">'+aS+'</span><span class="sc-sep">:</span><span class="sc'+(isFinal&&!hW?' dim':'')+'">'+hS+'</span></div>';
+  }else{
+    scoreHtml='<div style="font-size:12px;color:var(--faint);font-family:\'DM Mono\',monospace">vs</div>';
   }
 
-  // Winning team
-  var awayWin = awayScore > homeScore;
-  var homeWin = homeScore > awayScore;
-  var hasScore = awayScore !== undefined && awayScore !== null;
+  // Pick banner
+  var pb='';
+  if(pick){pb='<div class="pick-banner"><span class="pt">'+pick.tier+'</span><span class="pd">'+pick.pick+'</span><span class="pl">'+pick.line+'</span><span class="pu">'+pick.units+'u</span></div>';}
 
-  // Probable pitchers
-  var awayP = g.teams.away.probablePitcher;
-  var homeP = g.teams.home.probablePitcher;
-  var awayPName = awayP ? awayP.fullName.split(' ').pop() : 'TBD';
-  var homePName = homeP ? homeP.fullName.split(' ').pop() : 'TBD';
+  // Line score
+  var lsHtml=buildLS(inn,away,home,aS,hS,curI,state);
 
-  // Line score table
-  var lineScoreHtml = buildLineScore(innings, away, home, awayScore, homeScore, currentInn, state);
+  // PBP section — only for started/finished games
+  var pbpHtml='';
+  if(state!=='Preview'&&state!=='Scheduled'&&state!=='Pre-Game'){
+    pbpHtml='<div class="pbp-section"><div class="pbp-row" onclick="togglePBP(this,\''+gid+'\')"><div class="tog"></div><span class="pbp-lbl">Play by play</span></div><div class="pbp-content" data-loaded="0" data-gid="'+gid+'"></div></div>';
+  }
 
-  // Pick badge
-  var pickBadge = hasPick ?
-    '<div class="pick-badge">' + pick.tier + ' · ' + pick.pick.replace(/\(WATCH\)/,'').trim() + '</div>' : '';
-
-  return `
-<div class="game-card ${hasPick ? 'has-pick' : ''} ${state === 'live' ? 'live-game' : ''}" data-gameid="${gameId}">
-  ${pickBadge}
-  <div class="card-header">
-    <div class="game-teams">
-      <div class="team-block">
-        <div class="team-name">${teamAbbr(away)}</div>
-        <div class="team-record" style="font-size:10px;color:var(--muted)">${awayPName}</div>
-      </div>
-      <div class="score-block">
-        ${hasScore ? `
-        <div class="score-display">
-          <span class="score-num ${state==='final'&&awayWin?'winning':'losing'}">${awayScore}</span>
-          <span class="score-sep">:</span>
-          <span class="score-num ${state==='final'&&homeWin?'winning':'losing'}">${homeScore}</span>
-        </div>` : `<div style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace">vs</div>`}
-        <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:2px;font-family:'DM Mono',monospace">${state !== 'upcoming' ? statusText : ''}</div>
-      </div>
-      <div class="team-block" style="text-align:right">
-        <div class="team-name">${teamAbbr(home)}</div>
-        <div class="team-record" style="font-size:10px;color:var(--muted)">${homePName}</div>
-      </div>
-    </div>
-    <div class="game-status-row">
-      <span class="game-status ${statusClass}">${state === 'upcoming' ? '⏱ ' + statusText : statusText}</span>
-      <span class="toggle-hint">Line score <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg></span>
-    </div>
-  </div>
-  <div class="line-score-wrap">
-    ${lineScoreHtml}
-    ${hasPick ? `<div style="background:var(--surface2);border:1px solid #F5C84230;border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:11px">
-      <span style="color:var(--gold);font-weight:700">YOUR PICK:</span>
-      <span style="font-family:'DM Mono',monospace;color:var(--text);margin-left:6px">${pick.pick}</span>
-      <span style="color:var(--muted);margin-left:6px">${pick.line}</span>
-      <span style="color:var(--gold);margin-left:6px">${pick.units}u</span>
-    </div>` : ''}
-  </div>
-  <div class="card-footer" style="padding:0 14px 12px;display:${state !== 'upcoming' ? 'block' : 'none'}">
-    <div class="line-score-wrap" style="max-height:none;padding:0">
-      <div class="pbp-toggle">
-        <div class="pbp-toggle-btn"></div>
-        <span class="pbp-toggle-label">Play by play</span>
-      </div>
-      <div class="pbp-list" data-loaded="false"></div>
-    </div>
-  </div>
-</div>`;
+  return '<div class="gc'+(pick?' haspick':'')+(isLive?' islive':'')+'" id="gc-'+gid+'">'
+    +'<div class="gc-top" onclick="toggleCard(\''+gid+'\')">'
+    +'<div class="t-away"><div class="tn">'+ab(away)+'</div><div class="sp">'+awayP+'</div></div>'
+    +'<div class="center">'+scoreHtml+'<div class="'+gcls+'">'+ginfo+'</div></div>'
+    +'<div class="t-home"><div class="tn">'+ab(home)+'</div><div class="sp">'+homeP+'</div></div>'
+    +'<span class="arrow">▾</span>'
+    +'</div>'
+    +pb
+    +'<div class="gc-body"><div class="ls">'+lsHtml+'</div>'+pbpHtml+'</div>'
+    +'</div>';
 }
 
-function buildLineScore(innings, away, home, awayTotal, homeTotal, currentInn, state) {
-  if (!innings.length && state === 'upcoming') return '';
+function toggleCard(gid){
+  var gc=document.getElementById('gc-'+gid);
+  if(gc)gc.classList.toggle('open');
+}
 
-  var maxInn = Math.max(9, innings.length);
-  var headers = '<th class="team-col">Team</th>';
-  for (var i = 1; i <= maxInn; i++) {
-    headers += `<th class="${i === currentInn ? 'current-inn' : ''}">${i}</th>`;
+function togglePBP(rowEl,gid){
+  var tog=rowEl.querySelector('.tog');
+  var content=rowEl.nextElementSibling;
+  tog.classList.toggle('on');
+  content.classList.toggle('on');
+  // Load plays if first time opening
+  if(content.dataset.loaded==='0'&&content.classList.contains('on')){
+    content.dataset.loaded='1';
+    content.innerHTML='<div class="pbp-msg">Loading plays...</div>';
+    fetch('https://statsapi.mlb.com/api/v1/game/'+gid+'/playByPlay')
+      .then(r=>r.json())
+      .then(d=>{
+        var plays=(d.allPlays||[]).filter(p=>p.result&&p.result.description);
+        if(!plays.length){content.innerHTML='<div class="pbp-msg">No plays yet.</div>';return;}
+        var recent=plays.slice(-30).reverse();
+        content.innerHTML=recent.map(p=>{
+          var a=p.about||{};
+          var inn=(a.isTopInning?'▲':'▼')+(a.inning||'');
+          var sc=p.result.awayScore!==undefined?(p.result.awayScore+'-'+p.result.homeScore):'';
+          return '<div class="pbp-item"><span class="pbp-inn">'+inn+'</span><span class="pbp-txt">'+p.result.description+'</span>'+(sc?'<span class="pbp-sc">'+sc+'</span>':'')+'</div>';
+        }).join('');
+      })
+      .catch(()=>{content.innerHTML='<div class="pbp-msg">Could not load plays.</div>';});
   }
-  headers += '<th class="totals-sep">R</th><th>H</th><th>E</th>';
+}
 
-  function buildRow(side, teamName) {
-    var cells = '';
-    var totalR = 0, totalH = 0, totalE = 0;
-    for (var i = 1; i <= maxInn; i++) {
-      var inn = innings[i-1];
-      var val = inn ? (inn[side] ? (inn[side].runs !== undefined ? inn[side].runs : '·') : '·') : '';
-      if (typeof val === 'number') totalR += val;
-      cells += `<td class="${i === currentInn ? 'current-inn' : ''}">${val !== '' ? val : ''}</td>`;
+function buildLS(innings,away,home,aTotal,hTotal,curInn,state){
+  if(!innings.length&&state!=='Live'&&state!=='Final'){
+    return '<div style="font-size:11px;color:var(--faint);padding:4px 0">Game not started yet</div>';
+  }
+  var max=Math.max(9,innings.length);
+  var hdr='<th class="tn2">Team</th>';
+  for(var i=1;i<=max;i++)hdr+='<th'+(i===curInn?' class="cur"':'')+'>'+i+'</th>';
+  hdr+='<th class="sep">R</th>';
+
+  function row(side,name,total){
+    var cells='<td class="tn2">'+ab(name)+'</td>';
+    for(var i=1;i<=max;i++){
+      var inn=innings[i-1];
+      var v=inn&&inn[side]!==undefined&&inn[side].runs!==undefined?inn[side].runs:'';
+      cells+='<td'+(i===curInn?' class="cur"':'')+'>'+v+'</td>';
     }
-    // Use actual totals for R
-    var displayR = side === 'away' ? (awayTotal !== undefined ? awayTotal : totalR) : (homeTotal !== undefined ? homeTotal : totalR);
-    // H and E from linescore if available
-    cells += `<td class="totals-sep" style="font-weight:600">${displayR !== undefined ? displayR : ''}</td>`;
-    cells += `<td>${''}</td><td>${''}</td>`;
-    return `<tr><td class="team-col">${teamAbbr(teamName)}</td>${cells}</tr>`;
+    cells+='<td class="sep" style="font-weight:600">'+(total!==undefined&&total!==null?total:'')+'</td>';
+    return '<tr>'+cells+'</tr>';
   }
 
-  return `
-<table class="line-score-table">
-  <thead><tr>${headers}</tr></thead>
-  <tbody>
-    ${buildRow('away', away)}
-    ${buildRow('home', home)}
-  </tbody>
-</table>`;
+  return '<table class="lst"><thead><tr>'+hdr+'</tr></thead><tbody>'+row('away',away,aTotal)+row('home',home,hTotal)+'</tbody></table>';
 }
 
-async function loadPBP(gameId, container) {
-  container.dataset.loaded = 'true';
-  container.innerHTML = '<div class="pbp-empty">Loading...</div>';
-  try {
-    var r = await fetch('https://statsapi.mlb.com/api/v1/game/' + gameId + '/playByPlay');
-    var data = await r.json();
-    var plays = (data.allPlays || []).filter(p => p.result && p.result.description);
-    if (!plays.length) {
-      container.innerHTML = '<div class="pbp-empty">No play data available yet.</div>';
-      return;
-    }
-    // Show last 25 plays, most recent first
-    var recent = plays.slice(-25).reverse();
-    var html = '';
-    recent.forEach(p => {
-      var about = p.about || {};
-      var inn = (about.isTopInning ? '▲' : '▼') + (about.inning || '');
-      var desc = p.result.description || '';
-      var score = '';
-      if (p.result.awayScore !== undefined) {
-        score = p.result.awayScore + '-' + p.result.homeScore;
-      }
-      html += `<div class="pbp-item">
-        <span class="pbp-inning">${inn}</span>
-        <span class="pbp-desc">${desc}</span>
-        ${score ? '<span class="pbp-score">' + score + '</span>' : ''}
-      </div>`;
-    });
-    container.innerHTML = html;
-  } catch(e) {
-    container.innerHTML = '<div class="pbp-empty">Could not load play data.</div>';
-  }
-}
-
-// Initialize
-async function init() {
+async function init(){
   await loadPicks();
-  await loadScores();
-  // Auto refresh every 30 seconds
-  setInterval(loadScores, 30000);
+  await go();
+  setInterval(go,30000);
 }
-
 init();
 </script>
 </body>
