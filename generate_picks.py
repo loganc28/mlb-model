@@ -3240,6 +3240,7 @@ def build_html(data):
         '<span>'+str(data['total_games'])+' games</span><span class="divider">&middot;</span>'
         '<a href="archive.html">Archive</a><span class="divider">&middot;</span>'
         '<a href="record.html">Record</a><span class="divider">&middot;</span>'
+        '<a href="scores.html">Scores</a><span class="divider">&middot;</span>'
         '<span>'+model_badge+'</span><span class="divider">&middot;</span>'
         '<span id="last_update" style="color:var(--muted)">Loading scores...</span>'
         '</div>'
@@ -3554,6 +3555,11 @@ def main():
     (OUTPUT_DIR/(TODAY+".html")).write_text(html)
     (OUTPUT_DIR/"index.html").write_text(html)
     (OUTPUT_DIR/"record.html").write_text(build_record_html(record))
+    # Scores page — copy static file if not already present
+    scores_src = Path("scores.html")
+    scores_dst = OUTPUT_DIR/"scores.html"
+    if scores_src.exists() and not scores_dst.exists():
+        scores_dst.write_text(scores_src.read_text())
     build_archive_index()
 
     print("Done. "+str(len(active))+" active picks across "+str(len(games))+" games.")
