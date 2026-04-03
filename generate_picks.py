@@ -1016,11 +1016,15 @@ def fetch_odds():
         r.raise_for_status()
         print("Odds API remaining: "+str(r.headers.get("x-requests-remaining","?")))
         odds_map = {}
+        event_ids = {}  # track event IDs for NRFI fetch
         for event in r.json():
             home = normalize_team(event.get("home_team",""))
             away = normalize_team(event.get("away_team",""))
             bms  = event.get("bookmakers",[])
             ml   = {}; total = {}; runline = {}
+
+            # Store event ID for NRFI lookup
+            event_ids[away+"@"+home] = event.get("id","")
 
             # ML — best price across ALL books for each team
             for bm in bms:
@@ -1070,10 +1074,71 @@ def fetch_odds():
 
             odds_map[away+"@"+home] = {"moneyline":ml,"total":total,"runline":runline}
         print("Fetched odds for "+str(len(odds_map))+" games")
+
+        # Fetch real NRFI/YRFI lines per event
+        nrfi_map = fetch_nrfi_odds(event_ids)
+        for key, nrfi in nrfi_map.items():
+            if key in odds_map:
+                odds_map[key]["nrfi"] = nrfi
+
         return odds_map
     except Exception as e:
         print("Odds error: "+str(e))
         return {}
+
+def fetch_nrfi_odds(event_ids):
+    """
+    Fetch real NRFI/YRFI book lines for each game.
+    Uses totals_1st_1_innings market (over/under 0.5 runs in 1st inning).
+    Over 0.5 = YRFI, Under 0.5 = NRFI.
+    One API call per game — batches carefully to preserve credits.
+    """
+    if not ODDS_API_KEY or not event_ids:
+        return {}
+    nrfi_map = {}
+    for game_key, event_id in event_ids.items():
+        if not event_id:
+            continue
+        try:
+            r = requests.get(
+                f"https://api.the-odds-api.com/v4/sports/baseball_mlb/events/{event_id}/odds",
+                params={
+                    "apiKey": ODDS_API_KEY,
+                    "regions": "us",
+                    "markets": "totals_1st_1_innings",
+                    "oddsFormat": "american",
+                    "bookmakers": "draftkings,fanduel,betmgm,caesars,betonlineag",
+                },
+                timeout=10
+            )
+            if not r.ok:
+                continue
+            best_nrfi = None; best_yrfi = None
+            for bm in r.json().get("bookmakers", []):
+                for market in bm.get("markets", []):
+                    if market["key"] != "totals_1st_1_innings":
+                        continue
+                    for o in market.get("outcomes", []):
+                        price = o.get("price")
+                        name = o.get("name","").upper()
+                        # Under 0.5 = NRFI, Over 0.5 = YRFI
+                        if name == "UNDER":
+                            if best_nrfi is None or price > best_nrfi:
+                                best_nrfi = price
+                        elif name == "OVER":
+                            if best_yrfi is None or price > best_yrfi:
+                                best_yrfi = price
+            if best_nrfi or best_yrfi:
+                nrfi_map[game_key] = {
+                    "nrfi_price": best_nrfi,
+                    "yrfi_price": best_yrfi,
+                    "source": "book",
+                }
+        except Exception as e:
+            print(f"NRFI fetch error for {game_key}: {str(e)}")
+    if nrfi_map:
+        print(f"Fetched real NRFI lines for {len(nrfi_map)} games")
+    return nrfi_map
 
 # ── AI ────────────────────────────────────────────────────────────────────────
 
@@ -1208,9 +1273,14 @@ BET TYPE:
 - Total OVER: Fatigued bullpens + hitter park OR out-blowing wind + warm temp.
 - Total UNDER: Elite dual SPs + pitcher park + fresh pens. Wind IN adds to edge.
 - F5 Total OVER/UNDER: Use when SP quality gap is strong but bullpen fatigue on one side creates uncertainty for full game. F5 isolates the SP edge.
-- NRFI (No Run First Inning): Use when nrfi_data shows nrfi_prob above 65%. Both SPs must have K/9 above 8.5 AND BB/9 below 3.0. Park factor below 1.05. Pitcher-friendly ump. The nrfi_fair_price in the data is your baseline — if the book offers NRFI at a price that implies lower probability than our model, that is positive EV.
-- YRFI (Yes Run First Inning): Use when nrfi_data shows yrfi_prob above 50% AND at least one SP has ERA above 5.0 OR BB/9 above 4.0. Hitter-friendly park adds edge. The yrfi_fair_price is your baseline.
-- For NRFI/YRFI: use nrfi_fair_price as the "line" field and estimate EV by comparing to typical book price (-130 NRFI / -110 YRFI for average games). Only recommend when your model price shows 5%+ EV vs typical book pricing.
+- NRFI (No Run First Inning): Use when nrfi_data shows nrfi_prob above 65%. Both SPs must have K/9 above 8.5 AND BB/9 below 3.0. Park factor below 1.05. Pitcher-friendly ump.
+  PRICING: If nrfi_data contains nrfi_book_price (source="book"), use that as the actual line and calculate EV directly against it — this is the real book price.
+  If source="model_estimate", use nrfi_fair_price as baseline vs typical book price (-130 NRFI).
+  Always use nrfi_book_price as the "line" field when available. Only recommend when EV is 5%+.
+- YRFI (Yes Run First Inning): Use when nrfi_data shows yrfi_prob above 50% AND at least one SP has ERA above 5.0 OR BB/9 above 4.0. Hitter-friendly park adds edge.
+  PRICING: If nrfi_data contains yrfi_book_price (source="book"), use that as the actual line.
+  If source="model_estimate", use yrfi_fair_price as baseline vs typical book price (-110 YRFI).
+  Always use yrfi_book_price as the "line" field when available. Only recommend when EV is 5%+.
 - NRFI/YRFI resolves in about 15 minutes — highest confidence picks only.
 - Never skip solely because run line unavailable — use ML instead.
 - F5 and NRFI/YRFI should be considered on EVERY game — they are often higher EV than full game bets.
@@ -1689,12 +1759,18 @@ def summarize_game(g):
         },
         "home_streak": g.get("home_streak",{}),
         "away_streak": g.get("away_streak",{}),
-        "nrfi_data": estimate_nrfi_odds(
-            g.get("away_sp_stats",{}),
-            g.get("home_sp_stats",{}),
-            g.get("park_factor",{}).get("runs", 1.0),
-            safe_float(odds.get("total",{}).get("line", 0)),
-        ),
+        "nrfi_data": {
+            **estimate_nrfi_odds(
+                g.get("away_sp_stats",{}),
+                g.get("home_sp_stats",{}),
+                g.get("park_factor",{}).get("runs", 1.0),
+                safe_float(odds.get("total",{}).get("line", 0)),
+            ),
+            # Override with real book prices if available
+            **({"nrfi_book_price": odds.get("nrfi",{}).get("nrfi_price"),
+                "yrfi_book_price": odds.get("nrfi",{}).get("yrfi_price"),
+                "nrfi_source": "book"} if odds.get("nrfi",{}).get("nrfi_price") else {"nrfi_source": "model_estimate"}),
+        },
         "baseline_home_win_prob": estimate_win_prob(
             home_sp.get("era", 4.20) or 4.20,
             away_sp.get("era", 4.20) or 4.20,
