@@ -948,26 +948,36 @@ def fetch_mlb_games():
         print("Games error: "+str(e))
         return []
 
+_STANDINGS_CACHE = {}
+
 def fetch_team_streak(team_id):
-    """Fetch recent form — last 10 games W/L record for momentum."""
-    try:
-        data = mlb_api("/teams/"+str(team_id)+"/records", {
-            "leagueId":"103,104","season":"2026"
-        })
-        records = data.get("records",[])
-        if not records: return {}
-        rec = records[0]
-        streak = rec.get("streak",{})
-        return {
-            "wins": rec.get("wins",0),
-            "losses": rec.get("losses",0),
-            "streak_type": streak.get("streakType",""),
-            "streak_number": streak.get("streakNumber",0),
-            "last10_wins": rec.get("lastTen","").split("-")[0] if rec.get("lastTen") else "",
-            "last10_losses": rec.get("lastTen","").split("-")[1] if rec.get("lastTen") and "-" in rec.get("lastTen","") else "",
-        }
-    except:
-        return {}
+    """Fetch recent form — current W/L record and streak from standings. Cached."""
+    global _STANDINGS_CACHE
+    # Load standings once per run
+    if not _STANDINGS_CACHE:
+        try:
+            data = mlb_api("/standings", {
+                "leagueId":"103,104","season":"2026",
+                "standingsTypes":"regularSeason","hydrate":"team,record,streak",
+            })
+            for div in data.get("records",[]):
+                for tr in div.get("teamRecords",[]):
+                    tid = tr.get("team",{}).get("id")
+                    if not tid: continue
+                    streak = tr.get("streak",{})
+                    last10 = tr.get("lastTen","")
+                    parts = last10.split("-") if last10 and "-" in last10 else ["",""]
+                    _STANDINGS_CACHE[tid] = {
+                        "wins": tr.get("wins",0),
+                        "losses": tr.get("losses",0),
+                        "streak_type": streak.get("streakType",""),
+                        "streak_number": streak.get("streakNumber",0),
+                        "last10_wins": parts[0],
+                        "last10_losses": parts[1] if len(parts)>1 else "",
+                    }
+        except Exception as e:
+            print("Standings fetch error: "+str(e))
+    return _STANDINGS_CACHE.get(team_id, {})
 
 # ── Odds ──────────────────────────────────────────────────────────────────────
 
@@ -1255,7 +1265,7 @@ def _try_claude(user_msg):
             "https://api.anthropic.com/v1/messages",
             headers={"x-api-key":ANTHROPIC_KEY,"anthropic-version":"2023-06-01",
                      "content-type":"application/json"},
-            json={"model":"claude-sonnet-4-6","max_tokens":8000,
+            json={"model":"claude-sonnet-4-6","max_tokens":16000,
                   "system":SYSTEM_PROMPT,
                   "messages":[{"role":"user","content":user_msg}]},
             timeout=180
@@ -1707,8 +1717,8 @@ def call_ai(games_with_data):
         return [], "None"
     summarized = [summarize_game(g) for g in bettable]
 
-    # Split into batches of 8 to stay within token limits
-    BATCH_SIZE = 8
+    # Split into batches of 6 to stay within token limits
+    BATCH_SIZE = 6
     all_picks = []
     model_used = "None"
 
