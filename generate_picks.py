@@ -2341,12 +2341,13 @@ document.addEventListener("DOMContentLoaded", function() {
 
 def build_record_html(record):
     picks = record.get("picks",[])
-    settled = [p for p in picks if p.get("result") in ("W","L","P")]
-    wins    = [p for p in settled if p["result"]=="W"]
-    losses  = [p for p in settled if p["result"]=="L"]
-    total_bets = len(settled)
-    win_rate = round(len(wins)/total_bets*100,1) if total_bets else 0
-    units_won = round(sum(p.get("units_result",0) for p in settled),2)
+    # Real picks only (exclude WATCH) for headline W-L, win rate, units
+    settled     = [p for p in picks if p.get("result") in ("W","L","P") and p.get("tier") != "WATCH"]
+    wins        = [p for p in settled if p["result"]=="W"]
+    losses      = [p for p in settled if p["result"]=="L"]
+    total_bets  = len(settled)
+    win_rate    = round(len(wins)/total_bets*100,1) if total_bets else 0
+    units_won   = round(sum(p.get("units_result",0) for p in settled),2)
 
     # CLV analysis
     clv_picks = [p for p in settled if p.get("open_line") and p.get("close_line")]
@@ -2368,15 +2369,23 @@ def build_record_html(record):
             except: pass
         avg_clv = round(sum(clvs)/len(clvs),1) if clvs else 0
 
-    # By tier
+    # By tier — real picks only (WATCH tracked separately below)
     tiers = {}
     for p in settled:
         t = p.get("tier","?")
         if t not in tiers: tiers[t] = {"W":0,"L":0,"P":0,"units":0.0}
         tiers[t][p["result"]] += 1
         tiers[t]["units"] += p.get("units_result",0)
+    # Add WATCH to tier table separately
+    watch_settled = [p for p in picks if p.get("tier")=="WATCH" and p.get("result") in ("W","L","P")]
+    watch_wins  = len([p for p in watch_settled if p.get("result")=="W"])
+    watch_losses = len([p for p in watch_settled if p.get("result")=="L"])
+    watch_total = len(watch_settled)
+    watch_rate  = round(watch_wins/watch_total*100,1) if watch_total else 0
+    if watch_settled:
+        tiers["WATCH"] = {"W":watch_wins,"L":watch_losses,"P":0,"units":0.0}
 
-    # By bet type
+    # By bet type — real picks only
     bet_types = {}
     for p in settled:
         bt = p.get("bet_type","?")
@@ -2384,13 +2393,7 @@ def build_record_html(record):
         bet_types[bt][p["result"]] += 1
         bet_types[bt]["units"] += p.get("units_result",0)
 
-    # WATCH tracking
-    watch_settled = [p for p in picks if p.get("tier")=="WATCH" and p.get("result")]
-    watch_wins = len([p for p in watch_settled if p.get("result")=="W"])
-    watch_total = len(watch_settled)
-    watch_rate = round(watch_wins/watch_total*100,1) if watch_total else 0
-
-    pending = [p for p in picks if not p.get("result") and p.get("tier") != "WATCH"]
+    pending = [p for p in picks if not p.get("result") and p.get("tier") not in ("WATCH","SKIP")]
 
     # Loss reason breakdown
     REASON_LABELS = {
@@ -2476,7 +2479,8 @@ def build_record_html(record):
 
     tier_rows = "".join(stat_row(t,d) for t,d in sorted(tiers.items()))
     bt_rows   = "".join(stat_row(bt,d) for bt,d in sorted(bet_types.items()))
-    pick_rows = "".join(pick_row(p) for p in reversed(picks[-60:]))
+    sorted_picks = sorted(picks, key=lambda p: p.get("date",""), reverse=True)
+    pick_rows = "".join(pick_row(p) for p in sorted_picks[:60])
 
     u_color = "#1D9E75" if units_won>=0 else "#A32D2D"
     u_str   = ("+" if units_won>=0 else "")+str(units_won)+"u"
