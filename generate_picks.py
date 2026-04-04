@@ -1908,30 +1908,36 @@ def american_odds_to_payout(odds_str, units):
         return round(units * 0.909, 3)  # default -110 payout
 
 def fetch_final_scores(date_str):
-    """Fetch all final scores for a given date from MLB Stats API."""
+    """Fetch all final scores for a given date from MLB Stats API.
+    Also detects postponed/cancelled games so picks can be voided."""
     data = mlb_api("/schedule", {
         "sportId":"1","date":date_str,
         "hydrate":"linescore,team","gameType":"R",
     })
     scores = {}
+    postponed = set()  # set of game keys that were postponed/cancelled
     for de in data.get("dates",[]):
         for g in de.get("games",[]):
-            status = g.get("status",{}).get("abstractGameState","")
-            if status != "Final":
-                continue
             home = g["teams"]["home"]["team"]["name"]
             away = g["teams"]["away"]["team"]["name"]
+            key = away+"@"+home
+            status = g.get("status",{}).get("abstractGameState","")
+            detailed = g.get("status",{}).get("detailedState","")
+            code = g.get("status",{}).get("statusCode","")
+            # Detect postponed/cancelled/suspended games
+            if any(x in detailed for x in ["Postponed","Cancelled","Suspended","Canceled"]) or code in ["DR","DI","DC"]:
+                postponed.add(key)
+                continue
+            if status != "Final":
+                continue
             home_score = g["teams"]["home"].get("score",0) or 0
             away_score = g["teams"]["away"].get("score",0) or 0
-            # F5 score from linescore
             linescore = g.get("linescore",{})
             innings = linescore.get("innings",[])
             home_f5 = sum(int(inn.get("home",{}).get("runs",0) or 0) for inn in innings[:5])
             away_f5 = sum(int(inn.get("away",{}).get("runs",0) or 0) for inn in innings[:5])
             total_runs = home_score + away_score
             f5_total = home_f5 + away_f5
-            key = away+"@"+home
-            # First inning scores for NRFI/YRFI settlement
             inn1_home = int(innings[0].get("home",{}).get("runs",0) or 0) if innings else 0
             inn1_away = int(innings[0].get("away",{}).get("runs",0) or 0) if innings else 0
             scores[key] = {
@@ -1949,7 +1955,7 @@ def fetch_final_scores(date_str):
                 "inn1_away": inn1_away,
                 "inn1_total": inn1_home + inn1_away,
             }
-    return scores
+    return scores, postponed
 
 def settle_pick(pick, scores):
     """
@@ -2104,6 +2110,7 @@ def fetch_closing_lines():
 def auto_settle_record(record):
     """
     Check all unsettled picks against final scores and auto-update results.
+    Postponed/cancelled games are voided (removed from record entirely).
     Runs every time the workflow fires.
     """
     unsettled = [p for p in record["picks"] if not p.get("result") and p.get("tier") != "SKIP"]
@@ -2113,17 +2120,37 @@ def auto_settle_record(record):
     # Get unique dates we need scores for
     dates_needed = set(p.get("date","") for p in unsettled if p.get("date"))
     all_scores = {}
+    all_postponed = set()
     for d in dates_needed:
         try:
-            day_scores = fetch_final_scores(d)
+            day_scores, day_postponed = fetch_final_scores(d)
             all_scores.update(day_scores)
-            print("Fetched "+str(len(day_scores))+" final scores for "+d)
+            all_postponed.update(day_postponed)
+            print("Fetched "+str(len(day_scores))+" final scores for "+d+
+                  (", "+str(len(day_postponed))+" postponed" if day_postponed else ""))
         except Exception as e:
             print("Score fetch error for "+d+": "+str(e))
 
     settled_count = 0
-    # Fetch current odds as closing lines before settling
     closing_lines = fetch_closing_lines()
+
+    # Void postponed picks first — remove them from record entirely
+    postponed_picks = []
+    for pick in record["picks"]:
+        if pick.get("result") or pick.get("tier") == "SKIP":
+            continue
+        game = pick.get("game","")
+        # Build key both ways
+        parts = game.split(" @ ")
+        if len(parts) == 2:
+            key1 = parts[0]+"@"+parts[1]
+            key2 = parts[1]+"@"+parts[0]
+            if key1 in all_postponed or key2 in all_postponed:
+                postponed_picks.append(pick)
+                print("Postponed — removing from record: "+pick.get("pick","")+" ("+game+")")
+
+    if postponed_picks:
+        record["picks"] = [p for p in record["picks"] if p not in postponed_picks]
 
     for i, pick in enumerate(record["picks"]):
         if pick.get("result") or pick.get("tier") == "SKIP":
@@ -2137,7 +2164,6 @@ def auto_settle_record(record):
             cl = ""
             if "OVER" in bet_type or "UNDER" in bet_type:
                 direction = "Over" if "OVER" in bet_type else "Under"
-                # Find total line from pick string
                 import re
                 nums = re.findall(r"[0-9]+\.?[0-9]*", pick_str)
                 if nums:
