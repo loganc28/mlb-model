@@ -3322,7 +3322,9 @@ def main():
         if not games_with_odds:
             print("No games with odds found — rebuilding pages only.")
         record = json.loads(RECORD_FILE.read_text()) if RECORD_FILE.exists() else {"picks":[],"updated":TODAY}
-        settle_picks(record)
+        record, settled_count = auto_settle_record(record)
+        if settled_count:
+            print("Auto-settled "+str(settled_count)+" picks")
         RECORD_FILE.write_text(json.dumps(record, indent=2))
         picks_out = {"date":TODAY,"total_games":len(games),"picks":[],"generated_at":datetime.datetime.utcnow().isoformat(),"ai_model":"—"}
         (OUTPUT_DIR/"picks.json").write_text(json.dumps(picks_out, indent=2))
