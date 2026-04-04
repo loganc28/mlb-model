@@ -675,13 +675,14 @@
       "away_sp": "Chad Patrick",
       "line": "+110",
       "open_line": "+110",
-      "close_line": "",
+      "close_line": "-120",
       "tier": "C",
       "units": 0.5,
       "ev_pct": 4,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "L",
+      "units_result": -0.5,
+      "loss_reason": "",
+      "final_score": "Milwaukee Brewers 0 - Kansas City Royals 0"
     },
     {
       "date": "2026-04-03",
@@ -692,13 +693,14 @@
       "away_sp": "Grant Holmes",
       "line": "-105",
       "open_line": "-105",
-      "close_line": "",
+      "close_line": "-110",
       "tier": "C",
       "units": 0.5,
       "ev_pct": 4,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "W",
+      "units_result": 0.476,
+      "loss_reason": "",
+      "final_score": "Atlanta Braves 2 - Arizona Diamondbacks 0"
     },
     {
       "date": "2026-04-03",
