@@ -934,8 +934,10 @@ def fetch_mlb_games():
                     if off.get("officialType","") == "Home Plate":
                         hp_ump = off.get("official",{}).get("fullName","")
                         break
+                game_num = g.get("gameNumber", 1)
                 games.append({
                     "game_pk": g.get("gamePk"),
+                    "game_num": game_num,
                     "home":home,"away":away,
                     "home_id":home_id,"away_id":away_id,
                     "game_time":g.get("gameDate",""),
@@ -1312,7 +1314,7 @@ OUTPUT: Raw JSON array only. No markdown. No backticks. Every game must appear.
   "implied_prob_pct": 52,
   "ev_pct": 6,
   "sp_analysis": "season ERA/K9 + recent form ERA + relevant split ERA — cite specific numbers",
-  "lineup_analysis": "team OPS values + platoon note. NO injury mentions unless in injury arrays.",
+  "lineup_analysis": "team OPS values and lineup strength. NO injury mentions unless in injury arrays.",
   "bullpen_note": "fatigue level for each team with arm count and pitch counts",
   "injury_flags": "ONLY names from home_team.injuries or away_team.injuries arrays. If empty: None",
   "umpire_note": "rpg + k_pct + lean direction or Neutral if near 8.8 rpg",
@@ -1555,10 +1557,12 @@ def enforce_ev_rules(picks):
     return enforced
 
 def estimate_win_prob(home_sp_era, away_sp_era, home_ops, away_ops,
-                      park_runs, home_recent_era=None, away_recent_era=None):
+                      park_runs, home_recent_era=None, away_recent_era=None,
+                      home_bullpen_era=None, away_bullpen_era=None):
     """
     Estimate home team win probability using Pythagorean run expectation.
     Uses recent ERA when available as it's more predictive than season ERA.
+    Incorporates team bullpen ERA for more accurate run prevention estimate.
     Claude adjusts this baseline by max ±7% based on qualitative factors.
     """
     lg_era = 4.20; lg_ops = 0.720; lg_runs_pg = 4.5
@@ -1566,6 +1570,13 @@ def estimate_win_prob(home_sp_era, away_sp_era, home_ops, away_ops,
     # Use recent ERA if available and meaningful (not zero)
     h_era = home_recent_era if home_recent_era and home_recent_era > 0 else home_sp_era
     a_era = away_recent_era if away_recent_era and away_recent_era > 0 else away_sp_era
+
+    # Blend SP ERA with bullpen ERA (SP pitches ~5 innings, bullpen ~4)
+    # Weight: SP 55%, bullpen 45% of run prevention
+    if home_bullpen_era and home_bullpen_era > 0:
+        h_era = h_era * 0.55 + home_bullpen_era * 0.45
+    if away_bullpen_era and away_bullpen_era > 0:
+        a_era = a_era * 0.55 + away_bullpen_era * 0.45
 
     # Cap ERAs to prevent extreme distortion from tiny samples
     h_era = min(max(h_era, 1.0), 9.0)
@@ -1674,8 +1685,12 @@ def summarize_game(g):
     home_streak = g.get("home_streak",{})
     away_streak = g.get("away_streak",{})
 
+    game_num = g.get("game_num", 1)
+    game_label = g["away"]+" @ "+g["home"]
+    if game_num > 1:
+        game_label += " (Game "+str(game_num)+")"
     return {
-        "game": g["away"]+" @ "+g["home"],
+        "game": game_label,
         "venue": g.get("venue",""),
         "game_time": g.get("game_time",""),
         "status": g.get("status",""),
@@ -1759,10 +1774,6 @@ def summarize_game(g):
             },
             "has_odds": bool(odds.get("moneyline") or odds.get("total")),
         },
-        "platoon": {
-            "home": g.get("home_platoon",{}).get("platoon_note",""),
-            "away": g.get("away_platoon",{}).get("platoon_note",""),
-        },
         "nrfi_data": {
             **estimate_nrfi_odds(
                 g.get("away_sp_stats",{}),
@@ -1783,6 +1794,8 @@ def summarize_game(g):
             g.get("park_factor",{}).get("runs", 1.0) or 1.0,
             home_rec.get("era_last3", 0) or 0,
             away_rec.get("era_last3", 0) or 0,
+            home_pit.get("team_era") or None,
+            away_pit.get("team_era") or None,
         ),
     }
 
@@ -1810,7 +1823,8 @@ def call_ai(games_with_data):
         user_msg = (
             "Today is "+TODAY+". Analyze these "+str(b_n)+" MLB games.\n"
             "Use ALL provided data: SP season stats, recent form, home/away splits, "
-            "platoon matchups, bullpen fatigue, injuries, umpire tendencies, park factors, wind impact, odds.\n"
+            "bullpen fatigue, team bullpen ERA (already factored into baseline_home_win_prob), "
+            "injuries, umpire tendencies, park factors, wind impact, odds.\n"
             "Return exactly "+str(b_n)+" entries. Raw JSON array only.\n\n"
             "GAMES:\n"+json.dumps(batch, indent=2)
         )
@@ -3068,123 +3082,122 @@ def build_html(data):
                 '<div class="sp-lbl">'+label+'</div>'
                 '<div class="sp-name">'+str(name)+'</div></div>')
 
-    def mrow(icon, text):
-        t=str(text)
-        if not t or t in ('N/A','null','None',''): return ''
-        return '<div class="data-row">'+icon+' '+t+'</div>'
-
     def flag_row(text):
         t=str(text)
         if not t or t in ('','null','None'): return ''
-        return '<div class="flag">⚠️ '+t+'</div>'
+        return '<div class="flag">'+t+'</div>'
 
     def score_span(game):
-        return '<span id="'+score_id(game)+'" class="score-pill">--</span>'
+        return '<span id="'+score_id(game)+'" class="score-pill"></span>'
+
+    def detail_row(label, value):
+        v = str(value)
+        if not v or v in ('N/A','null','None',''): return ''
+        return ('<div class="detail-row">'
+                '<span class="detail-lbl">'+label+'</span>'
+                '<span class="detail-val">'+v+'</span>'
+                '</div>')
 
     def pick_card(p):
         t = p.get("tier","C")
         ev = p.get("ev_pct",0)
-        bw = min(int(float(ev or 0))*8, 100)
         game = str(p.get("game",""))
-        ump  = str(p.get("hp_ump",""))
-        ump_txt = (' &middot; &#9878; '+ump) if ump and ump != "TBD" else ""
-        tier_labels = {"MAX":"&#9733; MAX BET","A":"TIER A &mdash; PLAY","B":"TIER B &mdash; PLAY","C":"TIER C &mdash; LEAN","WATCH":"WATCH"}
+        ump = str(p.get("hp_ump",""))
+        ump_display = ump if ump and ump not in ("TBD","") else "TBD"
+        win_pct = p.get("win_prob_pct",0)
+        impl_pct = p.get("implied_prob_pct",0)
+        tier_labels = {"MAX":"★ MAX BET","A":"TIER A — PLAY","B":"TIER B — PLAY","C":"TIER C — LEAN"}
         lbl = tier_labels.get(t, t)
+        away_sp = str(p.get("away_sp","TBD"))
+        home_sp = str(p.get("home_sp","TBD"))
+        sp_edge = p.get("sp_analysis","")
+        lineup = p.get("lineup_analysis","")
+        bullpen = p.get("bullpen_note","")
+        weather = p.get("weather_impact","")
+        park = p.get("park_note","")
+        key_edge = str(p.get("key_edge",""))
+
+        # Compact detail rows — only show populated ones
+        details = ""
+        if sp_edge: details += detail_row("SP", sp_edge)
+        if lineup:  details += detail_row("Lineup", lineup)
+        if bullpen: details += detail_row("Bullpen", bullpen)
+        if weather or park:
+            env = " · ".join(x for x in [weather, park] if x)
+            if env: details += detail_row("Conditions", env)
+        if ump_display != "TBD":
+            details += detail_row("Umpire", ump_display)
+
         return (
             '<div class="pick-card tier-'+t+'">'
             '<div class="card-inner">'
+
+            '<div class="card-top">'
             '<div class="tier-badge '+t+'">'+lbl+'</div>'
+            '<div class="card-top-right">'
+            '<span class="units-badge">'+str(p.get("units",0))+'u</span>'
+            '<span class="odds-badge">'+str(p.get("line",""))+'</span>'
+            '</div>'
+            '</div>'
+
             +flag_row(p.get("flags",""))+
+
             '<div class="pick-name">'+str(p.get("pick",""))+'</div>'
-            '<div class="pick-meta">'
-            '<span class="game">'+game+'</span>'
-            '<span class="odds">'+str(p.get("line","N/A"))+'</span>'
-            '<span class="units">'+str(p.get("units",0))+'u</span>'
-            +ump_txt+' '+score_span(game)+
+            '<div class="pick-sub">'
+            '<span class="game-label">'+game+'</span>'
+            '<span class="game-time">'+str(p.get("game_time",""))+'</span>'
+            +score_span(game)+
             '</div>'
+
             '<div class="sp-grid">'
-            +sp_box("Away SP",p.get("away_sp","TBD"))+sp_box("Home SP",p.get("home_sp","TBD"))+
+            +sp_box("Away SP", away_sp)+sp_box("Home SP", home_sp)+
             '</div>'
-            '<div class="ev-row">'
-            '<span class="win-prob">Win '+str(p.get("win_prob_pct",0))+'% vs implied '+str(p.get("implied_prob_pct",0))+'%</span>'
-            '<span class="ev-badge" style="background:var(--surface2);color:var(--green)">+'+str(ev)+'% EV</span>'
+
+            '<div class="ev-strip">'
+            '<div class="ev-nums">'
+            '<span class="win-pct">'+str(win_pct)+'% win</span>'
+            '<span class="ev-sep">vs</span>'
+            '<span class="impl-pct">'+str(impl_pct)+'% implied</span>'
             '</div>'
-            '<div class="ev-bar"><div class="ev-fill '+t+'" style="width:'+str(bw)+'%"></div></div>'
-            '<div>'
-            +mrow("&#9918;",p.get("sp_analysis",""))
-            +mrow("&#128101;",p.get("lineup_analysis",""))
-            +mrow("&#128293;",p.get("bullpen_note",""))
-            +mrow("&#129657;",p.get("injury_flags",""))
-            +mrow("&#9878;",p.get("umpire_note",""))
-            +mrow("&#127966;",p.get("park_note",""))
-            +mrow("&#127748;",p.get("weather_impact",""))+
+            '<span class="ev-badge">+'+str(ev)+'% EV</span>'
             '</div>'
-            +(('<div class="key-edge">'
-               '<div class="key-edge-lbl">Key Edge</div>'
-               '<div class="key-edge-text">'+str(p.get("key_edge",""))+'</div>'
-               '</div>') if p.get("key_edge") else '')+
-            '<div class="rationale">'+str(p.get("rationale",""))+'</div>'
+            '<div class="ev-bar"><div class="ev-fill '+t+'" style="width:'+str(min(int(float(ev or 0))*8,100))+'%"></div></div>'
+
+            +(('<div class="key-edge">'+key_edge+'</div>') if key_edge else '')+
+
+            +(('<div class="details">'+details+'</div>') if details else '')+
+
             '</div></div>'
         )
 
     def watch_card(p):
-        t = "WATCH"
         game = str(p.get("game",""))
-        ev = p.get("ev_pct",0)
+        avoid = str(p.get("avoid_reason",""))
         return (
             '<div class="pick-card tier-WATCH">'
             '<div class="card-inner">'
-            '<div class="tier-badge WATCH">WATCH &mdash; TRACK ONLY</div>'
-            +flag_row(p.get("flags",""))+
-            '<div class="pick-name" style="font-size:17px">'+str(p.get("pick",game))+'</div>'
-            '<div class="pick-meta">'
-            '<span class="game">'+game+'</span>'
-            '<span class="odds">'+str(p.get("line","N/A"))+'</span>'
-            '<span style="font-size:11px;color:var(--muted)">Not betting</span>'
-            ' '+score_span(game)+
+            '<div class="card-top">'
+            '<div class="tier-badge WATCH">WATCH — TRACK ONLY</div>'
+            '<span class="odds-badge">'+str(p.get("line",""))+'</span>'
             '</div>'
-            '<div class="sp-grid">'
-            +sp_box("Away SP",p.get("away_sp","TBD"))+sp_box("Home SP",p.get("home_sp","TBD"))+
-            '</div>'
-            '<div>'
-            +mrow("&#9918;",p.get("sp_analysis",""))
-            +mrow("&#128101;",p.get("lineup_analysis",""))
-            +mrow("&#128293;",p.get("bullpen_note",""))
-            +mrow("&#127966;",p.get("park_note",""))
-            +mrow("&#127748;",p.get("weather_impact",""))+
-            '</div>'
-            '<div style="border-top:1px solid var(--border);padding-top:8px;margin-top:8px">'
-            '<div class="watch-why">&#128065; '+str(p.get("avoid_reason",""))+'</div>'
-            '<div class="rationale">'+str(p.get("rationale",""))+'</div>'
-            '</div>'
+            '<div class="pick-name" style="font-size:17px;color:var(--muted)">'+str(p.get("pick",game))+'</div>'
+            '<div class="pick-sub"><span class="game-label">'+game+'</span>'+score_span(game)+'</div>'
+            +(('<div class="watch-reason">'+avoid+'</div>') if avoid else '')+
             '</div></div>'
         )
 
     def skip_card(p):
         game = str(p.get("game",""))
+        away_sp = str(p.get("away_sp","TBD"))
+        home_sp = str(p.get("home_sp","TBD"))
+        avoid = str(p.get("avoid_reason","No clear edge"))
         return (
             '<div class="pick-card tier-SKIP">'
             '<div class="card-inner">'
-            '<div class="tier-badge SKIP">SKIP &mdash; NO EDGE</div>'
-            +flag_row(p.get("flags",""))+
-            '<div class="pick-name" style="font-size:16px;color:var(--muted)">'+game+' '+score_span(game)+'</div>'
-            '<div class="pick-meta"><span style="color:var(--muted)">'+str(p.get("venue",""))+'</span></div>'
-            '<div class="sp-grid">'
-            +sp_box("Away SP",p.get("away_sp","TBD"))+sp_box("Home SP",p.get("home_sp","TBD"))+
-            '</div>'
-            '<div>'
-            +mrow("&#9918;",p.get("sp_analysis",""))
-            +mrow("&#128101;",p.get("lineup_analysis",""))
-            +mrow("&#128293;",p.get("bullpen_note",""))
-            +mrow("&#129657;",p.get("injury_flags",""))
-            +mrow("&#9878;",p.get("umpire_note",""))
-            +mrow("&#127966;",p.get("park_note",""))
-            +mrow("&#127748;",p.get("weather_impact",""))+
-            '</div>'
-            '<div style="border-top:1px solid var(--border);padding-top:8px;margin-top:8px">'
-            '<div class="skip-reason">Why skip: '+str(p.get("avoid_reason","No clear edge"))+'</div>'
-            '<div class="rationale">'+str(p.get("rationale",""))+'</div>'
-            '</div>'
+            '<div class="tier-badge SKIP">SKIP — NO EDGE</div>'
+            '<div class="pick-name" style="font-size:15px;color:var(--faint)">'+game+' '+score_span(game)+'</div>'
+            '<div class="sp-grid" style="margin-top:8px">'+sp_box("Away SP",away_sp)+sp_box("Home SP",home_sp)+'</div>'
+            '<div class="skip-reason">'+avoid+'</div>'
             '</div></div>'
         )
 
@@ -3236,106 +3249,95 @@ def build_html(data):
         '--bg:#080A0C;--surface:#0F1115;--surface2:#161A1F;--surface3:#1C2028;'
         '--border:#1E2329;--border2:#252B33;'
         '--text:#EAEEF2;--muted:#6B7685;--faint:#2C3340;'
-        '--gold:#E8B84B;--gold2:#F5D06A;--green:#23C97A;--red:#E8414B;--blue:#4A9CF0;'
+        '--gold:#E8B84B;--green:#23C97A;--red:#E8414B;--blue:#4A9CF0;'
         '--radius:12px;--radius-sm:8px;'
         '}'
         'body{font-family:"Outfit",sans-serif;background:var(--bg);color:var(--text);'
-        'padding:2rem 1.25rem;max-width:740px;margin:0 auto;min-height:100vh;'
-        'font-size:15px;line-height:1.5}'
+        'padding:2rem 1.25rem;max-width:740px;margin:0 auto;min-height:100vh;font-size:15px}'
         '.brand{font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;'
         'color:var(--gold);margin-bottom:6px;opacity:.8}'
         '.page-title{font-size:32px;font-weight:800;letter-spacing:-.03em;'
         'color:var(--text);margin-bottom:6px;line-height:1}'
         '.meta{font-size:12px;color:var(--muted);margin-bottom:2rem;'
         'display:flex;gap:10px;align-items:center;flex-wrap:wrap}'
-        '.meta a{color:var(--text);text-decoration:none;font-weight:500;opacity:.7;transition:opacity .15s}'
+        '.meta a{color:var(--text);text-decoration:none;font-weight:500;opacity:.7}'
         '.meta a:hover{opacity:1}'
         '.divider{color:var(--faint)}'
-
         '.stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:2.5rem}'
         '.stat-card{background:var(--surface);border:1px solid var(--border);'
         'border-radius:var(--radius);padding:14px 16px}'
         '.stat-val{font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1}'
         '.stat-lbl{font-size:10px;color:var(--muted);margin-top:5px;text-transform:uppercase;'
         'letter-spacing:.1em;font-weight:500}'
-
         '.section-label{font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;'
         'color:var(--muted);margin:2rem 0 1rem;display:flex;align-items:center;gap:10px}'
         '.section-label::after{content:"";flex:1;height:1px;background:var(--border)}'
-
         '.pick-card{background:var(--surface);border:1px solid var(--border);'
         'border-radius:var(--radius);margin-bottom:10px;overflow:hidden}'
-        '.pick-card.tier-MAX{border-color:#E8B84B30;box-shadow:0 0 0 1px #E8B84B10}'
+        '.pick-card.tier-MAX{border-color:#E8B84B30}'
         '.pick-card.tier-A{border-color:#23C97A22}'
         '.pick-card.tier-B{border-color:#4A9CF018}'
-        '.pick-card.tier-SKIP{opacity:.55}'
+        '.pick-card.tier-SKIP{opacity:.45}'
+        '.pick-card.tier-WATCH{opacity:.7}'
         '.card-inner{padding:1.1rem 1.25rem}'
-
-        '.tier-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;'
+        '.card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}'
+        '.card-top-right{display:flex;align-items:center;gap:6px}'
+        '.tier-badge{display:inline-flex;align-items:center;font-size:10px;font-weight:600;'
         'letter-spacing:.12em;text-transform:uppercase;padding:3px 10px;'
-        'border-radius:20px;margin-bottom:12px;font-family:"JetBrains Mono",monospace}'
+        'border-radius:20px;font-family:"JetBrains Mono",monospace}'
         '.tier-badge.MAX{background:#E8B84B15;color:var(--gold);border:1px solid #E8B84B30}'
         '.tier-badge.A{background:#23C97A12;color:var(--green);border:1px solid #23C97A25}'
         '.tier-badge.B{background:#4A9CF010;color:var(--blue);border:1px solid #4A9CF025}'
         '.tier-badge.C{background:#EAEEF210;color:var(--muted);border:1px solid #EAEEF215}'
-        '.tier-badge.WATCH{background:#6B768510;color:var(--muted);border:1px solid #6B768520}'
-        '.tier-badge.SKIP{background:#2C334018;color:var(--faint);border:1px solid #2C334030}'
-
-        '.pick-name{font-size:22px;font-weight:800;letter-spacing:-.02em;'
-        'margin-bottom:6px;line-height:1.1;color:var(--text)}'
-
-        '.pick-meta{font-size:12px;color:var(--muted);margin-bottom:14px;'
+        '.tier-badge.WATCH{background:#6B768510;color:var(--muted);border:1px solid #6B768518}'
+        '.tier-badge.SKIP{background:#2C334015;color:var(--faint);border:1px solid #2C334025}'
+        '.units-badge{font-family:"JetBrains Mono",monospace;font-weight:600;font-size:13px;color:var(--gold)}'
+        '.odds-badge{font-family:"JetBrains Mono",monospace;font-weight:500;font-size:13px;'
+        'color:var(--text);background:var(--surface2);padding:2px 8px;border-radius:6px}'
+        '.pick-name{font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:5px;line-height:1.1}'
+        '.pick-sub{font-size:11px;color:var(--muted);margin-bottom:12px;'
         'display:flex;gap:8px;align-items:center;flex-wrap:wrap}'
-        '.pick-meta .game{color:var(--text);opacity:.5;font-size:11px}'
-        '.pick-meta .odds{font-family:"JetBrains Mono",monospace;font-weight:500;'
-        'color:var(--text);font-size:12px}'
-        '.pick-meta .units{font-family:"JetBrains Mono",monospace;font-weight:600;'
-        'color:var(--gold);background:#E8B84B12;padding:2px 8px;border-radius:20px;font-size:11px}'
+        '.game-label{opacity:.7}'
+        '.game-time{font-family:"JetBrains Mono",monospace}'
         '.score-pill{font-family:"JetBrains Mono",monospace;font-size:10px;'
         'background:var(--surface2);color:var(--muted);padding:2px 8px;border-radius:6px}'
         '.score-pill.live{background:#E8B84B15;color:var(--gold)}'
         '.score-pill.final{background:#23C97A12;color:var(--green)}'
-
-        '.sp-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px}'
+        '.sp-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}'
         '.sp-box{background:var(--surface2);border:1px solid var(--border);'
-        'border-radius:var(--radius-sm);padding:10px 12px}'
+        'border-radius:var(--radius-sm);padding:8px 10px}'
         '.sp-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;'
-        'letter-spacing:.1em;margin-bottom:4px;font-weight:500}'
-        '.sp-name{font-size:13px;font-weight:600;color:var(--text)}'
-
-        '.ev-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}'
-        '.win-prob{font-size:11px;background:var(--surface2);color:var(--muted);'
-        'padding:3px 10px;border-radius:20px;font-family:"JetBrains Mono",monospace}'
-        '.ev-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;'
-        'font-family:"JetBrains Mono",monospace}'
-
-        '.ev-bar{height:2px;background:var(--surface3);border-radius:2px;margin-bottom:14px}'
+        'letter-spacing:.1em;margin-bottom:3px;font-weight:500}'
+        '.sp-name{font-size:13px;font-weight:600}'
+        '.ev-strip{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}'
+        '.ev-nums{display:flex;align-items:center;gap:6px;font-size:11px;font-family:"JetBrains Mono",monospace}'
+        '.win-pct{color:var(--text);font-weight:600}'
+        '.ev-sep{color:var(--faint)}'
+        '.impl-pct{color:var(--muted)}'
+        '.ev-badge{font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;'
+        'font-family:"JetBrains Mono",monospace;background:#23C97A12;'
+        'color:var(--green);border:1px solid #23C97A25}'
+        '.ev-bar{height:2px;background:var(--surface3);border-radius:2px;margin-bottom:12px}'
         '.ev-fill{height:100%;border-radius:2px}'
-        '.ev-fill.MAX,.ev-fill.A{background:var(--green)}'
-        '.ev-fill.B{background:var(--blue)}'
+        '.ev-fill.MAX{background:var(--gold)}'
+        '.ev-fill.A,.ev-fill.B{background:var(--green)}'
         '.ev-fill.C{background:var(--muted)}'
-
-        '.data-row{font-size:12px;color:var(--muted);margin-bottom:5px;line-height:1.55;'
-        'padding-left:2px}'
-        '.flag{font-size:11px;background:#E8B84B0C;color:#E8B84B99;padding:5px 10px;'
-        'border-radius:var(--radius-sm);margin-bottom:10px;border:1px solid #E8B84B18;'
-        'line-height:1.5}'
-
         '.key-edge{background:var(--surface2);border:1px solid var(--border2);'
-        'border-left:2px solid var(--gold);padding:10px 14px;'
-        'border-radius:0 var(--radius-sm) var(--radius-sm) 0;margin-bottom:12px}'
-        '.key-edge-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.12em;'
-        'color:var(--gold);font-weight:600;margin-bottom:4px;font-family:"JetBrains Mono",monospace}'
-        '.key-edge-text{font-size:12px;color:var(--text);font-weight:500;line-height:1.5;opacity:.9}'
-
-        '.rationale{font-size:12px;color:var(--muted);line-height:1.65;margin-top:10px;'
-        'border-top:1px solid var(--border);padding-top:10px;opacity:.8}'
-        '.skip-reason{font-size:11px;color:var(--red);font-weight:500;margin-bottom:4px;opacity:.8}'
-        '.watch-why{font-size:11px;color:var(--muted);font-style:italic;margin-bottom:4px}'
-
+        'border-left:2px solid var(--gold);padding:9px 12px;'
+        'border-radius:0 var(--radius-sm) var(--radius-sm) 0;'
+        'margin-bottom:10px;font-size:12px;font-weight:600;color:var(--text);line-height:1.5}'
+        '.details{border-top:1px solid var(--border);padding-top:10px;margin-top:2px}'
+        '.detail-row{display:flex;gap:10px;padding:3px 0;font-size:12px;line-height:1.4}'
+        '.detail-lbl{font-weight:600;color:var(--muted);flex-shrink:0;width:64px;font-size:11px;'
+        'text-transform:uppercase;letter-spacing:.06em;padding-top:1px}'
+        '.detail-val{color:var(--text);opacity:.8;flex:1}'
+        '.flag{font-size:11px;background:#E8B84B0C;color:#E8B84B99;padding:5px 10px;'
+        'border-radius:var(--radius-sm);margin-bottom:10px;border:1px solid #E8B84B18}'
+        '.watch-reason{font-size:11px;color:var(--muted);margin-top:8px;'
+        'border-top:1px solid var(--border);padding-top:8px;font-style:italic}'
+        '.skip-reason{font-size:11px;color:var(--faint);margin-top:6px;line-height:1.5}'
         'footer{font-size:11px;color:var(--faint);margin-top:2.5rem;text-align:center;'
         'padding-bottom:2rem;line-height:2}'
-
         '@media(max-width:480px){'
         '.stats-bar{grid-template-columns:repeat(2,1fr)}'
         '.sp-grid{grid-template-columns:1fr}'
@@ -3344,6 +3346,7 @@ def build_html(data):
         '}'
         '</style>'
     )
+
 
     has_max = any(p.get('tier')=='MAX' for p in active)
     active_color = 'var(--gold)' if has_max else 'var(--green)'
@@ -3644,6 +3647,25 @@ def main():
         ai_model = record.get("ai_model", "Claude Sonnet 4.5")
         picks = [p for p in record.get("picks",[]) if p.get("date")==TODAY]
         active = [p for p in picks if p.get("tier") in ("MAX","A","B","C")]
+
+        # 3PM ump patch — inject real ump assignments into today's picks
+        _now_et = (_now_utc.hour - 4) % 24
+        if _now_et >= 12:  # After noon ET — umps are posted
+            ump_updated = 0
+            for g in games_with_data:
+                hp_ump = g.get("hp_ump","")
+                if not hp_ump or hp_ump == "TBD":
+                    continue
+                game_key = g["away"]+" @ "+g["home"]
+                for p in record["picks"]:
+                    if p.get("game","") == game_key and p.get("date") == TODAY and not p.get("result"):
+                        if p.get("hp_ump","") != hp_ump:
+                            p["hp_ump"] = hp_ump
+                            ump_updated += 1
+            if ump_updated:
+                print(f"3PM ump patch: updated {ump_updated} picks with real ump assignments")
+                save_record(record)
+                picks = [p for p in record.get("picks",[]) if p.get("date")==TODAY]
 
     # Save new picks to record (only when fresh or regenerated)
     existing_keys = {p["game"]+p.get("date","") for p in record["picks"]}
