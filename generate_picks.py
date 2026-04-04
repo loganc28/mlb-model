@@ -1345,11 +1345,11 @@ def _try_claude(user_msg, retries=2):
                 "https://api.anthropic.com/v1/messages",
                 headers={"x-api-key":ANTHROPIC_KEY,"anthropic-version":"2023-06-01",
                          "content-type":"application/json"},
-                json={"model":"claude-sonnet-4-6","max_tokens":16000,
+                json={"model":"claude-sonnet-4-6","max_tokens":4000,
                       "temperature":0,
                       "system":SYSTEM_PROMPT,
                       "messages":[{"role":"user","content":user_msg}]},
-                timeout=180
+                timeout=240
             )
             if not r.ok:
                 print("Claude error: "+r.text[:300])
@@ -1528,22 +1528,13 @@ def enforce_ev_rules(picks):
 
         # Validate run line price matches actual odds data
         if bet_type == "Run Line" and p.get("game"):
-            game_key = p.get("game","").replace(" @ ","@")
-            # Find the game in the original summarized data
             pick_str = p.get("pick","").upper()
             stated_line = str(p.get("line","")).replace("+","")
             try:
                 stated_price = float(stated_line)
-                # If price is more negative than -300 on +1.5, that's almost certainly wrong
-                # Underdog +1.5 should never be more than -200
+                # Underdog +1.5 should never be worse than -200 juice
                 if "+1.5" in pick_str and stated_price < -200:
                     print("LINE ERROR: "+p.get("game","")+" — "+pick_str+" showing "+str(p.get("line",""))+" which is impossible for underdog +1.5. Downgrading to WATCH.")
-                    p["tier"] = "WATCH"
-                    p["units"] = 0
-                    p["avoid_reason"] = "Line validation failed — price inconsistent with run line direction"
-                # Favorite -1.5 should never be plus money
-                if "-1.5" in pick_str and stated_price > 0:
-                    print("LINE ERROR: "+p.get("game","")+" — "+pick_str+" showing +"+str(p.get("line",""))+" which is impossible for favorite -1.5. Downgrading to WATCH.")
                     p["tier"] = "WATCH"
                     p["units"] = 0
                     p["avoid_reason"] = "Line validation failed — price inconsistent with run line direction"
