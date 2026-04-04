@@ -3306,6 +3306,27 @@ def main():
     # Fetch ESPN injuries once for all teams
     espn_injuries = fetch_espn_injuries()
 
+    # Exit early if no games have odds — nothing to analyze
+    games_with_odds = [g for g in games if odds_map.get(g["away"]+"@"+g["home"])]
+    if not games_with_odds:
+        print("No games with odds found — rebuilding pages only.")
+        record = json.loads(RECORD_FILE.read_text()) if RECORD_FILE.exists() else {"picks":[],"updated":TODAY}
+        settle_picks(record)
+        RECORD_FILE.write_text(json.dumps(record, indent=2))
+        picks_out = {"date":TODAY,"total_games":len(games),"picks":[],"generated_at":datetime.datetime.utcnow().isoformat(),"ai_model":"—"}
+        (OUTPUT_DIR/"picks.json").write_text(json.dumps(picks_out, indent=2))
+        html = build_html(picks_out)
+        (OUTPUT_DIR/(TODAY+".html")).write_text(html)
+        (OUTPUT_DIR/"index.html").write_text(html)
+        (OUTPUT_DIR/"record.html").write_text(build_record_html(record))
+        scores_src = Path("scores.html")
+        scores_dst = OUTPUT_DIR/"scores.html"
+        if scores_src.exists():
+            scores_dst.write_text(scores_src.read_text())
+        build_archive_index()
+        print("Done — pages rebuilt, no picks generated.")
+        return
+
     games_with_data = []
 
     for g in games:
