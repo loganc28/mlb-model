@@ -2540,76 +2540,122 @@ def build_record_html(record):
         wr = round(w/tot*100,1) if tot else 0
         u = round(d["units"],2)
         uc = "var(--green)" if u>=0 else "var(--red)"
-        tier_colors = {"MAX":"var(--gold)","A":"var(--green)","B":"var(--blue)","C":"var(--purple)","WATCH":"var(--muted)"}
-        dot = ('<span class="tier-dot '+label+'"></span>') if label in tier_colors else ""
+        dot = ('<span class="tier-dot '+label+'"></span>') if label in ("MAX","A","B","C","WATCH") else ""
         return ('<tr>'
                 '<td style="font-weight:600">'+dot+label+'</td>'
-                '<td style="text-align:center;font-family:\'DM Mono\',monospace">'+str(w)+'-'+str(l)+(('-'+str(p)) if p else '')+'</td>'
+                '<td style="text-align:center;font-family:\'JetBrains Mono\',monospace">'+str(w)+'-'+str(l)+(('-'+str(p)) if p else '')+'</td>'
                 '<td style="text-align:center">'+str(wr)+'%</td>'
-                '<td style="text-align:center;font-family:\'DM Mono\',monospace;font-weight:600;color:'+uc+'">'
+                '<td style="text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:600;color:'+uc+'">'
                 +('+'if u>=0 else '')+str(u)+'u</td></tr>')
 
-    def pick_row(p):
+    # Group picks by date for collapsible history
+    from collections import defaultdict
+    picks_by_date = defaultdict(list)
+    for p in sorted_picks:
+        picks_by_date[p.get("date","")].append(p)
+
+    def pick_card_html(p):
         res = p.get("result","")
-        ur  = p.get("units_result",0)
-        if res=="W": rl="WIN"
-        elif res=="L": rl="LOSS"
-        elif res=="P": rl="PUSH"
-        else: rl="PENDING"
+        ur = p.get("units_result",0)
         t = p.get("tier","?")
-        open_l  = p.get("open_line","")
+        if t == "WATCH": ur = 0
+        if res=="W": rl,rc="WIN","var(--green)"
+        elif res=="L": rl,rc="LOSS","var(--red)"
+        elif res=="P": rl,rc="PUSH","var(--muted)"
+        else: rl,rc="PENDING","var(--gold)"
+        open_l = p.get("open_line","")
         close_l = p.get("close_line","")
         clv_str = ""
         if open_l and close_l:
             try:
                 ol = float(str(open_l).replace("+",""))
-                cl = float(str(close_l).replace("+",""))
-                clv = round(ol-cl if ol<0 else cl-ol, 0)
+                cl2 = float(str(close_l).replace("+",""))
+                clv = round(ol-cl2 if ol<0 else cl2-ol, 0)
                 clv_str = ("+" if clv>0 else "")+str(int(clv))
             except: pass
-        final_score = p.get("final_score","")
-        loss_reason = p.get("loss_reason","")
-        # WATCH picks always show 0u
-        if t == "WATCH":
-            ur = 0
-        ur_color = "var(--green)" if ur>=0 else "var(--red)"
         clv_color = "var(--green)" if clv_str.startswith('+') else "var(--red)" if clv_str.startswith('-') else "var(--muted)"
-        tier_dot = '<span class="tier-dot '+t+'"></span>' if t in ("MAX","A","B","C","WATCH") else ""
-        # Loss reason badge — only show on losses
-        REASON_LABELS = {
-            "SP_OUTPERFORMED": "SP Outperformed",
-            "BULLPEN_HELD":    "Bullpen Held",
-            "LINEUP_DIFF":     "Lineup Diff",
-            "WEATHER_WRONG":   "Weather Wrong",
-            "PURE_VARIANCE":   "Variance",
-            "BAD_DATA":        "Bad Data",
-        }
-        reason_html = ""
+        loss_reason = p.get("loss_reason","")
+        reason_badge = ""
         if res == "L" and loss_reason:
-            label = REASON_LABELS.get(loss_reason, loss_reason)
-            reason_html = (' <span style="font-size:9px;background:#F04B4B15;color:#F04B4BAA;'
-                          'padding:1px 6px;border-radius:4px;border:1px solid #F04B4B25">'+label+'</span>')
-        return ('<tr>'
-                '<td style="color:var(--muted);font-family:\'DM Mono\',monospace;font-size:11px">'+p.get("date","")+'</td>'
-                '<td style="font-weight:600">'+p.get("pick","")+'</td>'
-                '<td style="color:var(--muted);font-size:11px">'+p.get("game","")+'</td>'
-                '<td>'+tier_dot+t+'</td>'
-                '<td style="font-family:\'DM Mono\',monospace;font-size:11px">'+str(open_l)+'</td>'
-                '<td style="font-family:\'DM Mono\',monospace;font-size:11px;color:var(--muted)">'+str(close_l)+'</td>'
-                '<td style="font-family:\'DM Mono\',monospace;font-size:11px;color:'+clv_color+'">'+clv_str+'</td>'
-                '<td style="font-size:11px;color:var(--muted)">'+str(final_score)+'</td>'
-                '<td><span class="badge '+rl+'">'+rl+'</span>'+reason_html+'</td>'
-                '<td style="font-family:\'DM Mono\',monospace;font-weight:600;color:'+ur_color+'">'
-                +('+'if ur>=0 else '')+str(round(ur,2))+'u</td></tr>')
+            label2 = REASON_LABELS.get(loss_reason, loss_reason)
+            reason_badge = ('<span style="font-size:9px;background:#E8414B10;color:#E8414B80;'
+                           'padding:1px 7px;border-radius:10px;border:1px solid #E8414B20;margin-left:4px">'+label2+'</span>')
+        score = p.get("final_score","—")
+        dot = '<span class="tier-dot '+t+'"></span>' if t in ("MAX","A","B","C","WATCH") else ""
+        ur_color = "var(--green)" if ur > 0 else "var(--red)" if ur < 0 else "var(--muted)"
+        watch_dim = 'opacity:.5;' if t == "WATCH" else ''
+        return (
+            '<div style="display:flex;align-items:flex-start;gap:12px;padding:10px 0;'
+            'border-bottom:1px solid var(--border);'+watch_dim+'">'
+            '<div style="flex:1;min-width:0">'
+            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;flex-wrap:wrap">'
+            '<span style="font-size:13px;font-weight:700">'+p.get("pick","")+'</span>'
+            +reason_badge+
+            '</div>'
+            '<div style="font-size:11px;color:var(--muted);margin-bottom:3px">'+p.get("game","")+'</div>'
+            '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:10px">'
+            +dot+'<span style="color:var(--muted)">'+t+'</span>'
+            '<span style="color:var(--faint)">·</span>'
+            '<span style="font-family:\'JetBrains Mono\',monospace;color:var(--text)">'+str(open_l)+'</span>'
+            +(('<span style="color:var(--faint)">→</span>'
+               '<span style="font-family:\'JetBrains Mono\',monospace;color:var(--muted)">'+str(close_l)+'</span>'
+               +(('<span style="color:var(--faint)">·</span>'
+                  '<span style="font-family:\'JetBrains Mono\',monospace;color:'+clv_color+'">CLV '+clv_str+'</span>') if clv_str else '')
+               ) if close_l else '')+
+            '<span style="color:var(--faint)">·</span>'
+            '<span style="color:var(--muted)">'+str(score)+'</span>'
+            '</div>'
+            '</div>'
+            '<div style="flex-shrink:0;text-align:right">'
+            '<div style="font-size:11px;font-weight:700;color:'+rc+';font-family:\'JetBrains Mono\',monospace;margin-bottom:4px">'+rl+'</div>'
+            '<div style="font-size:12px;font-weight:700;color:'+ur_color+';font-family:\'JetBrains Mono\',monospace">'
+            +('+' if ur>0 else '')+str(round(ur,2))+'u</div>'
+            '</div>'
+            '</div>'
+        )
+
+    def date_group_html(date, picks_list):
+        real = [p for p in picks_list if p.get("tier") not in ("WATCH","SKIP")]
+        w = len([p for p in real if p.get("result")=="W"])
+        l = len([p for p in real if p.get("result")=="L"])
+        u = round(sum(p.get("units_result",0) for p in real),2)
+        pending_count = len([p for p in real if not p.get("result")])
+        if w+l == 0 and pending_count == 0:
+            summary = '<span style="color:var(--muted);font-size:11px">No active picks</span>'
+        elif pending_count > 0:
+            summary = '<span style="color:var(--gold);font-size:11px;font-family:\'JetBrains Mono\',monospace">'+str(pending_count)+' pending</span>'
+        else:
+            u_col = "var(--green)" if u>=0 else "var(--red)"
+            wl_col = "var(--green)" if w>l else "var(--red)" if l>w else "var(--muted)"
+            summary = ('<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:'+wl_col+';font-weight:600">'+str(w)+'-'+str(l)+'</span>'
+                      +' <span style="color:var(--faint)">·</span> '
+                      +'<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:'+u_col+';font-weight:600">'+('+'if u>=0 else '')+str(u)+'u</span>')
+        uid = "dg_"+date.replace("-","")
+        cards = "".join(pick_card_html(p) for p in picks_list)
+        return (
+            '<div class="dg" id="'+uid+'">'
+            '<div class="dg-hdr" onclick="toggleDG(\''+uid+'\')">'
+            '<div style="display:flex;align-items:center;gap:10px">'
+            '<span style="font-size:13px;font-weight:700;font-family:\'JetBrains Mono\',monospace">'+date+'</span>'
+            +summary+
+            '</div>'
+            '<span class="dg-arr">▾</span>'
+            '</div>'
+            '<div class="dg-body">'+cards+'</div>'
+            '</div>'
+        )
 
     tier_rows = "".join(stat_row(t,d) for t,d in sorted(tiers.items()))
     bt_rows   = "".join(stat_row(bt,d) for bt,d in sorted(bet_types.items()))
     sorted_picks = sorted(picks, key=lambda p: p.get("date",""), reverse=True)
-    pick_rows = "".join(pick_row(p) for p in sorted_picks[:60])
 
-    u_color = "#1D9E75" if units_won>=0 else "#A32D2D"
+    date_groups_html = ""
+    for date in sorted(picks_by_date.keys(), reverse=True):
+        date_groups_html += date_group_html(date, picks_by_date[date])
+
+    u_color = "var(--green)" if units_won>=0 else "var(--red)"
     u_str   = ("+" if units_won>=0 else "")+str(units_won)+"u"
-    clv_color = "#1D9E75" if avg_clv>0 else "#A32D2D" if avg_clv<0 else "#888"
+    clv_color = "var(--green)" if avg_clv>0 else "var(--red)" if avg_clv<0 else "var(--muted)"
 
     rec_css = (
         '@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap");'
@@ -2617,10 +2663,10 @@ def build_record_html(record):
         ':root{--bg:#080A0C;--surface:#0F1115;--surface2:#161A1F;--surface3:#1C2028;'
         '--border:#1E2329;--border2:#252B33;'
         '--text:#EAEEF2;--muted:#6B7685;--faint:#2C3340;'
-        '--gold:#E8B84B;--green:#23C97A;--red:#E8414B;--blue:#4A9CF0;--purple:#9B72F5;'
+        '--gold:#E8B84B;--green:#23C97A;--red:#E8414B;--blue:#4A9CF0;'
         '--radius:12px;--radius-sm:8px;}'
         'body{font-family:"Outfit",sans-serif;background:var(--bg);color:var(--text);'
-        'padding:2rem 1.25rem;max-width:1020px;margin:0 auto;font-size:14px}'
+        'padding:2rem 1.25rem;max-width:860px;margin:0 auto;font-size:14px}'
         '.brand{font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;'
         'color:var(--gold);margin-bottom:6px;opacity:.8}'
         '.page-title{font-size:32px;font-weight:800;letter-spacing:-.03em;'
@@ -2629,42 +2675,72 @@ def build_record_html(record):
         'display:flex;gap:10px;align-items:center;flex-wrap:wrap}'
         '.meta a{color:var(--text);text-decoration:none;font-weight:500;opacity:.7}'
         '.meta a:hover{opacity:1}'
-        '.stats-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:2.5rem}'
+        '.divider{color:var(--faint)}'
+        '.stats-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:2rem}'
         '.stat-card{background:var(--surface);border:1px solid var(--border);'
         'border-radius:var(--radius);padding:14px 16px}'
-        '.stat-val{font-size:24px;font-weight:800;letter-spacing:-.02em;line-height:1}'
+        '.stat-val{font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1}'
         '.stat-lbl{font-size:10px;color:var(--muted);margin-top:5px;text-transform:uppercase;'
         'letter-spacing:.1em;font-weight:500}'
         '.section-label{font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;'
         'color:var(--muted);margin:2rem 0 .75rem;display:flex;align-items:center;gap:10px}'
         '.section-label::after{content:"";flex:1;height:1px;background:var(--border)}'
         'table{width:100%;border-collapse:collapse;background:var(--surface);'
-        'border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:1.5rem}'
-        'th{padding:10px 16px;font-size:10px;font-weight:600;color:var(--muted);'
+        'border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:1rem}'
+        'th{padding:9px 14px;font-size:10px;font-weight:600;color:var(--muted);'
         'text-transform:uppercase;letter-spacing:.1em;text-align:left;'
         'background:var(--surface2);border-bottom:1px solid var(--border)}'
-        'td{padding:10px 16px;font-size:12px;border-bottom:1px solid var(--border);color:var(--text)}'
+        'td{padding:9px 14px;font-size:12px;border-bottom:1px solid var(--border);color:var(--text)}'
         'tr:last-child td{border-bottom:none}'
         'tr:hover td{background:var(--surface2)}'
-        '.badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;'
-        'border-radius:20px;font-family:"JetBrains Mono",monospace}'
-        '.badge.WIN{background:#23C97A12;color:var(--green);border:1px solid #23C97A25}'
-        '.badge.LOSS{background:#E8414B12;color:var(--red);border:1px solid #E8414B25}'
-        '.badge.PENDING{background:#E8B84B12;color:var(--gold);border:1px solid #E8B84B25}'
-        '.badge.PUSH{background:#6B768510;color:var(--muted);border:1px solid #6B768520}'
-        '.tier-dot{display:inline-block;width:7px;height:7px;border-radius:50%;'
-        'margin-right:6px;vertical-align:middle}'
+        '.tier-dot{display:inline-block;width:6px;height:6px;border-radius:50%;'
+        'margin-right:6px;vertical-align:middle;flex-shrink:0}'
         '.tier-dot.MAX{background:var(--gold)}'
         '.tier-dot.A{background:var(--green)}'
         '.tier-dot.B{background:var(--blue)}'
         '.tier-dot.C{background:var(--muted)}'
         '.tier-dot.WATCH{background:var(--faint)}'
-        '.mono{font-family:"JetBrains Mono",monospace}'
+        '.dg{background:var(--surface);border:1px solid var(--border);'
+        'border-radius:var(--radius);overflow:hidden;margin-bottom:6px}'
+        '.dg-hdr{padding:12px 16px;cursor:pointer;display:flex;align-items:center;'
+        'justify-content:space-between;transition:background .15s;user-select:none}'
+        '.dg-hdr:hover{background:var(--surface2)}'
+        '.dg-arr{font-size:10px;color:var(--faint);transition:transform .2s}'
+        '.dg.open .dg-arr{transform:rotate(180deg)}'
+        '.dg-body{display:none;padding:0 16px}'
+        '.dg.open .dg-body{display:block}'
+        '.dg-body>div:last-child{border-bottom:none!important}'
         'footer{font-size:11px;color:var(--faint);margin-top:2rem;text-align:center;'
         'padding-bottom:2rem;line-height:2}'
-        '@media(max-width:600px){.stats-bar{grid-template-columns:repeat(3,1fr)}'
-        'th,td{padding:8px 10px;font-size:11px}}'
+        '@media(max-width:600px){.stats-bar{grid-template-columns:repeat(3,1fr)}}'
     )
+
+    toggle_js = (
+        '<script>'
+        'function toggleDG(id){'
+        'var el=document.getElementById(id);'
+        'if(el)el.classList.toggle("open");'
+        '}'
+        'document.addEventListener("DOMContentLoaded",function(){'
+        'var first=document.querySelector(".dg");'
+        'if(first)first.classList.add("open");'
+        '});'
+        '</script>'
+    )
+
+    loss_breakdown = ""
+    if loss_reasons and losses:
+        loss_breakdown = (
+            '<div class="section-label">Loss Breakdown</div>'
+            '<table><thead><tr><th>Reason</th><th>Count</th><th>% of Losses</th></tr></thead><tbody>'
+            +"".join(
+                '<tr><td style="font-weight:600">'+REASON_LABELS.get(r,r)+'</td>'
+                '<td style="text-align:center;font-family:\'JetBrains Mono\',monospace">'+str(c)+'</td>'
+                '<td style="text-align:center;color:var(--muted)">'+str(round(c/len(losses)*100,1))+'%</td></tr>'
+                for r,c in sorted(loss_reasons.items(), key=lambda x: -x[1])
+            )
+            +'</tbody></table>'
+        )
 
     return ('<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">'
             '<meta name="viewport" content="width=device-width,initial-scale=1">'
@@ -2673,37 +2749,31 @@ def build_record_html(record):
             '<div class="brand">MLB Betting Model</div>'
             '<div class="page-title">Record</div>'
             '<div class="meta">'
-            'Updated '+TODAY+' &nbsp;&middot;&nbsp; '
-            '<span id="live_update" style="color:var(--green)">&#9679; Live</span>'
-            ' &nbsp;&middot;&nbsp; <a href="index.html">Today\'s picks</a>'
-            ' &nbsp;&middot;&nbsp; <a href="archive.html">Archive</a>'
-            '</div>'
+            'Updated '+TODAY
+            +' <span class="divider">&middot;</span> '
+            '<a href="index.html">Today\'s picks</a>'
+            +' <span class="divider">&middot;</span> '
+            '<a href="archive.html">Archive</a>'
+            +' <span class="divider">&middot;</span> '
+            '<a href="scores.html">Scores</a>'
+            +'</div>'
             '<div class="stats-bar">'
-            '<div class="stat-card"><div class="stat-val" data-stat="wl">'+str(len(wins))+'-'+str(len(losses))+'</div><div class="stat-lbl">W-L Record</div></div>'
-            '<div class="stat-card"><div class="stat-val" data-stat="winrate">'+str(win_rate)+'%</div><div class="stat-lbl">Win Rate</div></div>'
-            '<div class="stat-card"><div class="stat-val" data-stat="units" style="color:'+u_color+'">'+u_str+'</div><div class="stat-lbl">Units P&L</div></div>'
+            '<div class="stat-card"><div class="stat-val">'+str(len(wins))+'-'+str(len(losses))+'</div><div class="stat-lbl">Record</div></div>'
+            '<div class="stat-card"><div class="stat-val">'+str(win_rate)+'%</div><div class="stat-lbl">Win Rate</div></div>'
+            '<div class="stat-card"><div class="stat-val" style="color:'+u_color+'">'+u_str+'</div><div class="stat-lbl">Units P&L</div></div>'
             '<div class="stat-card"><div class="stat-val" style="color:'+clv_color+'">'+('+'if avg_clv>=0 else '')+str(avg_clv)+'</div><div class="stat-lbl">Avg CLV</div></div>'
-            '<div class="stat-card"><div class="stat-val" style="color:var(--purple)">'+str(watch_rate)+'%</div><div class="stat-lbl">Watch Hit %</div></div>'
+            '<div class="stat-card"><div class="stat-val" style="color:var(--muted)">'+str(watch_rate)+'%</div><div class="stat-lbl">Watch Hit %</div></div>'
             '</div>'
-            '<div class="section-label">Performance by Tier</div>'
+            '<div class="section-label">By Tier</div>'
             '<table><thead><tr><th>Tier</th><th>Record</th><th>Win %</th><th>Units</th></tr></thead><tbody>'+tier_rows+'</tbody></table>'
-            '<div class="section-label">Performance by Bet Type</div>'
+            '<div class="section-label">By Bet Type</div>'
             '<table><thead><tr><th>Type</th><th>Record</th><th>Win %</th><th>Units</th></tr></thead><tbody>'+bt_rows+'</tbody></table>'
-            +( ('<div class="section-label">Loss Breakdown</div>'
-               '<table><thead><tr><th>Reason</th><th>Count</th><th>% of Losses</th></tr></thead><tbody>'
-               +"".join(
-                   '<tr><td style="font-weight:600">'+REASON_LABELS.get(r,r)+'</td>'
-                   '<td style="text-align:center;font-family:\'DM Mono\',monospace">'+str(c)+'</td>'
-                   '<td style="text-align:center;color:var(--muted)">'+str(round(c/len(losses)*100,1))+'%</td></tr>'
-                   for r,c in sorted(loss_reasons.items(), key=lambda x: -x[1])
-               )
-               +'</tbody></table>') if loss_reasons and losses else '')+
+            +loss_breakdown+
             '<div class="section-label">Pick History</div>'
-            '<table><thead><tr>'
-            '<th>Date</th><th>Pick</th><th>Game</th><th>Tier</th><th>Open</th><th>Close</th><th>CLV</th><th>Score</th><th>Result</th><th>Units</th>'
-            '</tr></thead><tbody>'+pick_rows+'</tbody></table>'
-            '<footer>EV model &middot; Track CLV to measure long-term edge &middot; Paper trading until 50+ picks verified</footer>'
+            +date_groups_html+
+            '<footer>EV model &middot; Track CLV for long-term edge &middot; Paper trading until 50+ picks verified</footer>'
             + RECORD_LIVE_JS
+            + toggle_js
             + '</body></html>')
 
 # ── Archive ───────────────────────────────────────────────────────────────────
