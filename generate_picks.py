@@ -34,7 +34,8 @@ RECORD_FILE     = OUTPUT_DIR / "record.json"
 # ── HARD LOCK: Exit immediately if picks already generated today ───────────────
 # This runs before ANY other logic. Lock file is written after successful generation.
 LOCK_FILE = OUTPUT_DIR / ("picks_locked_" + TODAY + ".txt")
-if LOCK_FILE.exists() and not FORCE_REGEN:
+INDEX_FILE = OUTPUT_DIR / "index.html"
+if LOCK_FILE.exists() and not FORCE_REGEN and INDEX_FILE.exists():
     print(f"[LOCK] picks_locked_{TODAY}.txt exists — picks already generated today. Exiting.")
     print("[LOCK] Use FORCE_REGENERATE=yes to override.")
     import sys; sys.exit(0)
