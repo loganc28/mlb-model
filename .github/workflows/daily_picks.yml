@@ -2,7 +2,7 @@ name: Daily MLB Picks
 
 on:
   schedule:
-    - cron: '0 12 * * *'
+    - cron: '0 11 * * *'
     - cron: '0 19 * * *'
   workflow_dispatch:
     inputs:
@@ -38,38 +38,6 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           FORCE_REGENERATE: ${{ env.FORCE_REGENERATE }}
         run: python generate_picks.py
-
-      - name: Send notification
-        run: |
-          NOTIFY_FILE="output/notify.txt"
-          if [ ! -f "$NOTIFY_FILE" ]; then
-            echo "No notify file — skipping notification"
-            exit 0
-          fi
-
-          MSG=$(cat "$NOTIFY_FILE")
-
-          if [ "$MSG" = "LOCKED" ]; then
-            # Silent lock confirmation — only send on 3PM run to avoid noise
-            HOUR=$(date -u +%H)
-            if [ "$HOUR" = "19" ]; then
-              curl -s -X POST https://ntfy.sh/mlb-picks-2026 \
-                -H "Title: ✅ MLB Picks Locked" \
-                -H "Priority: low" \
-                -H "Tags: lock,baseball" \
-                -d "3PM check complete. No changes. Picks locked for today."
-            fi
-          else
-            # Trigger fired — always notify immediately
-            curl -s -X POST https://ntfy.sh/mlb-picks-2026 \
-              -H "Title: ⚠️ MLB Picks Regenerated" \
-              -H "Priority: high" \
-              -H "Tags: warning,baseball" \
-              -d "$MSG"
-          fi
-
-          # Clean up notify file so it doesn't persist
-          rm -f "$NOTIFY_FILE"
 
       - name: Commit and push output
         run: |
