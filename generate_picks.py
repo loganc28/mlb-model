@@ -2550,6 +2550,7 @@ def build_record_html(record):
 
     # Group picks by date for collapsible history
     from collections import defaultdict
+    sorted_picks = sorted(picks, key=lambda p: p.get("date",""), reverse=True)
     picks_by_date = defaultdict(list)
     for p in sorted_picks:
         picks_by_date[p.get("date","")].append(p)
@@ -2647,7 +2648,6 @@ def build_record_html(record):
 
     tier_rows = "".join(stat_row(t,d) for t,d in sorted(tiers.items()))
     bt_rows   = "".join(stat_row(bt,d) for bt,d in sorted(bet_types.items()))
-    sorted_picks = sorted(picks, key=lambda p: p.get("date",""), reverse=True)
 
     date_groups_html = ""
     for date in sorted(picks_by_date.keys(), reverse=True):
