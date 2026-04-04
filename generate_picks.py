@@ -34,33 +34,11 @@ RECORD_FILE     = OUTPUT_DIR / "record.json"
 # ── HARD LOCK: Exit immediately if picks already generated today ───────────────
 LOCK_FILE = OUTPUT_DIR / ("picks_locked_" + TODAY + ".txt")
 INDEX_FILE = OUTPUT_DIR / "index.html"
-if LOCK_FILE.exists() and not FORCE_REGEN:
-    if INDEX_FILE.exists():
-        print(f"[LOCK] picks_locked_{TODAY}.txt exists — picks already generated today. Exiting.")
-        print("[LOCK] Use FORCE_REGENERATE=yes to override.")
-        import sys; sys.exit(0)
-    else:
-        # index.html missing but picks locked — fast rebuild from existing data
-        print("[LOCK] index.html missing — rebuilding pages from existing picks.")
-        _record = json.loads(RECORD_FILE.read_text()) if RECORD_FILE.exists() else {"picks":[],"updated":TODAY}
-        _picks_json = OUTPUT_DIR/"picks.json"
-        if _picks_json.exists():
-            _output = json.loads(_picks_json.read_text())
-        else:
-            _today_picks = [p for p in _record.get("picks",[]) if p.get("date")==TODAY]
-            _output = {"date":TODAY,"generated_at":datetime.datetime.utcnow().isoformat()+"Z",
-                      "ai_model":_record.get("ai_model","Claude Sonnet 4.6"),
-                      "total_games":0,"total_picks":len([p for p in _today_picks if p.get("tier") in ("MAX","A","B","C")]),
-                      "picks":_today_picks}
-        _html = build_html(_output)
-        (OUTPUT_DIR/(TODAY+".html")).write_text(_html)
-        INDEX_FILE.write_text(_html)
-        (OUTPUT_DIR/"record.html").write_text(build_record_html(_record))
-        _scores_src = Path("scores.html")
-        if _scores_src.exists(): (OUTPUT_DIR/"scores.html").write_text(_scores_src.read_text())
-        build_archive_index()
-        print("[LOCK] Pages rebuilt. Exiting.")
-        import sys; sys.exit(0)
+REBUILD_ONLY = LOCK_FILE.exists() and not FORCE_REGEN and not INDEX_FILE.exists()
+if LOCK_FILE.exists() and not FORCE_REGEN and INDEX_FILE.exists():
+    print(f"[LOCK] picks_locked_{TODAY}.txt exists — picks already generated today. Exiting.")
+    print("[LOCK] Use FORCE_REGENERATE=yes to override.")
+    import sys; sys.exit(0)
 # ──────────────────────────────────────────────────────────────────────────────
 
 # ── Stadium data: coordinates + outfield facing direction (degrees from N) ────
@@ -3414,6 +3392,28 @@ def build_html(data):
 
 def main():
     print("Running MLB picks generator for "+TODAY+"...")
+
+    # Fast rebuild — index.html missing but picks locked, rebuild pages without enrichment
+    if REBUILD_ONLY:
+        print("[LOCK] index.html missing — rebuilding pages from existing picks.")
+        record = json.loads(RECORD_FILE.read_text()) if RECORD_FILE.exists() else {"picks":[],"updated":TODAY}
+        picks_json_path = OUTPUT_DIR/"picks.json"
+        if picks_json_path.exists():
+            output = json.loads(picks_json_path.read_text())
+        else:
+            today_picks = [p for p in record.get("picks",[]) if p.get("date")==TODAY]
+            output = {"date":TODAY,"generated_at":datetime.datetime.utcnow().isoformat()+"Z",
+                     "ai_model":record.get("ai_model","Claude Sonnet 4.6"),
+                     "total_games":0,"picks":today_picks}
+        html = build_html(output)
+        (OUTPUT_DIR/(TODAY+".html")).write_text(html)
+        (OUTPUT_DIR/"index.html").write_text(html)
+        (OUTPUT_DIR/"record.html").write_text(build_record_html(record))
+        scores_src = Path("scores.html")
+        if scores_src.exists(): (OUTPUT_DIR/"scores.html").write_text(scores_src.read_text())
+        build_archive_index()
+        print("[LOCK] Pages rebuilt. Exiting.")
+        return
 
     # Generation window check — only generate NEW picks during 7AM-10AM ET or with FORCE_REGEN
     import datetime as _dt
