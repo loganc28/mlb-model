@@ -3295,6 +3295,16 @@ def build_html(data):
 
 def main():
     print("Running MLB picks generator for "+TODAY+"...")
+
+    # Generation window check — only generate NEW picks during 7AM-10AM ET or with FORCE_REGEN
+    import datetime as _dt
+    _now_utc = _dt.datetime.utcnow()
+    _now_et_hour = (_now_utc.hour - 4) % 24  # EDT offset
+    _in_window = 6 <= _now_et_hour < 10
+    _can_generate = _in_window or FORCE_REGEN
+    if not _can_generate:
+        print("Outside generation window ("+str(_now_et_hour).zfill(2)+":xx ET). Rebuilding pages only — no new picks.")
+
     stats = fetch_and_cache_stats()
     games = fetch_mlb_games()
     if not games:
@@ -3308,8 +3318,9 @@ def main():
 
     # Exit early if no games have odds — nothing to analyze
     games_with_odds = [g for g in games if odds_map.get(g["away"]+"@"+g["home"])]
-    if not games_with_odds:
-        print("No games with odds found — rebuilding pages only.")
+    if not games_with_odds or not _can_generate:
+        if not games_with_odds:
+            print("No games with odds found — rebuilding pages only.")
         record = json.loads(RECORD_FILE.read_text()) if RECORD_FILE.exists() else {"picks":[],"updated":TODAY}
         settle_picks(record)
         RECORD_FILE.write_text(json.dumps(record, indent=2))
