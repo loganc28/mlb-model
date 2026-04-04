@@ -3147,12 +3147,11 @@ def build_html(data):
             '</div>'
             '</div>'
 
-            +flag_row(p.get("flags",""))+
-
             '<div class="pick-name">'+str(p.get("pick",""))+'</div>'
+            +flag_row(p.get("flags",""))+
             '<div class="pick-sub">'
             '<span class="game-label">'+game+'</span>'
-            '<span class="game-time">'+str(p.get("game_time",""))+'</span>'
+            +(('<span class="game-time">'+str(p.get("game_time",""))+'</span>') if p.get("game_time") and str(p.get("game_time","")) not in game else '')
             +score_span(game)
             +'</div>'
             '<div class="sp-grid">'
@@ -3330,10 +3329,11 @@ def build_html(data):
         'border-radius:0 var(--radius-sm) var(--radius-sm) 0;'
         'margin-bottom:10px;font-size:12px;font-weight:600;color:var(--text);line-height:1.5}'
         '.details{border-top:1px solid var(--border);padding-top:10px;margin-top:2px}'
-        '.detail-row{display:flex;gap:10px;padding:3px 0;font-size:12px;line-height:1.4}'
-        '.detail-lbl{font-weight:600;color:var(--muted);flex-shrink:0;width:64px;font-size:11px;'
-        'text-transform:uppercase;letter-spacing:.06em;padding-top:1px}'
-        '.detail-val{color:var(--text);opacity:.8;flex:1}'
+        '.detail-row{display:flex;gap:8px;padding:4px 0;font-size:12px;line-height:1.5;border-bottom:1px solid var(--border)}'
+        '.detail-row:last-child{border-bottom:none}'
+        '.detail-lbl{font-weight:700;color:var(--muted);flex-shrink:0;width:72px;font-size:10px;'
+        'text-transform:uppercase;letter-spacing:.06em;padding-top:2px}'
+        '.detail-val{color:var(--text);opacity:.85;flex:1;min-width:0}'
         '.flag{font-size:11px;background:#E8B84B0C;color:#E8B84B99;padding:5px 10px;'
         'border-radius:var(--radius-sm);margin-bottom:10px;border:1px solid #E8B84B18}'
         '.watch-reason{font-size:11px;color:var(--muted);margin-top:8px;'
