@@ -3153,12 +3153,11 @@ def build_html(data):
             '<div class="pick-sub">'
             '<span class="game-label">'+game+'</span>'
             '<span class="game-time">'+str(p.get("game_time",""))+'</span>'
-            +score_span(game)+
-            '</div>'
-
+            +score_span(game)
+            +'</div>'
             '<div class="sp-grid">'
-            +sp_box("Away SP", away_sp)+sp_box("Home SP", home_sp)+
-            '</div>'
+            +sp_box("Away SP", away_sp)+sp_box("Home SP", home_sp)
+            +'</div>'
 
             '<div class="ev-strip">'
             '<div class="ev-nums">'
@@ -3169,12 +3168,9 @@ def build_html(data):
             '<span class="ev-badge">+'+str(ev)+'% EV</span>'
             '</div>'
             '<div class="ev-bar"><div class="ev-fill '+t+'" style="width:'+str(min(int(float(ev or 0))*8,100))+'%"></div></div>'
-
-            +(('<div class="key-edge">'+key_edge+'</div>') if key_edge else '')+
-
-            +(('<div class="details">'+details+'</div>') if details else '')+
-
-            '</div></div>'
+            +(('<div class="key-edge">'+key_edge+'</div>') if key_edge else '')
+            +(('<div class="details">'+details+'</div>') if details else '')
+            +'</div></div>'
         )
 
     def watch_card(p):
