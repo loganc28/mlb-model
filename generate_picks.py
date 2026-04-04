@@ -32,13 +32,35 @@ STATS_CACHE     = OUTPUT_DIR / "stats_cache.json"
 RECORD_FILE     = OUTPUT_DIR / "record.json"
 
 # ── HARD LOCK: Exit immediately if picks already generated today ───────────────
-# This runs before ANY other logic. Lock file is written after successful generation.
 LOCK_FILE = OUTPUT_DIR / ("picks_locked_" + TODAY + ".txt")
 INDEX_FILE = OUTPUT_DIR / "index.html"
-if LOCK_FILE.exists() and not FORCE_REGEN and INDEX_FILE.exists():
-    print(f"[LOCK] picks_locked_{TODAY}.txt exists — picks already generated today. Exiting.")
-    print("[LOCK] Use FORCE_REGENERATE=yes to override.")
-    import sys; sys.exit(0)
+if LOCK_FILE.exists() and not FORCE_REGEN:
+    if INDEX_FILE.exists():
+        print(f"[LOCK] picks_locked_{TODAY}.txt exists — picks already generated today. Exiting.")
+        print("[LOCK] Use FORCE_REGENERATE=yes to override.")
+        import sys; sys.exit(0)
+    else:
+        # index.html missing but picks locked — fast rebuild from existing data
+        print("[LOCK] index.html missing — rebuilding pages from existing picks.")
+        _record = json.loads(RECORD_FILE.read_text()) if RECORD_FILE.exists() else {"picks":[],"updated":TODAY}
+        _picks_json = OUTPUT_DIR/"picks.json"
+        if _picks_json.exists():
+            _output = json.loads(_picks_json.read_text())
+        else:
+            _today_picks = [p for p in _record.get("picks",[]) if p.get("date")==TODAY]
+            _output = {"date":TODAY,"generated_at":datetime.datetime.utcnow().isoformat()+"Z",
+                      "ai_model":_record.get("ai_model","Claude Sonnet 4.6"),
+                      "total_games":0,"total_picks":len([p for p in _today_picks if p.get("tier") in ("MAX","A","B","C")]),
+                      "picks":_today_picks}
+        _html = build_html(_output)
+        (OUTPUT_DIR/(TODAY+".html")).write_text(_html)
+        INDEX_FILE.write_text(_html)
+        (OUTPUT_DIR/"record.html").write_text(build_record_html(_record))
+        _scores_src = Path("scores.html")
+        if _scores_src.exists(): (OUTPUT_DIR/"scores.html").write_text(_scores_src.read_text())
+        build_archive_index()
+        print("[LOCK] Pages rebuilt. Exiting.")
+        import sys; sys.exit(0)
 # ──────────────────────────────────────────────────────────────────────────────
 
 # ── Stadium data: coordinates + outfield facing direction (degrees from N) ────
@@ -1355,13 +1377,19 @@ def _try_claude(user_msg, retries=2):
                 timeout=240
             )
             if not r.ok:
-                print("Claude error: "+r.text[:300])
+                print("Claude error "+str(r.status_code)+": "+r.text[:300])
                 if attempt < retries - 1:
                     print(f"Retrying in 15 seconds... (attempt {attempt+1}/{retries})")
                     time.sleep(15)
                     continue
                 return None, None
             raw = r.json()["content"][0]["text"]
+            if not raw or not raw.strip():
+                print("Claude returned empty response")
+                if attempt < retries - 1:
+                    time.sleep(15)
+                    continue
+                return None, None
             picks = _parse_ai_response(raw)
             print("Claude returned "+str(len(picks))+" picks")
             return picks, "Claude Sonnet 4.6"
@@ -3570,26 +3598,40 @@ def main():
                         triggers.append("SP scratch: "+old_home_sp+" → "+gd["home_sp"])
                     if old_away_sp and old_away_sp != gd["away_sp"] and gd["away_sp"] != "TBD":
                         triggers.append("SP scratch: "+old_away_sp+" → "+gd["away_sp"])
-            # Check line movement 40+ cents (15 was too sensitive — normal market movement)
-            # Only check games not yet started — no point regenerating a game already in progress
+            # Check line movement 40+ cents — ONLY on games where we have an active pick
             game_status = gd.get("status","")
             if game_status in ("In Progress","Live","Final","Game Over","Completed"):
                 continue
             new_odds = gd.get("odds",{})
-            for lp in locked_picks:
-                if gd["away"]+" @ "+gd["home"] == lp.get("game",""):
-                    # Only trigger on picks made today — not yesterday's settled picks
-                    if lp.get("result"):
+            game_label = gd["away"]+" @ "+gd["home"]
+            active_picks_for_game = [lp for lp in locked_picks
+                                     if lp.get("game","") == game_label
+                                     and not lp.get("result")
+                                     and lp.get("tier") not in ("WATCH","SKIP")]
+            for lp in active_picks_for_game:
+                try:
+                    old_line = float(str(lp.get("open_line","0")).replace("+",""))
+                    if old_line == 0:
                         continue
-                    try:
-                        old_line = float(str(lp.get("open_line","0")).replace("+",""))
-                        if old_line == 0:
-                            continue
-                        new_ml = new_odds.get("moneyline",{})
-                        for team, price in new_ml.items():
-                            if abs(float(price) - old_line) >= 40:
+                    bet_type = lp.get("bet_type","")
+                    # Compare against the right market
+                    if "ML" in bet_type:
+                        for team, price in new_odds.get("moneyline",{}).items():
+                            if team in lp.get("pick","") and abs(float(price) - old_line) >= 40:
                                 triggers.append("Line moved 40+ cents on "+team)
-                    except: pass
+                    elif "Total" in bet_type:
+                        new_total = new_odds.get("total",{})
+                        new_over = new_total.get("over","")
+                        if new_over and abs(float(str(new_over).replace("+","")) - old_line) >= 40:
+                            triggers.append("Line moved 40+ cents on total for "+game_label)
+                    elif "Run Line" in bet_type:
+                        pick_team = lp.get("pick","").split(" +")[0].split(" -")[0]
+                        for team, rl in new_odds.get("runline",{}).items():
+                            if team in pick_team:
+                                new_price = rl.get("price","")
+                                if new_price and abs(float(str(new_price).replace("+","")) - old_line) >= 40:
+                                    triggers.append("Line moved 40+ cents on "+team+" run line")
+                except: pass
         return triggers
 
     force_regen = False
