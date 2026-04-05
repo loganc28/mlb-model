@@ -3875,8 +3875,20 @@ def main():
         if settled_count:
             print("Auto-settled "+str(settled_count)+" picks")
         RECORD_FILE.write_text(json.dumps(record, indent=2))
-        picks_out = {"date":TODAY,"total_games":len(games),"picks":[],"generated_at":datetime.datetime.utcnow().isoformat(),"ai_model":"—"}
-        (OUTPUT_DIR/"picks.json").write_text(json.dumps(picks_out, indent=2))
+        # Preserve existing picks.json — never overwrite with empty during rebuild
+        picks_json_path = OUTPUT_DIR/"picks.json"
+        if picks_json_path.exists():
+            try:
+                picks_out = json.loads(picks_json_path.read_text())
+                # Update total_games count but keep existing picks
+                picks_out["total_games"] = len(games)
+            except:
+                picks_out = {"date":TODAY,"total_games":len(games),"picks":[],"generated_at":datetime.datetime.utcnow().isoformat(),"ai_model":"—"}
+        else:
+            # No picks.json yet — build from today's record picks
+            today_picks = [p for p in record.get("picks",[]) if p.get("date")==TODAY]
+            picks_out = {"date":TODAY,"total_games":len(games),"picks":today_picks,"generated_at":datetime.datetime.utcnow().isoformat(),"ai_model":record.get("ai_model","—")}
+        picks_json_path.write_text(json.dumps(picks_out, indent=2))
         html = build_html(picks_out)
         (OUTPUT_DIR/(TODAY+".html")).write_text(html)
         (OUTPUT_DIR/"index.html").write_text(html)
@@ -3886,7 +3898,7 @@ def main():
         if scores_src.exists():
             scores_dst.write_text(scores_src.read_text())
         build_archive_index()
-        print("Done — pages rebuilt, no picks generated.")
+        print("Done — pages rebuilt, picks preserved.")
         return
 
     games_with_data = []
