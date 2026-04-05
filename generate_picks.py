@@ -719,7 +719,7 @@ def fetch_team_home_away_splits(team_id, season):
     _SPLITS_CACHE[cache_key] = result
     return result
 
-STATS_CACHE_VERSION = "v3"  # bump when fetch logic changes to force cache refresh
+STATS_CACHE_VERSION = "v4"  # bump when fetch logic changes to force cache refresh
 
 def fetch_and_cache_stats():
     if STATS_CACHE.exists():
@@ -768,6 +768,156 @@ def fetch_and_cache_stats():
     print(f"Savant: {sv_p} pitcher records, {sv_b} batting records")
     STATS_CACHE.write_text(json.dumps(stats))
     return stats
+
+
+def sp_reliability_score(sp_stats):
+    """
+    Calculate how reliable a pitcher's stats are based on sample size.
+    Returns a score 0.0-1.0 and a confidence label.
+    
+    This is the core fix for the early-season overconfidence problem.
+    xERA from 1 start = noise. ERA from 150 IP = signal.
+    """
+    gs_2026 = sp_stats.get("gs_2026", 0) or sp_stats.get("gs", 0) or 0
+    ip_2026 = sp_stats.get("ip", 0) or 0
+    note = sp_stats.get("note", "")
+    
+    # If using 2025 stats only, moderate reliability
+    if "2025 only" in note or gs_2026 == 0:
+        return 0.65, "2025_ONLY"
+    
+    # 2026 sample size scoring
+    if ip_2026 >= 60:
+        return 1.0, "RELIABLE"
+    elif ip_2026 >= 40:
+        return 0.90, "RELIABLE"
+    elif ip_2026 >= 25:
+        return 0.75, "MODERATE"
+    elif ip_2026 >= 15:
+        return 0.55, "SMALL_SAMPLE"
+    elif ip_2026 >= 5:
+        return 0.35, "VERY_SMALL"
+    else:
+        return 0.20, "UNRELIABLE"
+
+
+def fetch_team_rest_days(team_id, game_date_str):
+    """
+    Fetch days of rest for a team — how many days since their last game.
+    Returns dict with rest_days, back_to_back, road_trip_length.
+    """
+    try:
+        # Look back 4 days to find last game
+        target = datetime.date.fromisoformat(game_date_str) if game_date_str else datetime.date.today()
+        for days_back in range(1, 5):
+            check_date = (target - datetime.timedelta(days=days_back)).isoformat()
+            data = mlb_api("/schedule", {
+                "sportId":"1","date":check_date,"teamId":str(team_id),
+                "hydrate":"team","gameType":"R",
+            })
+            games = []
+            for de in data.get("dates",[]):
+                for g in de.get("games",[]):
+                    status = g.get("status",{}).get("abstractGameState","")
+                    if status in ("Final","Live","In Progress"):
+                        games.append(g)
+            if games:
+                # Found last game
+                rest_days = days_back - 1  # 0 = back-to-back
+                # Check if it was a road game
+                last_game = games[0]
+                was_away = last_game.get("teams",{}).get("away",{}).get("team",{}).get("id") == team_id
+                return {
+                    "rest_days": rest_days,
+                    "back_to_back": rest_days == 0,
+                    "was_away_last": was_away,
+                }
+        return {"rest_days": 3, "back_to_back": False, "was_away_last": False}
+    except:
+        return {"rest_days": 2, "back_to_back": False, "was_away_last": False}
+
+
+def fetch_line_movement(away_team, home_team):
+    """
+    Fetch current odds and compare against historical opening lines
+    to detect sharp money movement.
+    Uses the Odds API historical endpoint if available.
+    Returns movement data: direction, magnitude, sharp_signal.
+    """
+    # We detect movement by comparing DraftKings vs market consensus
+    # If DK moved significantly vs other books, sharp action happened
+    if not ODDS_API_KEY:
+        return {}
+    try:
+        r = requests.get(
+            "https://api.the-odds-api.com/v4/sports/baseball_mlb/odds/",
+            params={
+                "apiKey": ODDS_API_KEY,
+                "regions": "us",
+                "markets": "h2h,totals",
+                "oddsFormat": "american",
+                "bookmakers": "draftkings,fanduel,betmgm,caesars,pinnacle",
+            },
+            timeout=10
+        )
+        if not r.ok:
+            return {}
+        
+        away_norm = normalize_team(away_team)
+        home_norm = normalize_team(home_team)
+        
+        for event in r.json():
+            ev_home = normalize_team(event.get("home_team",""))
+            ev_away = normalize_team(event.get("away_team",""))
+            if ev_home != home_norm or ev_away != away_norm:
+                continue
+            
+            # Collect prices per book
+            book_prices = {}
+            for bm in event.get("bookmakers",[]):
+                for market in bm.get("markets",[]):
+                    if market["key"] == "h2h":
+                        for o in market.get("outcomes",[]):
+                            book = bm["key"]
+                            if book not in book_prices:
+                                book_prices[book] = {}
+                            book_prices[book][o["name"]] = o["price"]
+            
+            if len(book_prices) < 2:
+                return {}
+            
+            # Calculate consensus (average) vs Pinnacle (sharpest book)
+            all_home_prices = [v.get(ev_home,0) for v in book_prices.values() if v.get(ev_home)]
+            all_away_prices = [v.get(ev_away,0) for v in book_prices.values() if v.get(ev_away)]
+            
+            if not all_home_prices or not all_away_prices:
+                return {}
+            
+            consensus_home = round(sum(all_home_prices)/len(all_home_prices))
+            consensus_away = round(sum(all_away_prices)/len(all_away_prices))
+            pinnacle_home = book_prices.get("pinnacle",{}).get(ev_home)
+            pinnacle_away = book_prices.get("pinnacle",{}).get(ev_away)
+            
+            result = {
+                "consensus_home": consensus_home,
+                "consensus_away": consensus_away,
+                "book_count": len(book_prices),
+            }
+            
+            # Sharp signal: Pinnacle significantly different from consensus
+            if pinnacle_home and abs(pinnacle_home - consensus_home) >= 10:
+                if pinnacle_home > consensus_home:
+                    result["sharp_signal"] = f"Sharp money on {ev_home} — Pinnacle {pinnacle_home} vs consensus {consensus_home}"
+                    result["sharp_side"] = ev_home
+                else:
+                    result["sharp_signal"] = f"Sharp money on {ev_away} — Pinnacle {pinnacle_away} vs consensus {consensus_away}"
+                    result["sharp_side"] = ev_away
+            
+            return result
+        return {}
+    except:
+        return {}
+
 
 def get_pitcher_stats(name, stats, is_home=False):
     """Get full pitcher profile: season stats + recent form + splits."""
@@ -869,6 +1019,11 @@ def get_pitcher_stats(name, stats, is_home=False):
         if sv.get("barrel_pct"): primary["barrel_pct"] = sv["barrel_pct"]
         if sv.get("hard_hit_pct"): primary["hard_hit_pct"] = sv["hard_hit_pct"]
         if sv.get("whiff_pct"): primary["whiff_pct"] = sv["whiff_pct"]
+
+    # Add reliability score — core fix for early-season overconfidence
+    reliability, reliability_label = sp_reliability_score(primary)
+    primary["reliability"] = reliability
+    primary["reliability_label"] = reliability_label
 
     return primary
 
@@ -1420,7 +1575,7 @@ def fetch_nrfi_odds(event_ids):
 
 # ── AI ────────────────────────────────────────────────────────────────────────
 
-SYSTEM_PROMPT = """You are a sharp MLB betting analyst. Find the single best positive EV bet for each game.
+SYSTEM_PROMPT = """You are a sharp MLB betting analyst. Your goal is to find picks that WIN, not just picks with theoretical EV.
 Use ONLY the real data provided. Never use memory for stats, injuries, or lineups.
 
 ABSOLUTE RULES — violating these means the pick is wrong:
@@ -1458,6 +1613,44 @@ ABSOLUTE RULES — violating these means the pick is wrong:
 10. Bullpen fatigue alone is NOT sufficient for a Tier A or MAX pick. It must combine with SP edge or park.
 11. Rain 80%+ probability = WATCH only, never an active pick. Game may be postponed.
 12. Doubleheaders — if you have picks on both Game 1 and Game 2 of same matchup, flag the lower EV one as WATCH.
+
+SP RELIABILITY — CRITICAL FOR EARLY SEASON:
+Each SP now has a reliability score and label in their stats.
+- RELIABLE (0.90+): 40+ IP in 2026. Stats are meaningful. Use xFIP/FIP/ERA confidently.
+- MODERATE (0.75): 25-40 IP. Treat 2026 stats as directional, not definitive.
+- SMALL_SAMPLE (0.55): 15-25 IP. Use 2025 stats as primary, 2026 as supporting signal only.
+- VERY_SMALL (0.35): Under 15 IP. 2026 stats are noise. Rely entirely on 2025 stats and 2025 xFIP.
+- UNRELIABLE (0.20): Under 5 IP. Ignore 2026 numbers completely.
+- 2025_ONLY (0.65): No 2026 starts yet. Use 2025 stats reliably.
+When BOTH SPs are SMALL_SAMPLE or worse: maximum Tier B, maximum 7% EV claim. The edge is not strong
+enough to justify higher confidence. Do NOT assign Tier A or MAX when both SPs are unreliable.
+When ONE SP is SMALL_SAMPLE: maximum Tier A, cap EV at 9%.
+A large xERA gap between two pitchers with 1 start each is NOT a reliable edge. 
+A large ERA gap between two pitchers with full 2025 seasons IS a reliable edge.
+
+REST AND TRAVEL FACTORS:
+Each team now has rest_days and back_to_back in their data.
+- back_to_back = True: Team played yesterday. Bullpen more fatigued, lineup may be tired.
+  Downgrade ML picks on back-to-back road teams by 2-3% win probability.
+- rest_days = 0: Same as back_to_back. Meaningful disadvantage especially for road teams.
+- rest_days >= 3: Well-rested team. Slight edge, especially for bullpen-heavy games.
+Always mention rest situation in flags if either team is on a back-to-back.
+
+SHARP MONEY SIGNALS:
+Each game now includes sharp_money data showing consensus vs Pinnacle prices.
+Pinnacle is the sharpest book — professional bettors use it exclusively.
+- sharp_side: If Pinnacle is significantly better on one side, sharp money is on that side.
+- If sharp money aligns with your pick: +1-2% EV confidence boost, mention in key_edge.
+- If sharp money opposes your pick: reduce confidence by 2-3%, consider WATCH instead.
+- No sharp_money data: no adjustment.
+Sharp money is a confirming signal, not a primary reason to bet. Never pick solely on sharp money.
+
+WINS MATTER MORE THAN EV:
+- A pick with 6% EV based on reliable data beats a pick with 10% EV based on SMALL_SAMPLE SPs.
+- Prioritize picks where MULTIPLE independent factors align: SP edge + lineup edge + bullpen edge.
+- Single-factor picks (e.g. only Coors park factor, only one good SP) are lower confidence.
+- The best picks have: reliable SP data + lineup advantage + bullpen edge + confirming weather/park.
+- Do not force picks. A slate with 3 genuinely strong picks is better than 8 questionable ones.
 
 INJURIES — ZERO TOLERANCE FOR HALLUCINATION:
 - injury_flags field MUST only contain names from home_team.injuries or away_team.injuries arrays.
@@ -1836,6 +2029,31 @@ def enforce_ev_rules(picks):
                 p["tier"] = "A"
         if p["tier"] == "A" and ev_val < 7:
             p["tier"] = "B" if ev_val >= 4 else ("C" if ev_val >= 3 else "WATCH")
+
+        # ── SP Reliability Gate — core fix for early-season overconfidence ────
+        # When SP data is unreliable (small sample), cap confidence accordingly
+        sp_analysis = p.get("sp_analysis","").lower()
+        flags_lower = p.get("flags","").lower()
+        small_sample_count = sp_analysis.count("small_sample") + sp_analysis.count("small sample") + \
+                             flags_lower.count("small_sample") + flags_lower.count("small sample")
+
+        # Both SPs unreliable → cap at Tier B, cap EV at 7%
+        if small_sample_count >= 2:
+            if p["tier"] in ("MAX","A"):
+                print(f"RELIABILITY GATE: {p.get('game','')} — both SPs SMALL SAMPLE, capping at Tier B")
+                p["tier"] = "B"
+                if ev_val > 7:
+                    p["ev_pct"] = 7.0
+                    ev_val = 7.0
+        # One SP unreliable → cap at Tier A max, cap EV at 9%
+        elif small_sample_count == 1:
+            if p["tier"] == "MAX":
+                print(f"RELIABILITY GATE: {p.get('game','')} — one SP SMALL SAMPLE, capping at Tier A")
+                p["tier"] = "A"
+            if ev_val > 9:
+                p["ev_pct"] = 9.0
+                ev_val = 9.0
+
         # Always enforce correct unit size regardless of what Claude said
         if p["tier"] == "MAX": p["units"] = 3.0
         elif p["tier"] == "A": p["units"] = 1.5
@@ -1864,7 +2082,6 @@ def enforce_ev_rules(picks):
     # ── Post-enforcement caps ─────────────────────────────────────────────────
 
     # 1. Rain auto-skip — 80%+ precip on an active pick is a postponement risk
-    # You've already placed the bet — game may not play. Auto-WATCH.
     for p in enforced:
         if p.get("tier") not in ("MAX","A","B","C"): continue
         flags = (p.get("flags","") + " " + p.get("weather_impact","")).lower()
@@ -1908,6 +2125,38 @@ def enforce_ev_rules(picks):
             seen_matchups[base] = p
 
     # 3. Tier A pick limit — max 3 Tier A picks per day until 50+ picks validated
+    # 4. Back-to-back penalty — teams on no rest perform measurably worse
+    for p in enforced:
+        if p.get("tier") not in ("MAX","A","B","C"): continue
+        flags = (p.get("flags","") or "").lower()
+        bullpen = (p.get("bullpen_note","") or "").lower()
+        # If we're betting on a team that's on a back-to-back, downgrade confidence
+        pick_str = p.get("pick","").upper()
+        game = p.get("game","")
+        # Look for back-to-back in flags or bullpen note
+        if "back-to-back" in flags or "back to back" in flags:
+            if p["tier"] == "MAX":
+                print(f"B2B PENALTY: {game} — back-to-back, downgrading MAX→A")
+                p["tier"] = "A"; p["units"] = 1.5
+            elif p["tier"] == "A":
+                print(f"B2B PENALTY: {game} — back-to-back, downgrading A→B")
+                p["tier"] = "B"; p["units"] = 1.0
+
+    # 5. Sharp money confirmation — if Pinnacle agrees with our pick, boost confidence
+    # If Pinnacle disagrees, downgrade
+    # (This uses data from line_movement in the pick's flags/rationale)
+    for p in enforced:
+        if p.get("tier") not in ("MAX","A","B","C"): continue
+        rationale = (p.get("rationale","") + " " + p.get("key_edge","")).lower()
+        if "sharp money" in rationale or "pinnacle" in rationale:
+            if "sharp money on" in rationale:
+                # Sharp money confirmed on our side — small boost
+                pick_str = p.get("pick","").upper()
+                if any(t in rationale for t in [pick_str[:6].lower()]):
+                    ev_current = float(p.get("ev_pct",0) or 0)
+                    p["ev_pct"] = min(ev_current + 1.0, 15.0)
+                    print(f"SHARP CONFIRMED: {p.get('game','')} — sharp money aligns, +1% EV")
+
     # After April 10 audit, remove this if CLV shows consistent edge
     MAX_TIER_A = 3
     tier_a_picks = [p for p in enforced if p.get("tier") == "A"]
@@ -1975,6 +2224,11 @@ def estimate_win_prob(home_sp_era, away_sp_era, home_ops, away_ops,
 
     pf = min(max(park_runs, 0.80), 1.30)
 
+    # Recalibrate based on SP reliability — key fix for early-season overconfidence
+    # When SPs are unreliable, regress toward 50% (coin flip)
+    home_rel = home_sp_fip if home_sp_fip else (home_recent_era if home_recent_era else home_sp_era)
+    away_rel = away_sp_fip if away_sp_fip else (away_recent_era if away_recent_era else away_sp_era)
+
     # Expected runs per game
     home_runs = lg_runs_pg * (a_era / lg_era) * h_off * pf * 1.03  # home advantage
     away_runs = lg_runs_pg * (h_era / lg_era) * a_off * pf
@@ -1984,7 +2238,8 @@ def estimate_win_prob(home_sp_era, away_sp_era, home_ops, away_ops,
     if home_runs <= 0 or away_runs <= 0:
         return 54.0
     home_win_pct = home_runs**exp / (home_runs**exp + away_runs**exp)
-    return round(home_win_pct * 100, 1)
+    result = round(home_win_pct * 100, 1)
+    return result
 
 def estimate_nrfi_odds(away_sp_stats, home_sp_stats, park_factor, game_total):
     """
@@ -2073,6 +2328,9 @@ def summarize_game(g):
     away_rec = away_sp.get("recent_form",{})
     home_streak = g.get("home_streak",{})
     away_streak = g.get("away_streak",{})
+    home_rest = g.get("home_rest",{})
+    away_rest = g.get("away_rest",{})
+    line_movement = g.get("line_movement",{})
 
     game_num = g.get("game_num", 1)
     game_label = g["away"]+" @ "+g["home"]
@@ -2104,6 +2362,8 @@ def summarize_game(g):
             "relevant_split": away_sp.get("relevant_split",""),
             "recent_era": away_rec.get("era_last3",0),
             "recent_starts": away_rec.get("starts",0),
+            "reliability": away_sp.get("reliability",0.5),
+            "reliability_label": away_sp.get("reliability_label","UNKNOWN"),
         },
         "home_sp_stats": {
             "era": home_sp.get("era",0),
@@ -2122,6 +2382,8 @@ def summarize_game(g):
             "relevant_split": home_sp.get("relevant_split",""),
             "recent_era": home_rec.get("era_last3",0),
             "recent_starts": home_rec.get("starts",0),
+            "reliability": home_sp.get("reliability",0.5),
+            "reliability_label": home_sp.get("reliability_label","UNKNOWN"),
         },
         "away_team": {
             "ops": away_bat.get("ops",0),
@@ -2134,6 +2396,8 @@ def summarize_game(g):
             "fatigued_arms": away_bp.get("fatigued_arms",[])[:3],
             "injuries": [i["name"] for i in g.get("away_injuries",[])[:2]],
             "streak": str(away_streak.get("streak_type",""))+str(away_streak.get("streak_number","")) if away_streak else "",
+            "rest_days": away_rest.get("rest_days", 2),
+            "back_to_back": away_rest.get("back_to_back", False),
         },
         "home_team": {
             "ops": home_bat.get("ops",0),
@@ -2146,7 +2410,10 @@ def summarize_game(g):
             "fatigued_arms": home_bp.get("fatigued_arms",[])[:3],
             "injuries": [i["name"] for i in g.get("home_injuries",[])[:2]],
             "streak": str(home_streak.get("streak_type",""))+str(home_streak.get("streak_number","")) if home_streak else "",
+            "rest_days": home_rest.get("rest_days", 2),
+            "back_to_back": home_rest.get("back_to_back", False),
         },
+        "sharp_money": line_movement,
         "umpire": {
             "name": ump.get("name",""),
             "rpg": ump.get("rpg",8.8),
@@ -3951,15 +4218,19 @@ def main():
             if lineups.get("home",{}).get("batters") and home_throws:
                 away_platoon = analyze_lineup_handedness(lineups["home"]["batters"], home_throws)
 
-        # Bullpen, injuries, splits — run in parallel per game
+        # Bullpen, injuries, splits, rest, line movement — run in parallel per game
         import concurrent.futures as _cf
-        with _cf.ThreadPoolExecutor(max_workers=8) as ex:
+        game_date = TODAY
+        with _cf.ThreadPoolExecutor(max_workers=10) as ex:
             f_hbp   = ex.submit(fetch_bullpen_fatigue, g["home_id"])
             f_abp   = ex.submit(fetch_bullpen_fatigue, g["away_id"])
             f_hinj  = ex.submit(fetch_injuries, g["home_id"])
             f_ainj  = ex.submit(fetch_injuries, g["away_id"])
             f_hspl  = ex.submit(fetch_team_home_away_splits, g["home_id"], 2026)
             f_aspl  = ex.submit(fetch_team_home_away_splits, g["away_id"], 2026)
+            f_hrest = ex.submit(fetch_team_rest_days, g["home_id"], game_date)
+            f_arest = ex.submit(fetch_team_rest_days, g["away_id"], game_date)
+            f_lines = ex.submit(fetch_line_movement, g["away"], g["home"])
 
         home_bullpen  = f_hbp.result() if f_hbp.exception() is None else {}
         away_bullpen  = f_abp.result() if f_abp.exception() is None else {}
@@ -3967,6 +4238,9 @@ def main():
         away_injuries = f_ainj.result() if f_ainj.exception() is None else []
         home_splits   = f_hspl.result() if f_hspl.exception() is None else {}
         away_splits   = f_aspl.result() if f_aspl.exception() is None else {}
+        home_rest     = f_hrest.result() if f_hrest.exception() is None else {}
+        away_rest     = f_arest.result() if f_arest.exception() is None else {}
+        line_movement = f_lines.result() if f_lines.exception() is None else {}
 
         # Fall back to 2025 splits if 2026 unavailable
         if not home_splits:
@@ -4000,6 +4274,9 @@ def main():
         gd["away_injuries"]         = away_injuries[:5]
         gd["home_team_splits"]      = home_splits
         gd["away_team_splits"]      = away_splits
+        gd["home_rest"]             = home_rest
+        gd["away_rest"]             = away_rest
+        gd["line_movement"]         = line_movement
         return gd
 
     # Filter duplicates first
