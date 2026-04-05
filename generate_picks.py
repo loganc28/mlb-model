@@ -2366,6 +2366,16 @@ def fetch_final_scores(date_str):
                 continue
             if status != "Final":
                 continue
+            # Sanity check — don't settle games that started less than 2 hours ago
+            game_date_str = g.get("gameDate","")
+            if game_date_str:
+                try:
+                    import datetime as _sd
+                    game_utc = _sd.datetime.strptime(game_date_str[:19], "%Y-%m-%dT%H:%M:%S")
+                    now_utc = _sd.datetime.utcnow()
+                    if (now_utc - game_utc).total_seconds() < 7200:  # less than 2 hours since start
+                        continue  # too early — skip settlement
+                except: pass
             home_score = g["teams"]["home"].get("score",0) or 0
             away_score = g["teams"]["away"].get("score",0) or 0
             linescore = g.get("linescore",{})
