@@ -345,20 +345,21 @@ SAVANT_TEAM_MAP_REV = {v:k for k,v in SAVANT_TEAM_MAP.items()}
 
 def fetch_savant_pitcher_data(season):
     """
-    Fetch pitcher Statcast data from Baseball Savant.
-    Returns xFIP, xERA, barrel_pct, hard_hit_pct keyed by player name.
+    Fetch pitcher Statcast data from Baseball Savant expected statistics leaderboard.
+    This endpoint is more stable than the custom leaderboard.
+    Returns xERA, xwOBA against, barrel_pct, hard_hit_pct keyed by player name.
     Falls back gracefully if unavailable.
     """
     try:
         import csv, io
-        url = "https://baseballsavant.mlb.com/leaderboard/custom"
+        # Use the expected statistics endpoint — stable, well-documented
+        url = "https://baseballsavant.mlb.com/leaderboard/expected_statistics"
         params = {
-            "year": str(season),
             "type": "pitcher",
-            "filter": "",
+            "year": str(season),
+            "position": "",
+            "team": "",
             "min": "1",
-            "selections": "player_id,last_name,first_name,xfip,xera,barrel_batted_rate,hard_hit_percent,whiff_percent,k_percent,bb_percent",
-            "statcast": "true",
             "csv": "true"
         }
         r = requests.get(url, params=params,
@@ -368,32 +369,71 @@ def fetch_savant_pitcher_data(season):
             print(f"Savant pitcher HTTP {r.status_code}")
             return {}
         if len(r.text) < 100:
-            print(f"Savant pitcher returned empty response ({len(r.text)} chars)")
+            print(f"Savant pitcher returned empty ({len(r.text)} chars)")
             return {}
         reader = csv.DictReader(io.StringIO(r.text))
-        # Log actual column names on first run to verify
         fieldnames = reader.fieldnames or []
-        if fieldnames:
-            print(f"Savant pitcher columns: {fieldnames[:10]}")
+        print(f"Savant pitcher columns ({season}): {list(fieldnames)[:12]}")
         result = {}
         for row in reader:
-            # Handle both possible name column formats
-            first = (row.get("first_name","") or row.get("\"first_name\"","") or "").strip().strip('"')
-            last  = (row.get("last_name","") or row.get("\"last_name\"","") or "").strip().strip('"')
-            if not first or not last: continue
-            full_name = first+" "+last
+            # last_name, first_name format
+            last  = (row.get("last_name","") or row.get("last_name, first_name","") or "").strip().strip('"').split(",")[0].strip()
+            first = (row.get("first_name","") or "").strip().strip('"')
+            # Some endpoints return "last_name, first_name" as single column
+            if not first:
+                combined = row.get("last_name, first_name","") or row.get("player_name","")
+                if combined and "," in combined:
+                    parts = combined.split(",")
+                    last = parts[0].strip().strip('"')
+                    first = parts[1].strip().strip('"') if len(parts) > 1 else ""
+            if not last: continue
+            full_name = (first+" "+last).strip() if first else last
             def sv(k):
                 v = (row.get(k,"") or "").strip().strip('"')
-                try: return round(float(v),2) if v and v not in ("","null","NA","--","None") else None
+                try: return round(float(v),3) if v and v not in ("","null","NA","--","None") else None
                 except: return None
             result[full_name] = {
-                "player_id_savant": row.get("player_id",""),
-                "xfip": sv("xfip"),
-                "xera": sv("xera"),
-                "barrel_pct": sv("barrel_batted_rate"),
-                "hard_hit_pct": sv("hard_hit_percent"),
-                "whiff_pct": sv("whiff_percent"),
+                "player_id_savant": (row.get("player_id","") or "").strip(),
+                "xera": sv("xera") or sv("est_era") or sv("xERA"),
+                "xwoba_against": sv("est_woba") or sv("xwoba") or sv("xwOBA"),
+                "xba": sv("est_ba") or sv("xba"),
             }
+        # Also try the exit velocity / barrels leaderboard for barrel/hard hit data
+        url2 = "https://baseballsavant.mlb.com/leaderboard/statcast"
+        params2 = {
+            "type": "pitcher",
+            "year": str(season),
+            "position": "",
+            "team": "",
+            "min": "q",
+            "csv": "true"
+        }
+        r2 = requests.get(url2, params=params2,
+                         headers={"User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"},
+                         timeout=20)
+        if r2.ok and len(r2.text) > 100:
+            reader2 = csv.DictReader(io.StringIO(r2.text))
+            fields2 = reader2.fieldnames or []
+            print(f"Savant statcast pitcher columns ({season}): {list(fields2)[:12]}")
+            for row in reader2:
+                last  = (row.get("last_name","") or "").strip().strip('"')
+                first = (row.get("first_name","") or "").strip().strip('"')
+                if not last: continue
+                full_name = (first+" "+last).strip() if first else last
+                def sv2(k):
+                    v = (row.get(k,"") or "").strip().strip('"')
+                    try: return round(float(v),2) if v and v not in ("","null","NA","--","None") else None
+                    except: return None
+                if full_name in result:
+                    result[full_name]["barrel_pct"] = sv2("barrel_batted_rate") or sv2("brl_percent") or sv2("barrel_percent")
+                    result[full_name]["hard_hit_pct"] = sv2("hard_hit_percent") or sv2("hard_hit_rate")
+                    result[full_name]["whiff_pct"] = sv2("whiff_percent") or sv2("whiff_rate")
+                else:
+                    result[full_name] = {
+                        "barrel_pct": sv2("barrel_batted_rate") or sv2("brl_percent"),
+                        "hard_hit_pct": sv2("hard_hit_percent"),
+                        "whiff_pct": sv2("whiff_percent"),
+                    }
         print(f"Baseball Savant: loaded {len(result)} pitcher records for {season}")
         return result
     except Exception as e:
