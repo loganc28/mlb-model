@@ -371,17 +371,19 @@ def fetch_savant_pitcher_data(season):
         if len(r.text) < 100:
             print(f"Savant pitcher returned empty ({len(r.text)} chars)")
             return {}
-        reader = csv.DictReader(io.StringIO(r.text))
-        fieldnames = reader.fieldnames or []
-        print(f"Savant pitcher columns ({season}): {list(fieldnames)[:12]}")
+        # Strip UTF-8 BOM and normalize line endings
+        text = r.text.lstrip('\ufeff').replace('\r\n','\n')
+        reader = csv.DictReader(io.StringIO(text))
+        fieldnames = [f.strip().strip('"') for f in (reader.fieldnames or [])]
+        print(f"Savant pitcher columns ({season}): {fieldnames[:12]}")
         result = {}
         for row in reader:
-            # last_name, first_name format
-            last  = (row.get("last_name","") or row.get("last_name, first_name","") or "").strip().strip('"').split(",")[0].strip()
-            first = (row.get("first_name","") or "").strip().strip('"')
-            # Some endpoints return "last_name, first_name" as single column
-            if not first:
-                combined = row.get("last_name, first_name","") or row.get("player_name","")
+            # Re-map keys stripping BOM/quotes
+            clean_row = {k.strip().strip('"'): v for k,v in row.items()}
+            last  = (clean_row.get("last_name","") or "").strip().strip('"').split(",")[0].strip()
+            first = (clean_row.get("first_name","") or "").strip().strip('"')
+            if not first and not last:
+                combined = clean_row.get("last_name, first_name","") or clean_row.get("player_name","")
                 if combined and "," in combined:
                     parts = combined.split(",")
                     last = parts[0].strip().strip('"')
@@ -389,11 +391,11 @@ def fetch_savant_pitcher_data(season):
             if not last: continue
             full_name = (first+" "+last).strip() if first else last
             def sv(k):
-                v = (row.get(k,"") or "").strip().strip('"')
+                v = (clean_row.get(k,"") or "").strip().strip('"')
                 try: return round(float(v),3) if v and v not in ("","null","NA","--","None") else None
                 except: return None
             result[full_name] = {
-                "player_id_savant": (row.get("player_id","") or "").strip(),
+                "player_id_savant": (clean_row.get("player_id","") or "").strip(),
                 "xera": sv("xera") or sv("est_era") or sv("xERA"),
                 "xwoba_against": sv("est_woba") or sv("xwoba") or sv("xwOBA"),
                 "xba": sv("est_ba") or sv("xba"),
@@ -412,16 +414,18 @@ def fetch_savant_pitcher_data(season):
                          headers={"User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"},
                          timeout=20)
         if r2.ok and len(r2.text) > 100:
-            reader2 = csv.DictReader(io.StringIO(r2.text))
-            fields2 = reader2.fieldnames or []
-            print(f"Savant statcast pitcher columns ({season}): {list(fields2)[:12]}")
+            text2 = r2.text.lstrip('\ufeff').replace('\r\n','\n')
+            reader2 = csv.DictReader(io.StringIO(text2))
+            fields2 = [f.strip().strip('"') for f in (reader2.fieldnames or [])]
+            print(f"Savant statcast pitcher columns ({season}): {fields2[:12]}")
             for row in reader2:
-                last  = (row.get("last_name","") or "").strip().strip('"')
-                first = (row.get("first_name","") or "").strip().strip('"')
+                clean_row2 = {k.strip().strip('"'): v for k,v in row.items()}
+                last  = (clean_row2.get("last_name","") or "").strip().strip('"')
+                first = (clean_row2.get("first_name","") or "").strip().strip('"')
                 if not last: continue
                 full_name = (first+" "+last).strip() if first else last
                 def sv2(k):
-                    v = (row.get(k,"") or "").strip().strip('"')
+                    v = (clean_row2.get(k,"") or "").strip().strip('"')
                     try: return round(float(v),2) if v and v not in ("","null","NA","--","None") else None
                     except: return None
                 if full_name in result:
@@ -1615,7 +1619,9 @@ def _parse_ai_response(raw):
     return json.loads(raw.strip())
 
 def _try_claude(user_msg, retries=3):
-    if not ANTHROPIC_KEY: return None, None
+    if not ANTHROPIC_KEY:
+        print("Claude: no API key")
+        return None, None
     import time
     for attempt in range(retries):
         try:
@@ -1627,14 +1633,9 @@ def _try_claude(user_msg, retries=3):
                       "temperature":0,
                       "system":SYSTEM_PROMPT,
                       "messages":[{"role":"user","content":user_msg}]},
-                timeout=240
+                timeout=60
             )
-            print(f"Claude HTTP {r.status_code}")
-            if r.status_code == 529:
-                wait = 30 * (attempt + 1)
-                print(f"Claude overloaded (529) — waiting {wait}s before retry")
-                time.sleep(wait)
-                continue
+            print(f"Claude HTTP {r.status_code}, body_len={len(r.content)}, headers={dict(list(r.headers.items())[:5])}")
             if r.status_code == 529 or r.status_code == 503:
                 wait = 30 * (attempt + 1)
                 print(f"Claude unavailable ({r.status_code}) — waiting {wait}s")
@@ -1646,17 +1647,23 @@ def _try_claude(user_msg, retries=3):
                     time.sleep(20)
                     continue
                 return None, None
+            if not r.content:
+                print(f"Claude empty response body (status {r.status_code})")
+                if attempt < retries - 1:
+                    time.sleep(20)
+                    continue
+                return None, None
             try:
                 body = r.json()
-            except Exception:
-                print(f"Claude returned non-JSON body (status {r.status_code}): {r.text[:200]}")
+            except Exception as je:
+                print(f"Claude non-JSON (status {r.status_code}), body: {r.text[:500]}")
                 if attempt < retries - 1:
                     time.sleep(20)
                     continue
                 return None, None
             raw = body.get("content",[{}])[0].get("text","")
             if not raw or not raw.strip():
-                print(f"Claude returned empty text (status {r.status_code})")
+                print(f"Claude empty text. Full body: {str(body)[:500]}")
                 if attempt < retries - 1:
                     time.sleep(20)
                     continue
@@ -1665,7 +1672,7 @@ def _try_claude(user_msg, retries=3):
             print("Claude returned "+str(len(picks))+" picks")
             return picks, "Claude Sonnet 4.6"
         except Exception as e:
-            print(f"Claude exception (attempt {attempt+1}/{retries}): {str(e)}")
+            print(f"Claude exception (attempt {attempt+1}/{retries}): {type(e).__name__}: {str(e)}")
             if attempt < retries - 1:
                 time.sleep(20)
             else:
