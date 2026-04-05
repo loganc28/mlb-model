@@ -1456,6 +1456,8 @@ ABSOLUTE RULES — violating these means the pick is wrong:
 9. Wind blowing IN never supports an OVER pick. Wind blowing OUT never supports an UNDER pick.
    If wind direction contradicts your pick direction, remove it as a supporting factor entirely.
 10. Bullpen fatigue alone is NOT sufficient for a Tier A or MAX pick. It must combine with SP edge or park.
+11. Rain 80%+ probability = WATCH only, never an active pick. Game may be postponed.
+12. Doubleheaders — if you have picks on both Game 1 and Game 2 of same matchup, flag the lower EV one as WATCH.
 
 INJURIES — ZERO TOLERANCE FOR HALLUCINATION:
 - injury_flags field MUST only contain names from home_team.injuries or away_team.injuries arrays.
@@ -1858,6 +1860,69 @@ def enforce_ev_rules(picks):
         enforced.append(p)
 
     # No daily unit cap — EV and scoring rubric are the only filters
+
+    # ── Post-enforcement caps ─────────────────────────────────────────────────
+
+    # 1. Rain auto-skip — 80%+ precip on an active pick is a postponement risk
+    # You've already placed the bet — game may not play. Auto-WATCH.
+    for p in enforced:
+        if p.get("tier") not in ("MAX","A","B","C"): continue
+        flags = (p.get("flags","") + " " + p.get("weather_impact","")).lower()
+        if "100% rain" in flags or "postponement" in flags:
+            precip_val = 0
+            for word in flags.split():
+                try:
+                    v = int(word.replace("%",""))
+                    if v >= 80: precip_val = v; break
+                except: pass
+            if precip_val >= 80 or "100% rain" in flags:
+                print(f"RAIN SKIP: {p.get('game','')} — {precip_val}%+ precip, postponement risk")
+                p["tier"] = "WATCH"
+                p["units"] = 0
+                p["avoid_reason"] = f"Rain {precip_val}%+ — postponement risk, bet voided if postponed"
+
+    # 2. Doubleheader dedup — only keep the higher EV pick from same matchup
+    seen_matchups = {}
+    for p in enforced:
+        if p.get("tier") not in ("MAX","A","B","C"): continue
+        # Strip " (Game N)" suffix to get base matchup
+        game = p.get("game","")
+        base = game.split(" (Game")[0].strip()
+        ev = float(p.get("ev_pct",0) or 0)
+        if base in seen_matchups:
+            # Keep higher EV pick, downgrade the other
+            prev = seen_matchups[base]
+            prev_ev = float(prev.get("ev_pct",0) or 0)
+            if ev > prev_ev:
+                prev["tier"] = "WATCH"
+                prev["units"] = 0
+                prev["avoid_reason"] = f"Doubleheader — {game} has higher EV ({ev}%)"
+                seen_matchups[base] = p
+                print(f"DH DEDUP: Keeping {game} ({ev}% EV), downgrading {prev.get('game','')} ({prev_ev}% EV)")
+            else:
+                p["tier"] = "WATCH"
+                p["units"] = 0
+                p["avoid_reason"] = f"Doubleheader — {seen_matchups[base].get('game','')} has higher EV ({prev_ev}%)"
+                print(f"DH DEDUP: Keeping {seen_matchups[base].get('game','')} ({prev_ev}% EV), downgrading {game} ({ev}% EV)")
+        else:
+            seen_matchups[base] = p
+
+    # 3. Daily unit cap — max 8u per day to protect bankroll
+    MAX_DAILY_UNITS = 8.0
+    total_u = sum(float(p.get("units",0) or 0) for p in enforced if p.get("tier") in ("MAX","A","B","C"))
+    if total_u > MAX_DAILY_UNITS:
+        # Sort active picks by EV descending, cut lowest EV picks until under cap
+        active = sorted(
+            [p for p in enforced if p.get("tier") in ("MAX","A","B","C")],
+            key=lambda x: float(x.get("ev_pct",0) or 0)
+        )
+        for p in active:
+            if total_u <= MAX_DAILY_UNITS: break
+            print(f"UNIT CAP: {p.get('game','')} downgraded to WATCH — daily cap {MAX_DAILY_UNITS}u reached")
+            total_u -= float(p.get("units",0) or 0)
+            p["tier"] = "WATCH"
+            p["units"] = 0
+            p["avoid_reason"] = f"Daily unit cap {MAX_DAILY_UNITS}u reached — lowest EV pick removed"
 
     # Clean up stale cap messages from avoid_reason
     for p in enforced:
@@ -3487,8 +3552,16 @@ def build_html(data):
         park = p.get("park_note","")
         key_edge = str(p.get("key_edge",""))
 
-        # Compact detail rows — only show populated ones
-        details = ""
+        # Convert UTC game time to ET for display
+        game_time_raw = str(p.get("game_time",""))
+        game_time_display = game_time_raw
+        if game_time_raw and "T" in game_time_raw:
+            try:
+                import datetime as _gdt
+                utc_dt = _gdt.datetime.strptime(game_time_raw[:19], "%Y-%m-%dT%H:%M:%S")
+                et_dt = utc_dt - _gdt.timedelta(hours=4)  # EDT
+                game_time_display = et_dt.strftime("%-I:%M %p ET")
+            except: pass
         if sp_edge: details += detail_row("SP", sp_edge)
         if lineup:  details += detail_row("Lineup", lineup)
         if bullpen: details += detail_row("Bullpen", bullpen)
@@ -3514,7 +3587,7 @@ def build_html(data):
             +flag_row(p.get("flags",""))+
             '<div class="pick-sub">'
             '<span class="game-label">'+game+'</span>'
-            +(('<span class="game-time">'+str(p.get("game_time",""))+'</span>') if p.get("game_time") and str(p.get("game_time","")) not in game else '')
+            +(('<span class="game-time">'+game_time_display+'</span>') if game_time_display and game_time_display not in game else '')
             +score_span(game)
             +'</div>'
             '<div class="sp-grid">'
