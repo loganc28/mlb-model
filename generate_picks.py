@@ -327,6 +327,22 @@ def get_ump_stats(ump_name):
 
 # ── Stats ─────────────────────────────────────────────────────────────────────
 
+# Baseball Savant uses team abbreviations — map to full MLB team names
+SAVANT_TEAM_MAP = {
+    "ARI":"Arizona Diamondbacks","ATL":"Atlanta Braves","BAL":"Baltimore Orioles",
+    "BOS":"Boston Red Sox","CHC":"Chicago Cubs","CWS":"Chicago White Sox",
+    "CIN":"Cincinnati Reds","CLE":"Cleveland Guardians","COL":"Colorado Rockies",
+    "DET":"Detroit Tigers","HOU":"Houston Astros","KC":"Kansas City Royals",
+    "LAA":"Los Angeles Angels","LAD":"Los Angeles Dodgers","MIA":"Miami Marlins",
+    "MIL":"Milwaukee Brewers","MIN":"Minnesota Twins","NYM":"New York Mets",
+    "NYY":"New York Yankees","ATH":"Athletics","PHI":"Philadelphia Phillies",
+    "PIT":"Pittsburgh Pirates","SD":"San Diego Padres","SF":"San Francisco Giants",
+    "SEA":"Seattle Mariners","STL":"St. Louis Cardinals","TB":"Tampa Bay Rays",
+    "TEX":"Texas Rangers","TOR":"Toronto Blue Jays","WSH":"Washington Nationals",
+    "OAK":"Athletics",
+}
+SAVANT_TEAM_MAP_REV = {v:k for k,v in SAVANT_TEAM_MAP.items()}
+
 def fetch_savant_pitcher_data(season):
     """
     Fetch pitcher Statcast data from Baseball Savant.
@@ -424,17 +440,21 @@ def fetch_savant_batter_data(season):
             if ev: team_data[team]["ev_sum"] += ev
             team_counts[team] += 1
         result = {}
-        for team, d in team_data.items():
-            n = team_counts[team]
+        for team_abbrev, d in team_data.items():
+            n = team_counts[team_abbrev]
             if n == 0: continue
-            result[team] = {
+            # Store by both abbreviation AND full name for flexible lookup
+            full_name = SAVANT_TEAM_MAP.get(team_abbrev, team_abbrev)
+            entry = {
                 "woba_savant": round(d["woba_sum"]/n,3) if d["woba_sum"] else None,
                 "xwoba": round(d["xwoba_sum"]/n,3) if d["xwoba_sum"] else None,
                 "barrel_pct": round(d["barrel_sum"]/n,1) if d["barrel_sum"] else None,
                 "hard_hit_pct": round(d["hh_sum"]/n,1) if d["hh_sum"] else None,
                 "exit_velo": round(d["ev_sum"]/n,1) if d["ev_sum"] else None,
             }
-        print(f"Baseball Savant: loaded {len(result)} team batting records for {season}")
+            result[full_name] = entry
+            result[team_abbrev] = entry  # also store by abbrev for fallback
+        print(f"Baseball Savant: loaded {len(result)//2} team batting records for {season}")
         return result
     except Exception as e:
         print(f"Baseball Savant batter fetch failed: {str(e)}")
@@ -794,14 +814,16 @@ def get_team_stats(team, stats, stat_type):
 
     # Merge Savant batting data for hitting stats
     if stat_type == "team_batting":
-        # Try abbreviation match for Savant team names
         sv26 = stats.get("savant_batting_2026",{})
         sv25 = stats.get("savant_batting_2025",{})
-        sv = sv26.get(team) or sv25.get(team)
+        # Try full name first, then abbreviation lookup
+        abbrev = SAVANT_TEAM_MAP_REV.get(team,"")
+        sv = sv26.get(team) or sv25.get(team) or sv26.get(abbrev) or sv25.get(abbrev)
         if not sv:
-            # Try partial match
+            # Last resort partial match
             for k,v in {**sv26,**sv25}.items():
-                if k and (k in team or team in k or k.split()[-1] in team):
+                full = SAVANT_TEAM_MAP.get(k,k)
+                if full == team or k in team or team.split()[-1] in k:
                     sv = v; break
         if sv:
             if sv.get("xwoba"): result["xwoba"] = sv["xwoba"]
@@ -810,7 +832,6 @@ def get_team_stats(team, stats, stat_type):
             if sv.get("exit_velo"): result["exit_velo"] = sv["exit_velo"]
 
     return result if result else {}
-    return {}
 
 # ── Lineups ───────────────────────────────────────────────────────────────────
 
