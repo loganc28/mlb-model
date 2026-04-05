@@ -346,7 +346,7 @@ SAVANT_TEAM_MAP_REV = {v:k for k,v in SAVANT_TEAM_MAP.items()}
 def fetch_savant_pitcher_data(season):
     """
     Fetch pitcher Statcast data from Baseball Savant.
-    Returns xFIP, stuff_plus, barrel_pct, hard_hit_pct keyed by player name.
+    Returns xFIP, xERA, barrel_pct, hard_hit_pct keyed by player name.
     Falls back gracefully if unavailable.
     """
     try:
@@ -363,23 +363,31 @@ def fetch_savant_pitcher_data(season):
         }
         r = requests.get(url, params=params,
                         headers={"User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"},
-                        timeout=15)
-        if not r.ok or len(r.text) < 100:
+                        timeout=20)
+        if not r.ok:
+            print(f"Savant pitcher HTTP {r.status_code}")
+            return {}
+        if len(r.text) < 100:
+            print(f"Savant pitcher returned empty response ({len(r.text)} chars)")
             return {}
         reader = csv.DictReader(io.StringIO(r.text))
+        # Log actual column names on first run to verify
+        fieldnames = reader.fieldnames or []
+        if fieldnames:
+            print(f"Savant pitcher columns: {fieldnames[:10]}")
         result = {}
         for row in reader:
-            first = (row.get("first_name","") or "").strip()
-            last  = (row.get("last_name","") or "").strip()
+            # Handle both possible name column formats
+            first = (row.get("first_name","") or row.get("\"first_name\"","") or "").strip().strip('"')
+            last  = (row.get("last_name","") or row.get("\"last_name\"","") or "").strip().strip('"')
             if not first or not last: continue
             full_name = first+" "+last
-            pid = row.get("player_id","")
-            def sv(k): 
-                v = row.get(k,"")
-                try: return round(float(v),2) if v and v not in ("","null","NA","--") else None
+            def sv(k):
+                v = (row.get(k,"") or "").strip().strip('"')
+                try: return round(float(v),2) if v and v not in ("","null","NA","--","None") else None
                 except: return None
             result[full_name] = {
-                "player_id_savant": pid,
+                "player_id_savant": row.get("player_id",""),
                 "xfip": sv("xfip"),
                 "xera": sv("xera"),
                 "barrel_pct": sv("barrel_batted_rate"),
@@ -691,10 +699,13 @@ def fetch_and_cache_stats():
     }
     # Enrich with Baseball Savant Statcast data
     print("Fetching Baseball Savant data...")
+    import time as _st
+    _sv_t = _st.time()
     stats["savant_pitchers_2026"] = fetch_savant_pitcher_data(2026)
     stats["savant_pitchers_2025"] = fetch_savant_pitcher_data(2025)
     stats["savant_batting_2026"] = fetch_savant_batter_data(2026)
     stats["savant_batting_2025"] = fetch_savant_batter_data(2025)
+    print(f"Savant fetch total: {round(_st.time()-_sv_t,1)}s")
     print("SP stats: "+str(len(stats["sp_2025"]))+" in 2025, "+str(len(stats["sp_2026"]))+" in 2026")
     savant_p = len(stats["savant_pitchers_2026"]) + len(stats["savant_pitchers_2025"])
     if savant_p > 0:
@@ -1551,7 +1562,7 @@ def _parse_ai_response(raw):
     if start >= 0 and end > start: raw = raw[start:end]
     return json.loads(raw.strip())
 
-def _try_claude(user_msg, retries=2):
+def _try_claude(user_msg, retries=3):
     if not ANTHROPIC_KEY: return None, None
     import time
     for attempt in range(retries):
@@ -1566,28 +1577,45 @@ def _try_claude(user_msg, retries=2):
                       "messages":[{"role":"user","content":user_msg}]},
                 timeout=240
             )
+            print(f"Claude HTTP {r.status_code}")
+            if r.status_code == 529:
+                wait = 30 * (attempt + 1)
+                print(f"Claude overloaded (529) — waiting {wait}s before retry")
+                time.sleep(wait)
+                continue
+            if r.status_code == 529 or r.status_code == 503:
+                wait = 30 * (attempt + 1)
+                print(f"Claude unavailable ({r.status_code}) — waiting {wait}s")
+                time.sleep(wait)
+                continue
             if not r.ok:
                 print("Claude error "+str(r.status_code)+": "+r.text[:300])
                 if attempt < retries - 1:
-                    print(f"Retrying in 15 seconds... (attempt {attempt+1}/{retries})")
-                    time.sleep(15)
+                    time.sleep(20)
                     continue
                 return None, None
-            raw = r.json()["content"][0]["text"]
-            if not raw or not raw.strip():
-                print("Claude returned empty response")
+            try:
+                body = r.json()
+            except Exception:
+                print(f"Claude returned non-JSON body (status {r.status_code}): {r.text[:200]}")
                 if attempt < retries - 1:
-                    time.sleep(15)
+                    time.sleep(20)
+                    continue
+                return None, None
+            raw = body.get("content",[{}])[0].get("text","")
+            if not raw or not raw.strip():
+                print(f"Claude returned empty text (status {r.status_code})")
+                if attempt < retries - 1:
+                    time.sleep(20)
                     continue
                 return None, None
             picks = _parse_ai_response(raw)
             print("Claude returned "+str(len(picks))+" picks")
             return picks, "Claude Sonnet 4.6"
         except Exception as e:
-            print("Claude failed: "+str(e))
+            print(f"Claude exception (attempt {attempt+1}/{retries}): {str(e)}")
             if attempt < retries - 1:
-                print(f"Retrying in 15 seconds... (attempt {attempt+1}/{retries})")
-                time.sleep(15)
+                time.sleep(20)
             else:
                 return None, None
     return None, None
@@ -3676,7 +3704,10 @@ def main():
     if not _can_generate:
         print("Outside generation window ("+str(_now_et_hour).zfill(2)+":xx ET). Rebuilding pages only — no new picks.")
 
+    import time as _time
+    _t0 = _time.time()
     stats = fetch_and_cache_stats()
+    print(f"Stats fetch: {round(_time.time()-_t0,1)}s")
     games = fetch_mlb_games()
     if not games:
         print("No games found -- exiting")
@@ -3712,10 +3743,21 @@ def main():
         return
 
     games_with_data = []
+    seen_pks = set()
 
     for g in games:
+        # Skip duplicate game_pks (safety check)
+        pk = g.get("game_pk")
+        if pk and pk in seen_pks:
+            print(f"Skipping duplicate game_pk {pk}: {g['away']} @ {g['home']}")
+            continue
+        if pk: seen_pks.add(pk)
+
         print("Enriching: "+g["away"]+" @ "+g["home"])
-        odds    = odds_map.get(g["away"]+"@"+g["home"], {})
+        # For doubleheaders use game_num suffix on odds key
+        base_key = g["away"]+"@"+g["home"]
+        game_num = g.get("game_num", 1)
+        odds = odds_map.get(base_key, {})  # odds API doesn't distinguish DH games — use same odds
         weather = fetch_weather(g["home"])
         park    = get_park_factor(g["venue"])
         ump     = get_ump_stats(g.get("hp_ump",""))
