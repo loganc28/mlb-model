@@ -1907,22 +1907,18 @@ def enforce_ev_rules(picks):
         else:
             seen_matchups[base] = p
 
-    # 3. Daily unit cap — max 8u per day to protect bankroll
-    MAX_DAILY_UNITS = 8.0
-    total_u = sum(float(p.get("units",0) or 0) for p in enforced if p.get("tier") in ("MAX","A","B","C"))
-    if total_u > MAX_DAILY_UNITS:
-        # Sort active picks by EV descending, cut lowest EV picks until under cap
-        active = sorted(
-            [p for p in enforced if p.get("tier") in ("MAX","A","B","C")],
-            key=lambda x: float(x.get("ev_pct",0) or 0)
-        )
-        for p in active:
-            if total_u <= MAX_DAILY_UNITS: break
-            print(f"UNIT CAP: {p.get('game','')} downgraded to WATCH — daily cap {MAX_DAILY_UNITS}u reached")
-            total_u -= float(p.get("units",0) or 0)
-            p["tier"] = "WATCH"
-            p["units"] = 0
-            p["avoid_reason"] = f"Daily unit cap {MAX_DAILY_UNITS}u reached — lowest EV pick removed"
+    # 3. Tier A pick limit — max 3 Tier A picks per day until 50+ picks validated
+    # After April 10 audit, remove this if CLV shows consistent edge
+    MAX_TIER_A = 3
+    tier_a_picks = [p for p in enforced if p.get("tier") == "A"]
+    if len(tier_a_picks) > MAX_TIER_A:
+        # Keep highest EV Tier A picks, downgrade the rest to B
+        tier_a_sorted = sorted(tier_a_picks, key=lambda x: float(x.get("ev_pct",0) or 0), reverse=True)
+        for p in tier_a_sorted[MAX_TIER_A:]:
+            print(f"TIER A CAP: {p.get('game','')} downgraded A→B — max {MAX_TIER_A} Tier A picks per day")
+            p["tier"] = "B"
+            p["units"] = 1.0
+            p["avoid_reason"] = ""
 
     # Clean up stale cap messages from avoid_reason
     for p in enforced:
@@ -3562,7 +3558,9 @@ def build_html(data):
                 et_dt = utc_dt - _gdt.timedelta(hours=4)  # EDT
                 game_time_display = et_dt.strftime("%-I:%M %p ET")
             except: pass
-        if sp_edge: details += detail_row("SP", sp_edge)
+
+        # Compact detail rows — only show populated ones
+        details = ""
         if lineup:  details += detail_row("Lineup", lineup)
         if bullpen: details += detail_row("Bullpen", bullpen)
         if weather or park:
