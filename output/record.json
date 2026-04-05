@@ -13,9 +13,10 @@
       "tier": "B",
       "units": 1.0,
       "ev_pct": 10.0,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "L",
+      "units_result": -1.0,
+      "loss_reason": "",
+      "final_score": "Los Angeles Dodgers 13 - Washington Nationals 6"
     },
     {
       "date": "2026-04-04",
@@ -26,13 +27,14 @@
       "away_sp": "Shane Baz",
       "line": "-106",
       "open_line": "-106",
-      "close_line": "",
+      "close_line": "109",
       "tier": "B",
       "units": 1.0,
       "ev_pct": 11.0,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "W",
+      "units_result": 0.943,
+      "loss_reason": "",
+      "final_score": "Baltimore Orioles 4 - Pittsburgh Pirates 5"
     },
     {
       "date": "2026-04-04",
@@ -47,9 +49,10 @@
       "tier": "B",
       "units": 1.0,
       "ev_pct": 7.0,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "W",
+      "units_result": 0.962,
+      "loss_reason": "",
+      "final_score": "San Diego Padres 2 - Boston Red Sox 5"
     },
     {
       "date": "2026-04-04",
@@ -60,13 +63,14 @@
       "away_sp": "Rhet Lowder",
       "line": "+125",
       "open_line": "+125",
-      "close_line": "",
+      "close_line": "104",
       "tier": "B",
       "units": 1.0,
       "ev_pct": 13.0,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "W",
+      "units_result": 1.25,
+      "loss_reason": "",
+      "final_score": "Cincinnati Reds 5 - Texas Rangers 3"
     },
     {
       "date": "2026-04-04",
@@ -77,30 +81,14 @@
       "away_sp": "Clay Holmes",
       "line": "-113",
       "open_line": "-113",
-      "close_line": "",
+      "close_line": "100",
       "tier": "B",
       "units": 1.0,
       "ev_pct": 6.9,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
-    },
-    {
-      "date": "2026-04-04",
-      "game": "Milwaukee Brewers @ Kansas City Royals",
-      "pick": "Kansas City Royals ML",
-      "bet_type": "ML",
-      "home_sp": "Luinder Avila",
-      "away_sp": "Chad Patrick",
-      "line": "-106",
-      "open_line": "-106",
-      "close_line": "",
-      "tier": "C",
-      "units": 0.5,
-      "ev_pct": 14.0,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "W",
+      "units_result": 0.885,
+      "loss_reason": "",
+      "final_score": "New York Mets 10 - San Francisco Giants 3"
     },
     {
       "date": "2026-04-03",
@@ -151,9 +139,10 @@
       "tier": "WATCH",
       "units": 0,
       "ev_pct": 0,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "W",
+      "units_result": 0.0,
+      "loss_reason": "",
+      "final_score": "Seattle Mariners 3 - Los Angeles Angels 1"
     },
     {
       "date": "2026-04-03",
@@ -164,13 +153,14 @@
       "away_sp": "Nolan McLean",
       "line": "-124",
       "open_line": "-124",
-      "close_line": "",
+      "close_line": "100",
       "tier": "WATCH",
       "units": 0,
       "ev_pct": 0,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "W",
+      "units_result": 0.0,
+      "loss_reason": "",
+      "final_score": "New York Mets 10 - San Francisco Giants 3"
     },
     {
       "date": "2026-04-02",
@@ -821,6 +811,6 @@
       "loss_reason": ""
     }
   ],
-  "updated": "2026-04-04",
-  "ai_model": "Claude Sonnet 4.6"
+  "updated": "2026-04-05",
+  "ai_model": "None"
 }
