@@ -2153,6 +2153,17 @@ def call_ai(games_with_data):
         return [], "None"
     summarized = [summarize_game(g) for g in bettable]
 
+    def strip_nulls(obj):
+        """Remove None values recursively to reduce token count."""
+        if isinstance(obj, dict):
+            return {k: strip_nulls(v) for k, v in obj.items()
+                    if v is not None and v != "" and v != [] and v != {}}
+        if isinstance(obj, list):
+            return [strip_nulls(i) for i in obj if i is not None]
+        return obj
+
+    summarized = [strip_nulls(g) for g in summarized]
+
     # Split into batches of 4 to stay within token limits
     BATCH_SIZE = 4
     all_picks = []
@@ -2163,13 +2174,15 @@ def call_ai(games_with_data):
         b_n = len(batch)
         print("Processing batch "+str(i//BATCH_SIZE+1)+"/"+str((n+BATCH_SIZE-1)//BATCH_SIZE)+" ("+str(b_n)+" games)...")
 
+        batch_json = json.dumps(batch, indent=2)
+        approx_tokens = len(batch_json) // 4
+        print(f"Batch {i//BATCH_SIZE+1}: {b_n} games, ~{approx_tokens} tokens in game data")
         user_msg = (
             "Today is "+TODAY+". Analyze these "+str(b_n)+" MLB games.\n"
-            "Use ALL provided data: SP season stats, recent form, home/away splits, "
-            "bullpen fatigue, team bullpen ERA (already factored into baseline_home_win_prob), "
-            "injuries, umpire tendencies, park factors, wind impact, odds.\n"
+            "Use ALL provided data: SP stats (xFIP/FIP/ERA hierarchy), team offense (xwOBA/wOBA/OPS hierarchy), "
+            "bullpen fatigue, injuries, umpire, park, weather, odds.\n"
             "Return exactly "+str(b_n)+" entries. Raw JSON array only.\n\n"
-            "GAMES:\n"+json.dumps(batch, indent=2)
+            "GAMES:\n"+batch_json
         )
 
         picks, model = _try_claude(user_msg)
@@ -3794,38 +3807,30 @@ def main():
     games_with_data = []
     seen_pks = set()
 
-    for g in games:
-        # Skip duplicate game_pks (safety check)
+    def enrich_game(g):
+        """Enrich a single game with all data — runs in parallel."""
         pk = g.get("game_pk")
-        if pk and pk in seen_pks:
-            print(f"Skipping duplicate game_pk {pk}: {g['away']} @ {g['home']}")
-            continue
-        if pk: seen_pks.add(pk)
-
-        print("Enriching: "+g["away"]+" @ "+g["home"])
-        # For doubleheaders use game_num suffix on odds key
         base_key = g["away"]+"@"+g["home"]
         game_num = g.get("game_num", 1)
-        odds = odds_map.get(base_key, {})  # odds API doesn't distinguish DH games — use same odds
+        odds = odds_map.get(base_key, {})
         weather = fetch_weather(g["home"])
         park    = get_park_factor(g["venue"])
         ump     = get_ump_stats(g.get("hp_ump",""))
 
-        # Lineups — only for games not yet started
+        # Lineups
         lineups = {}
         status = g.get("status","")
-        if g.get("game_pk") and status not in ("In Progress","Live","Final","Game Over","Completed","Pre-Game"):
-            try: lineups = fetch_lineup(g["game_pk"])
+        if pk and status not in ("In Progress","Live","Final","Game Over","Completed","Pre-Game"):
+            try: lineups = fetch_lineup(pk)
             except: pass
 
-        # SP stats with recent form + splits
+        # SP stats
         home_sp_stats = get_pitcher_stats(g["home_sp"], stats, is_home=True)
         away_sp_stats = get_pitcher_stats(g["away_sp"], stats, is_home=False)
 
-        # Platoon analysis
+        # Platoon
         home_platoon = {}; away_platoon = {}
         if lineups:
-            # Determine pitcher handedness from stats if available
             home_throws = home_sp_stats.get("throws","")
             away_throws = away_sp_stats.get("throws","")
             if lineups.get("away",{}).get("batters") and away_throws:
@@ -3833,35 +3838,33 @@ def main():
             if lineups.get("home",{}).get("batters") and home_throws:
                 away_platoon = analyze_lineup_handedness(lineups["home"]["batters"], home_throws)
 
-        # Bullpen fatigue
-        home_bullpen={}; away_bullpen={}
-        try: home_bullpen = fetch_bullpen_fatigue(g["home_id"])
-        except: pass
-        try: away_bullpen = fetch_bullpen_fatigue(g["away_id"])
-        except: pass
+        # Bullpen, injuries, splits — run in parallel per game
+        import concurrent.futures as _cf
+        with _cf.ThreadPoolExecutor(max_workers=8) as ex:
+            f_hbp   = ex.submit(fetch_bullpen_fatigue, g["home_id"])
+            f_abp   = ex.submit(fetch_bullpen_fatigue, g["away_id"])
+            f_hinj  = ex.submit(fetch_injuries, g["home_id"])
+            f_ainj  = ex.submit(fetch_injuries, g["away_id"])
+            f_hspl  = ex.submit(fetch_team_home_away_splits, g["home_id"], 2026)
+            f_aspl  = ex.submit(fetch_team_home_away_splits, g["away_id"], 2026)
 
-        # Injuries — MLB IL + ESPN combined
-        home_injuries=[]; away_injuries=[]
-        try: home_injuries = fetch_injuries(g["home_id"])
-        except: pass
-        try: away_injuries = fetch_injuries(g["away_id"])
-        except: pass
-        # Merge with ESPN data
-        home_injuries = get_team_injuries_with_espn(g["home"], home_injuries, espn_injuries)
-        away_injuries = get_team_injuries_with_espn(g["away"], away_injuries, espn_injuries)
+        home_bullpen  = f_hbp.result() if f_hbp.exception() is None else {}
+        away_bullpen  = f_abp.result() if f_abp.exception() is None else {}
+        home_injuries = f_hinj.result() if f_hinj.exception() is None else []
+        away_injuries = f_ainj.result() if f_ainj.exception() is None else []
+        home_splits   = f_hspl.result() if f_hspl.exception() is None else {}
+        away_splits   = f_aspl.result() if f_aspl.exception() is None else {}
 
-        # Team home/away splits (2026 if available, else 2025)
-        home_splits={}; away_splits={}
-        try: home_splits = fetch_team_home_away_splits(g["home_id"], 2026)
-        except: pass
+        # Fall back to 2025 splits if 2026 unavailable
         if not home_splits:
             try: home_splits = fetch_team_home_away_splits(g["home_id"], 2025)
             except: pass
-        try: away_splits = fetch_team_home_away_splits(g["away_id"], 2026)
-        except: pass
         if not away_splits:
             try: away_splits = fetch_team_home_away_splits(g["away_id"], 2025)
             except: pass
+
+        home_injuries = get_team_injuries_with_espn(g["home"], home_injuries, espn_injuries)
+        away_injuries = get_team_injuries_with_espn(g["away"], away_injuries, espn_injuries)
 
         gd = dict(g)
         gd["odds"]                  = odds
@@ -3884,12 +3887,37 @@ def main():
         gd["away_injuries"]         = away_injuries[:5]
         gd["home_team_splits"]      = home_splits
         gd["away_team_splits"]      = away_splits
+        return gd
 
-        # Team momentum/streak
-        gd["home_streak"] = fetch_team_streak(g["home_id"])
-        gd["away_streak"] = fetch_team_streak(g["away_id"])
+    # Filter duplicates first
+    unique_games = []
+    for g in games:
+        pk = g.get("game_pk")
+        if pk and pk in seen_pks:
+            print(f"Skipping duplicate game_pk {pk}: {g['away']} @ {g['home']}")
+            continue
+        if pk: seen_pks.add(pk)
+        unique_games.append(g)
 
-        games_with_data.append(gd)
+    # Enrich all games in parallel
+    import concurrent.futures as _cf2
+    import time as _et
+    _enrich_t = _et.time()
+    print(f"Enriching {len(unique_games)} games in parallel...")
+    with _cf2.ThreadPoolExecutor(max_workers=8) as ex:
+        futures = {ex.submit(enrich_game, g): g for g in unique_games}
+        for future in _cf2.as_completed(futures):
+            g = futures[future]
+            try:
+                gd = future.result()
+                # Add streaks (fast, cached after first call)
+                gd["home_streak"] = fetch_team_streak(g["home_id"])
+                gd["away_streak"] = fetch_team_streak(g["away_id"])
+                games_with_data.append(gd)
+                print(f"  ✓ {g['away']} @ {g['home']}")
+            except Exception as e:
+                print(f"  ✗ {g['away']} @ {g['home']}: {str(e)}")
+    print(f"Enrichment: {round(_et.time()-_enrich_t,1)}s for {len(games_with_data)} games")
 
     # Save updated stats cache (may have new player ID lookups)
     STATS_CACHE.write_text(json.dumps(stats))
