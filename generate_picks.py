@@ -1625,52 +1625,59 @@ def _try_claude(user_msg, retries=3):
     import time
     for attempt in range(retries):
         try:
+            # Claude 4.x requires streaming to avoid HTTP timeouts on large max_tokens
             r = requests.post(
                 "https://api.anthropic.com/v1/messages",
                 headers={"x-api-key":ANTHROPIC_KEY,"anthropic-version":"2023-06-01",
                          "content-type":"application/json"},
-                json={"model":"claude-sonnet-4-6","max_tokens":4000,
+                json={"model":"claude-sonnet-4-5","max_tokens":4000,
                       "temperature":0,
+                      "stream":True,
                       "system":SYSTEM_PROMPT,
                       "messages":[{"role":"user","content":user_msg}]},
-                timeout=60
+                timeout=120,
+                stream=True
             )
-            print(f"Claude HTTP {r.status_code}, body_len={len(r.content)}, headers={dict(list(r.headers.items())[:5])}")
-            if r.status_code == 529 or r.status_code == 503:
+            print(f"Claude HTTP {r.status_code}")
+            if r.status_code in (529, 503):
                 wait = 30 * (attempt + 1)
                 print(f"Claude unavailable ({r.status_code}) — waiting {wait}s")
                 time.sleep(wait)
                 continue
             if not r.ok:
-                print("Claude error "+str(r.status_code)+": "+r.text[:300])
+                body_preview = ""
+                try: body_preview = r.text[:300]
+                except: pass
+                print(f"Claude error {r.status_code}: {body_preview}")
                 if attempt < retries - 1:
                     time.sleep(20)
                     continue
                 return None, None
-            if not r.content:
-                print(f"Claude empty response body (status {r.status_code})")
+            # Collect streamed SSE response
+            full_text = ""
+            for line in r.iter_lines():
+                if not line: continue
+                line = line.decode("utf-8") if isinstance(line, bytes) else line
+                if line.startswith("data: "):
+                    data = line[6:]
+                    if data.strip() == "[DONE]": break
+                    try:
+                        chunk = json.loads(data)
+                        if chunk.get("type") == "content_block_delta":
+                            full_text += chunk.get("delta",{}).get("text","")
+                        elif chunk.get("type") == "error":
+                            print(f"Claude stream error: {chunk}")
+                            break
+                    except: pass
+            if not full_text.strip():
+                print(f"Claude streamed empty response")
                 if attempt < retries - 1:
                     time.sleep(20)
                     continue
                 return None, None
-            try:
-                body = r.json()
-            except Exception as je:
-                print(f"Claude non-JSON (status {r.status_code}), body: {r.text[:500]}")
-                if attempt < retries - 1:
-                    time.sleep(20)
-                    continue
-                return None, None
-            raw = body.get("content",[{}])[0].get("text","")
-            if not raw or not raw.strip():
-                print(f"Claude empty text. Full body: {str(body)[:500]}")
-                if attempt < retries - 1:
-                    time.sleep(20)
-                    continue
-                return None, None
-            picks = _parse_ai_response(raw)
-            print("Claude returned "+str(len(picks))+" picks")
-            return picks, "Claude Sonnet 4.6"
+            picks = _parse_ai_response(full_text)
+            print(f"Claude returned {len(picks)} picks")
+            return picks, "Claude Sonnet 4.5"
         except Exception as e:
             print(f"Claude exception (attempt {attempt+1}/{retries}): {type(e).__name__}: {str(e)}")
             if attempt < retries - 1:
@@ -1685,11 +1692,11 @@ def _try_groq(user_msg):
         r = requests.post(
             "https://api.groq.com/openai/v1/chat/completions",
             headers={"Authorization":"Bearer "+GROQ_KEY,"Content-Type":"application/json"},
-            json={"model":"llama-3.3-70b-versatile",
+            json={"model":"llama-3.1-8b-instant",
                   "messages":[{"role":"system","content":SYSTEM_PROMPT},
                                {"role":"user","content":user_msg}],
-                  "temperature":0,"max_tokens":8000},
-            timeout=90
+                  "temperature":0,"max_tokens":4000},
+            timeout=60
         )
         if not r.ok:
             print("Groq error: "+r.text[:200])
