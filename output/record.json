@@ -2,6 +2,40 @@
   "picks": [
     {
       "date": "2026-04-05",
+      "game": "Chicago Cubs @ Cleveland Guardians",
+      "pick": "Cubs -1.5",
+      "bet_type": "Run Line",
+      "home_sp": "Slade Cecconi",
+      "away_sp": "Edward Cabrera",
+      "line": "+140",
+      "open_line": "+140",
+      "close_line": "",
+      "tier": "A",
+      "units": 1.5,
+      "ev_pct": 10.0,
+      "result": "",
+      "units_result": 0,
+      "loss_reason": ""
+    },
+    {
+      "date": "2026-04-05",
+      "game": "Milwaukee Brewers @ Kansas City Royals",
+      "pick": "UNDER 7.5",
+      "bet_type": "Total UNDER",
+      "home_sp": "Kris Bubic",
+      "away_sp": "Kyle Harrison",
+      "line": "-105",
+      "open_line": "-105",
+      "close_line": "",
+      "tier": "A",
+      "units": 1.5,
+      "ev_pct": 10.8,
+      "result": "",
+      "units_result": 0,
+      "loss_reason": ""
+    },
+    {
+      "date": "2026-04-05",
       "game": "Philadelphia Phillies @ Colorado Rockies",
       "pick": "OVER 11.0",
       "bet_type": "Total OVER",
@@ -13,10 +47,9 @@
       "tier": "A",
       "units": 1.5,
       "ev_pct": 9.0,
-      "result": "P",
+      "result": "",
       "units_result": 0,
-      "loss_reason": "",
-      "final_score": "Philadelphia Phillies 10 - Colorado Rockies 1"
+      "loss_reason": ""
     },
     {
       "date": "2026-04-05",
@@ -31,10 +64,9 @@
       "tier": "B",
       "units": 1.0,
       "ev_pct": 7.5,
-      "result": "L",
-      "units_result": -1.0,
-      "loss_reason": "",
-      "final_score": "San Diego Padres 2 - Boston Red Sox 5"
+      "result": "",
+      "units_result": 0,
+      "loss_reason": ""
     },
     {
       "date": "2026-04-05",
@@ -45,14 +77,13 @@
       "away_sp": "Chase Burns",
       "line": "+110",
       "open_line": "+110",
-      "close_line": "-158",
+      "close_line": "",
       "tier": "B",
       "units": 1.0,
       "ev_pct": 10.4,
-      "result": "W",
-      "units_result": 1.1,
-      "loss_reason": "",
-      "final_score": "Cincinnati Reds 5 - Texas Rangers 3"
+      "result": "",
+      "units_result": 0,
+      "loss_reason": ""
     },
     {
       "date": "2026-04-05",
@@ -63,14 +94,13 @@
       "away_sp": "Martin Perez",
       "line": "-106",
       "open_line": "-106",
-      "close_line": "-110",
+      "close_line": "",
       "tier": "B",
       "units": 1.0,
       "ev_pct": 7.5,
-      "result": "W",
-      "units_result": 0.943,
-      "loss_reason": "",
-      "final_score": "Atlanta Braves 2 - Arizona Diamondbacks 0"
+      "result": "",
+      "units_result": 0,
+      "loss_reason": ""
     },
     {
       "date": "2026-04-05",
@@ -85,10 +115,9 @@
       "tier": "B",
       "units": 1.0,
       "ev_pct": 8.0,
-      "result": "W",
-      "units_result": 1.0,
-      "loss_reason": "",
-      "final_score": "Seattle Mariners 3 - Los Angeles Angels 1"
+      "result": "",
+      "units_result": 0,
+      "loss_reason": ""
     },
     {
       "date": "2026-04-04",
@@ -103,10 +132,9 @@
       "tier": "B",
       "units": 1.0,
       "ev_pct": 10.0,
-      "result": "L",
-      "units_result": -1.0,
-      "loss_reason": "",
-      "final_score": "Los Angeles Dodgers 13 - Washington Nationals 6"
+      "result": "",
+      "units_result": 0,
+      "loss_reason": ""
     },
     {
       "date": "2026-04-04",
@@ -121,10 +149,9 @@
       "tier": "B",
       "units": 1.0,
       "ev_pct": 11.0,
-      "result": "W",
-      "units_result": 0.943,
-      "loss_reason": "",
-      "final_score": "Baltimore Orioles 4 - Pittsburgh Pirates 5"
+      "result": "",
+      "units_result": 0,
+      "loss_reason": ""
     },
     {
       "date": "2026-04-04",
@@ -139,10 +166,9 @@
       "tier": "B",
       "units": 1.0,
       "ev_pct": 7.0,
-      "result": "W",
-      "units_result": 0.962,
-      "loss_reason": "",
-      "final_score": "San Diego Padres 2 - Boston Red Sox 5"
+      "result": "",
+      "units_result": 0,
+      "loss_reason": ""
     },
     {
       "date": "2026-04-04",
@@ -153,14 +179,13 @@
       "away_sp": "Rhet Lowder",
       "line": "+125",
       "open_line": "+125",
-      "close_line": "-158",
+      "close_line": "",
       "tier": "B",
       "units": 1.0,
       "ev_pct": 13.0,
-      "result": "W",
-      "units_result": 1.25,
-      "loss_reason": "",
-      "final_score": "Cincinnati Reds 5 - Texas Rangers 3"
+      "result": "",
+      "units_result": 0,
+      "loss_reason": ""
     },
     {
       "date": "2026-04-04",
@@ -171,14 +196,30 @@
       "away_sp": "Clay Holmes",
       "line": "-113",
       "open_line": "-113",
-      "close_line": "107",
+      "close_line": "",
       "tier": "B",
       "units": 1.0,
       "ev_pct": 6.9,
-      "result": "W",
-      "units_result": 0.885,
-      "loss_reason": "",
-      "final_score": "New York Mets 10 - San Francisco Giants 3"
+      "result": "",
+      "units_result": 0,
+      "loss_reason": ""
+    },
+    {
+      "date": "2026-04-04",
+      "game": "Milwaukee Brewers @ Kansas City Royals",
+      "pick": "Kansas City Royals ML",
+      "bet_type": "ML",
+      "home_sp": "Luinder Avila",
+      "away_sp": "Chad Patrick",
+      "line": "-106",
+      "open_line": "-106",
+      "close_line": "",
+      "tier": "C",
+      "units": 0.5,
+      "ev_pct": 14.0,
+      "result": "",
+      "units_result": 0,
+      "loss_reason": ""
     },
     {
       "date": "2026-04-03",
@@ -229,10 +270,9 @@
       "tier": "WATCH",
       "units": 0,
       "ev_pct": 0,
-      "result": "W",
-      "units_result": 0.0,
-      "loss_reason": "",
-      "final_score": "Seattle Mariners 3 - Los Angeles Angels 1"
+      "result": "",
+      "units_result": 0,
+      "loss_reason": ""
     },
     {
       "date": "2026-04-03",
@@ -243,14 +283,13 @@
       "away_sp": "Nolan McLean",
       "line": "-124",
       "open_line": "-124",
-      "close_line": "107",
+      "close_line": "",
       "tier": "WATCH",
       "units": 0,
       "ev_pct": 0,
-      "result": "W",
-      "units_result": 0.0,
-      "loss_reason": "",
-      "final_score": "New York Mets 10 - San Francisco Giants 3"
+      "result": "",
+      "units_result": 0,
+      "loss_reason": ""
     },
     {
       "date": "2026-04-02",
