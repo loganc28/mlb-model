@@ -2403,15 +2403,18 @@ def fetch_final_scores(date_str):
             }
     return scores, postponed
 
-def settle_pick(pick, scores):
+def settle_pick(pick, scores, pick_date=None):
     """
     Determine W/L/P for a pick based on final scores.
     Returns updated pick dict or None if game not found/not final.
     """
     game_str = pick.get("game","")
-    # Convert "AWAY @ HOME" to "AWAY@HOME" key
     key = game_str.replace(" @ ","@")
-    score = scores.get(key)
+    # Use date-scoped key to prevent cross-date collisions (same teams play multiple days)
+    if pick_date:
+        score = scores.get(pick_date+"_"+key)
+    else:
+        score = scores.get(key)
     if not score:
         return None  # game not found or not final
 
@@ -2570,7 +2573,9 @@ def auto_settle_record(record):
     for d in dates_needed:
         try:
             day_scores, day_postponed = fetch_final_scores(d)
-            all_scores.update(day_scores)
+            # Store scores with date prefix to prevent cross-date collisions
+            for k, v in day_scores.items():
+                all_scores[d+"_"+k] = v
             all_postponed.update(day_postponed)
             print("Fetched "+str(len(day_scores))+" final scores for "+d+
                   (", "+str(len(day_postponed))+" postponed" if day_postponed else ""))
@@ -2625,7 +2630,8 @@ def auto_settle_record(record):
             if cl:
                 record["picks"][i]["close_line"] = cl
 
-        updated = settle_pick(pick, all_scores)
+        pick_date = pick.get("date", TODAY)
+        updated = settle_pick(pick, all_scores, pick_date)
         if updated:
             record["picks"][i] = updated
             settled_count += 1
