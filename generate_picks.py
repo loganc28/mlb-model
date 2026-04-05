@@ -327,6 +327,120 @@ def get_ump_stats(ump_name):
 
 # ── Stats ─────────────────────────────────────────────────────────────────────
 
+def fetch_savant_pitcher_data(season):
+    """
+    Fetch pitcher Statcast data from Baseball Savant.
+    Returns xFIP, stuff_plus, barrel_pct, hard_hit_pct keyed by player name.
+    Falls back gracefully if unavailable.
+    """
+    try:
+        import csv, io
+        url = "https://baseballsavant.mlb.com/leaderboard/custom"
+        params = {
+            "year": str(season),
+            "type": "pitcher",
+            "filter": "",
+            "min": "1",
+            "selections": "player_id,last_name,first_name,xfip,xera,barrel_batted_rate,hard_hit_percent,whiff_percent,k_percent,bb_percent",
+            "statcast": "true",
+            "csv": "true"
+        }
+        r = requests.get(url, params=params,
+                        headers={"User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"},
+                        timeout=15)
+        if not r.ok or len(r.text) < 100:
+            return {}
+        reader = csv.DictReader(io.StringIO(r.text))
+        result = {}
+        for row in reader:
+            first = (row.get("first_name","") or "").strip()
+            last  = (row.get("last_name","") or "").strip()
+            if not first or not last: continue
+            full_name = first+" "+last
+            pid = row.get("player_id","")
+            def sv(k): 
+                v = row.get(k,"")
+                try: return round(float(v),2) if v and v not in ("","null","NA","--") else None
+                except: return None
+            result[full_name] = {
+                "player_id_savant": pid,
+                "xfip": sv("xfip"),
+                "xera": sv("xera"),
+                "barrel_pct": sv("barrel_batted_rate"),
+                "hard_hit_pct": sv("hard_hit_percent"),
+                "whiff_pct": sv("whiff_percent"),
+            }
+        print(f"Baseball Savant: loaded {len(result)} pitcher records for {season}")
+        return result
+    except Exception as e:
+        print(f"Baseball Savant pitcher fetch failed: {str(e)}")
+        return {}
+
+
+def fetch_savant_batter_data(season):
+    """
+    Fetch team batting Statcast data from Baseball Savant.
+    Returns wOBA, xwOBA, barrel_pct, hard_hit_pct, sprint_speed keyed by team name.
+    Falls back gracefully if unavailable.
+    """
+    try:
+        import csv, io
+        url = "https://baseballsavant.mlb.com/leaderboard/custom"
+        params = {
+            "year": str(season),
+            "type": "batter",
+            "filter": "",
+            "min": "1",
+            "selections": "player_id,last_name,first_name,team_name_alt,woba,xwoba,barrel_batted_rate,hard_hit_percent,exit_velocity_avg",
+            "statcast": "true",
+            "csv": "true"
+        }
+        r = requests.get(url, params=params,
+                        headers={"User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"},
+                        timeout=15)
+        if not r.ok or len(r.text) < 100:
+            return {}
+        reader = csv.DictReader(io.StringIO(r.text))
+        # Aggregate by team
+        team_data = {}
+        team_counts = {}
+        for row in reader:
+            team = (row.get("team_name_alt","") or "").strip()
+            if not team: continue
+            def sv(k):
+                v = row.get(k,"")
+                try: return float(v) if v and v not in ("","null","NA","--") else None
+                except: return None
+            woba = sv("woba"); xwoba = sv("xwoba")
+            barrel = sv("barrel_batted_rate"); hh = sv("hard_hit_percent")
+            ev = sv("exit_velocity_avg")
+            if team not in team_data:
+                team_data[team] = {"woba_sum":0,"xwoba_sum":0,"barrel_sum":0,"hh_sum":0,"ev_sum":0}
+                team_counts[team] = 0
+            if woba: team_data[team]["woba_sum"] += woba
+            if xwoba: team_data[team]["xwoba_sum"] += xwoba
+            if barrel: team_data[team]["barrel_sum"] += barrel
+            if hh: team_data[team]["hh_sum"] += hh
+            if ev: team_data[team]["ev_sum"] += ev
+            team_counts[team] += 1
+        result = {}
+        for team, d in team_data.items():
+            n = team_counts[team]
+            if n == 0: continue
+            result[team] = {
+                "woba_savant": round(d["woba_sum"]/n,3) if d["woba_sum"] else None,
+                "xwoba": round(d["xwoba_sum"]/n,3) if d["xwoba_sum"] else None,
+                "barrel_pct": round(d["barrel_sum"]/n,1) if d["barrel_sum"] else None,
+                "hard_hit_pct": round(d["hh_sum"]/n,1) if d["hh_sum"] else None,
+                "exit_velo": round(d["ev_sum"]/n,1) if d["ev_sum"] else None,
+            }
+        print(f"Baseball Savant: loaded {len(result)} team batting records for {season}")
+        return result
+    except Exception as e:
+        print(f"Baseball Savant batter fetch failed: {str(e)}")
+        return {}
+
+
 def fetch_sp_stats_bulk(season):
     data = mlb_api("/stats", {
         "stats":"season","playerPool":"All","sportId":"1",
@@ -342,12 +456,18 @@ def fetch_sp_stats_bulk(season):
         ip = safe_float(stat.get("inningsPitched","0"))
         so = int(stat.get("strikeOuts",0) or 0)
         bb = int(stat.get("baseOnBalls",0) or 0)
+        hr = int(stat.get("homeRuns",0) or 0)
+        hbp = int(stat.get("hitBatsmen",0) or 0)
+        # Calculate FIP: (13*HR + 3*(BB+HBP) - 2*K) / IP + 3.10
+        fip = round((13*hr + 3*(bb+hbp) - 2*so) / ip + 3.10, 2) if ip > 0 else None
         result[name] = {
             "player_id":pid,"season":season,"gs":gs,"ip":round(ip,1),
             "era":safe_float(stat.get("era")),
+            "fip":fip,
             "whip":safe_float(stat.get("whip")),
             "k9":round(so/ip*9,2) if ip>0 else 0,
             "bb9":round(bb/ip*9,2) if ip>0 else 0,
+            "hr9":round(hr/ip*9,2) if ip>0 else 0,
         }
     return result
 
@@ -477,11 +597,24 @@ def fetch_team_batting(season):
         if g < 5 and season == 2026: continue
         ops = safe_float(stat.get("ops"))
         if ops > 1.2: continue
+        # Calculate wOBA from component stats
+        bb  = int(stat.get("baseOnBalls",0) or 0)
+        hbp = int(stat.get("hitByPitch",0) or 0)
+        h   = int(stat.get("hits",0) or 0)
+        d   = int(stat.get("doubles",0) or 0)
+        t   = int(stat.get("triples",0) or 0)
+        hr  = int(stat.get("homeRuns",0) or 0)
+        ab  = int(stat.get("atBats",0) or 0)
+        sf  = int(stat.get("sacFlies",0) or 0)
+        singles = h - d - t - hr
+        pa = ab + bb + hbp + sf
+        woba = round((0.69*bb + 0.72*hbp + 0.89*singles + 1.27*d + 1.62*t + 2.10*hr) / pa, 3) if pa > 0 else None
         result[team] = {
             "season":season,"games_played":g,
             "ops":ops,"avg":safe_float(stat.get("avg")),
             "obp":safe_float(stat.get("obp")),
             "slg":safe_float(stat.get("slg")),
+            "woba":woba,
             "runs_per_game":round(runs/g,2) if g>0 else 0,
         }
     return result
@@ -514,7 +647,7 @@ def fetch_team_home_away_splits(team_id, season):
     _SPLITS_CACHE[cache_key] = result
     return result
 
-STATS_CACHE_VERSION = "v2"  # bump when fetch logic changes to force cache refresh
+STATS_CACHE_VERSION = "v3"  # bump when fetch logic changes to force cache refresh
 
 def fetch_and_cache_stats():
     if STATS_CACHE.exists():
@@ -536,7 +669,16 @@ def fetch_and_cache_stats():
         "team_batting_2026":fetch_team_batting(2026),
         "player_id_cache":{},
     }
+    # Enrich with Baseball Savant Statcast data
+    print("Fetching Baseball Savant data...")
+    stats["savant_pitchers_2026"] = fetch_savant_pitcher_data(2026)
+    stats["savant_pitchers_2025"] = fetch_savant_pitcher_data(2025)
+    stats["savant_batting_2026"] = fetch_savant_batter_data(2026)
+    stats["savant_batting_2025"] = fetch_savant_batter_data(2025)
     print("SP stats: "+str(len(stats["sp_2025"]))+" in 2025, "+str(len(stats["sp_2026"]))+" in 2026")
+    savant_p = len(stats["savant_pitchers_2026"]) + len(stats["savant_pitchers_2025"])
+    if savant_p > 0:
+        print(f"Savant pitcher data: {savant_p} records loaded")
     STATS_CACHE.write_text(json.dumps(stats))
     return stats
 
@@ -618,19 +760,56 @@ def get_pitcher_stats(name, stats, is_home=False):
             splits = fetch_pitcher_splits(pid, 2025)
         if splits:
             primary["splits"] = splits
-            # Apply relevant split based on whether pitching at home or away
             if is_home and "home_era" in splits:
                 primary["relevant_split"] = "Home ERA: "+str(splits["home_era"])+" K/9: "+str(splits.get("home_k9",""))
             elif not is_home and "away_era" in splits:
                 primary["relevant_split"] = "Away ERA: "+str(splits["away_era"])+" K/9: "+str(splits.get("away_k9",""))
+
+    # Merge Baseball Savant Statcast data
+    def find_savant(savant_pool, name):
+        if name in savant_pool: return savant_pool[name]
+        last = name.split()[-1].lower() if name else ""
+        for k,v in savant_pool.items():
+            if k.split()[-1].lower() == last and last: return v
+        return {}
+
+    sv26 = find_savant(stats.get("savant_pitchers_2026",{}), name)
+    sv25 = find_savant(stats.get("savant_pitchers_2025",{}), name)
+    sv = sv26 if sv26 else sv25
+    if sv:
+        if sv.get("xfip"): primary["xfip"] = sv["xfip"]
+        if sv.get("xera"): primary["xera"] = sv["xera"]
+        if sv.get("barrel_pct"): primary["barrel_pct"] = sv["barrel_pct"]
+        if sv.get("hard_hit_pct"): primary["hard_hit_pct"] = sv["hard_hit_pct"]
+        if sv.get("whiff_pct"): primary["whiff_pct"] = sv["whiff_pct"]
 
     return primary
 
 def get_team_stats(team, stats, stat_type):
     s26 = stats.get(stat_type+"_2026",{}).get(team,{})
     s25 = stats.get(stat_type+"_2025",{}).get(team,{})
-    if s26: s26["note"]="2026 YTD"; return s26
-    if s25: s25["note"]="2025 full season"; return s25
+    result = {}
+    if s26: s26["note"]="2026 YTD"; result = dict(s26)
+    elif s25: s25["note"]="2025 full season"; result = dict(s25)
+
+    # Merge Savant batting data for hitting stats
+    if stat_type == "team_batting":
+        # Try abbreviation match for Savant team names
+        sv26 = stats.get("savant_batting_2026",{})
+        sv25 = stats.get("savant_batting_2025",{})
+        sv = sv26.get(team) or sv25.get(team)
+        if not sv:
+            # Try partial match
+            for k,v in {**sv26,**sv25}.items():
+                if k and (k in team or team in k or k.split()[-1] in team):
+                    sv = v; break
+        if sv:
+            if sv.get("xwoba"): result["xwoba"] = sv["xwoba"]
+            if sv.get("barrel_pct"): result["barrel_pct"] = sv["barrel_pct"]
+            if sv.get("hard_hit_pct"): result["hard_hit_pct"] = sv["hard_hit_pct"]
+            if sv.get("exit_velo"): result["exit_velo"] = sv["exit_velo"]
+
+    return result if result else {}
     return {}
 
 # ── Lineups ───────────────────────────────────────────────────────────────────
@@ -1161,13 +1340,25 @@ ABSOLUTE RULES — violating these means the pick is wrong:
    Thresholds: ML = 3%, Run Line = 3%, Totals = 4%. NO EXCEPTIONS.
 2. Tier assignment: MAX = 10%+, A = 7%+, B = 4-6%, C = exactly 3%, WATCH = 1-2%, SKIP = below 1%.
    BASELINE WIN PROBABILITY: Each game includes baseline_home_win_prob calculated from a
-   Pythagorean run estimator using SP ERA, team OPS, and park factor. Use this as your starting
-   point for win_prob_pct. Adjust UP or DOWN by maximum 7% based on:
+   Pythagorean run estimator using SP xFIP (or FIP, or ERA as fallback), team xwOBA (or wOBA,
+   or OPS as fallback), bullpen ERA, and park factor.
+   METRIC HIERARCHY (most to least predictive):
+   - SP: xFIP > FIP > ERA. xFIP normalizes HR rate, FIP isolates pitcher control, ERA includes luck/defense.
+   - Offense: xwOBA > wOBA > OPS. xwOBA uses expected values based on contact quality.
+   - Statcast: barrel_pct (hard squared-up contact %), hard_hit_pct (95+ mph exit velo), whiff_pct (swing/miss rate).
+   Use this as your starting point for win_prob_pct. Adjust UP or DOWN by maximum 7% based on:
    - Recent form (HOT/DECLINING flags): ±3-5%
    - Bullpen fatigue differential: ±2-3%
    - Confirmed injuries to key players: ±1-2%
    Do NOT invent win_prob from scratch. Start from baseline_home_win_prob and adjust.
    For away team win prob: 100 - baseline_home_win_prob (then adjust).
+   SP ANALYSIS: Always reference xFIP first when available. A pitcher with ERA 3.50 but xFIP 4.80
+   is likely to regress — ERA is hiding poor underlying performance. A pitcher with ERA 4.50 but
+   xFIP 3.20 is pitching better than ERA suggests. High barrel_pct against a pitcher signals
+   danger regardless of ERA. High whiff_pct signals strikeout dominance.
+   LINEUP ANALYSIS: Always reference xwOBA or wOBA when available. xwOBA above 0.340 is strong,
+   below 0.300 is weak. High barrel_pct and hard_hit_pct from the offense signals dangerous lineup
+   even if OPS looks average.
 3. NEVER bet ML worse than -180. Automatic SKIP regardless of edge.
 4. NEVER use a total line you invented. Only use actual lines from the odds data provided.
 5. No daily unit cap. EV threshold and scoring rubric are the only filters.
@@ -1565,42 +1756,57 @@ def enforce_ev_rules(picks):
 
 def estimate_win_prob(home_sp_era, away_sp_era, home_ops, away_ops,
                       park_runs, home_recent_era=None, away_recent_era=None,
-                      home_bullpen_era=None, away_bullpen_era=None):
+                      home_bullpen_era=None, away_bullpen_era=None,
+                      home_sp_fip=None, away_sp_fip=None,
+                      home_woba=None, away_woba=None):
     """
     Estimate home team win probability using Pythagorean run expectation.
-    Uses recent ERA when available as it's more predictive than season ERA.
-    Incorporates team bullpen ERA for more accurate run prevention estimate.
-    Claude adjusts this baseline by max ±7% based on qualitative factors.
+    Uses FIP over ERA when available — FIP is more predictive (removes defense/luck).
+    Uses wOBA over OPS when available — wOBA weights hits correctly.
+    Incorporates team bullpen ERA for full pitching picture.
+    Claude adjusts this baseline by max ±7%.
     """
-    lg_era = 4.20; lg_ops = 0.720; lg_runs_pg = 4.5
+    lg_era = 4.20; lg_ops = 0.720; lg_woba = 0.320; lg_runs_pg = 4.5
 
-    # Use recent ERA if available and meaningful (not zero)
-    h_era = home_recent_era if home_recent_era and home_recent_era > 0 else home_sp_era
-    a_era = away_recent_era if away_recent_era and away_recent_era > 0 else away_sp_era
+    # Prefer xFIP > FIP > ERA — xFIP is most predictive (normalizes HR rate)
+    h_era = (home_sp_fip if home_sp_fip and home_sp_fip > 0 else
+             (home_recent_era if home_recent_era and home_recent_era > 0 else home_sp_era))
+    a_era = (away_sp_fip if away_sp_fip and away_sp_fip > 0 else
+             (away_recent_era if away_recent_era and away_recent_era > 0 else away_sp_era))
 
-    # Blend SP ERA with bullpen ERA (SP pitches ~5 innings, bullpen ~4)
-    # Weight: SP 55%, bullpen 45% of run prevention
+    # Blend SP with bullpen ERA (SP ~5 innings, bullpen ~4 innings)
     if home_bullpen_era and home_bullpen_era > 0:
         h_era = h_era * 0.55 + home_bullpen_era * 0.45
     if away_bullpen_era and away_bullpen_era > 0:
         a_era = a_era * 0.55 + away_bullpen_era * 0.45
 
-    # Cap ERAs to prevent extreme distortion from tiny samples
     h_era = min(max(h_era, 1.0), 9.0)
     a_era = min(max(a_era, 1.0), 9.0)
-    # Use league average when OPS is 0 (missing data) — never use 0 directly
-    h_ops = min(max(home_ops, 0.550), 1.000) if home_ops and home_ops > 0.100 else lg_ops
-    a_ops = min(max(away_ops, 0.550), 1.000) if away_ops and away_ops > 0.100 else lg_ops
+
+    # Use wOBA when available — convert to run scoring scale relative to league
+    # wOBA 0.320 = league average OPS ~0.720
+    if home_woba and home_woba > 0.100:
+        h_off = min(max(home_woba / lg_woba, 0.6), 1.5)
+    else:
+        h_ops = min(max(home_ops, 0.550), 1.000) if home_ops and home_ops > 0.100 else lg_ops
+        h_off = h_ops / lg_ops
+
+    if away_woba and away_woba > 0.100:
+        a_off = min(max(away_woba / lg_woba, 0.6), 1.5)
+    else:
+        a_ops = min(max(away_ops, 0.550), 1.000) if away_ops and away_ops > 0.100 else lg_ops
+        a_off = a_ops / lg_ops
+
     pf = min(max(park_runs, 0.80), 1.30)
 
-    # Expected runs per game for each team
-    home_runs = lg_runs_pg * (a_era / lg_era) * (h_ops / lg_ops) * pf * 1.03  # home advantage
-    away_runs = lg_runs_pg * (h_era / lg_era) * (a_ops / lg_ops) * pf
+    # Expected runs per game
+    home_runs = lg_runs_pg * (a_era / lg_era) * h_off * pf * 1.03  # home advantage
+    away_runs = lg_runs_pg * (h_era / lg_era) * a_off * pf
 
     # Pythagorean expectation (Davenport exponent 1.83)
     exp = 1.83
     if home_runs <= 0 or away_runs <= 0:
-        return 54.0  # fallback to slight home advantage
+        return 54.0
     home_win_pct = home_runs**exp / (home_runs**exp + away_runs**exp)
     return round(home_win_pct * 100, 1)
 
@@ -1707,9 +1913,16 @@ def summarize_game(g):
         "home_sp": g["home_sp"],
         "away_sp_stats": {
             "era": away_sp.get("era",0),
+            "fip": away_sp.get("fip"),
+            "xfip": away_sp.get("xfip"),
+            "xera": away_sp.get("xera"),
             "k9": away_sp.get("k9",0),
             "bb9": away_sp.get("bb9",0),
+            "hr9": away_sp.get("hr9",0),
             "whip": away_sp.get("whip",0),
+            "barrel_pct": away_sp.get("barrel_pct"),
+            "hard_hit_pct": away_sp.get("hard_hit_pct"),
+            "whiff_pct": away_sp.get("whiff_pct"),
             "note": away_sp.get("note",""),
             "form_flag": away_sp.get("form_flag",""),
             "relevant_split": away_sp.get("relevant_split",""),
@@ -1718,9 +1931,16 @@ def summarize_game(g):
         },
         "home_sp_stats": {
             "era": home_sp.get("era",0),
+            "fip": home_sp.get("fip"),
+            "xfip": home_sp.get("xfip"),
+            "xera": home_sp.get("xera"),
             "k9": home_sp.get("k9",0),
             "bb9": home_sp.get("bb9",0),
+            "hr9": home_sp.get("hr9",0),
             "whip": home_sp.get("whip",0),
+            "barrel_pct": home_sp.get("barrel_pct"),
+            "hard_hit_pct": home_sp.get("hard_hit_pct"),
+            "whiff_pct": home_sp.get("whiff_pct"),
             "note": home_sp.get("note",""),
             "form_flag": home_sp.get("form_flag",""),
             "relevant_split": home_sp.get("relevant_split",""),
@@ -1729,6 +1949,11 @@ def summarize_game(g):
         },
         "away_team": {
             "ops": away_bat.get("ops",0),
+            "woba": away_bat.get("woba"),
+            "xwoba": away_bat.get("xwoba"),
+            "barrel_pct": away_bat.get("barrel_pct"),
+            "hard_hit_pct": away_bat.get("hard_hit_pct"),
+            "exit_velo": away_bat.get("exit_velo"),
             "bullpen_fatigue": away_bp.get("fatigue_level","UNKNOWN"),
             "fatigued_arms": away_bp.get("fatigued_arms",[])[:3],
             "injuries": [i["name"] for i in g.get("away_injuries",[])[:2]],
@@ -1736,6 +1961,11 @@ def summarize_game(g):
         },
         "home_team": {
             "ops": home_bat.get("ops",0),
+            "woba": home_bat.get("woba"),
+            "xwoba": home_bat.get("xwoba"),
+            "barrel_pct": home_bat.get("barrel_pct"),
+            "hard_hit_pct": home_bat.get("hard_hit_pct"),
+            "exit_velo": home_bat.get("exit_velo"),
             "bullpen_fatigue": home_bp.get("fatigue_level","UNKNOWN"),
             "fatigued_arms": home_bp.get("fatigued_arms",[])[:3],
             "injuries": [i["name"] for i in g.get("home_injuries",[])[:2]],
@@ -1803,6 +2033,11 @@ def summarize_game(g):
             away_rec.get("era_last3", 0) or 0,
             home_pit.get("team_era") or None,
             away_pit.get("team_era") or None,
+            # Prefer xFIP over FIP — xFIP normalizes HR rate, most predictive
+            home_sp.get("xfip") or home_sp.get("fip") or None,
+            away_sp.get("xfip") or away_sp.get("fip") or None,
+            g.get("home_team_batting",{}).get("xwoba") or g.get("home_team_batting",{}).get("woba") or None,
+            g.get("away_team_batting",{}).get("xwoba") or g.get("away_team_batting",{}).get("woba") or None,
         ),
     }
 
@@ -3576,58 +3811,26 @@ def main():
     # Check trigger conditions for regeneration
     def should_regenerate(locked_picks, new_game_data, old_odds):
         triggers = []
+        # Only consider today's unsettled active picks
+        active_today = [lp for lp in locked_picks
+                        if lp.get("date") == TODAY
+                        and not lp.get("result")
+                        and lp.get("tier") not in ("WATCH","SKIP")]
+
         for gd in new_game_data:
-            game_key = gd["away"]+"@"+gd["home"]
-            # Check rain 80%+
-            precip = gd.get("weather",{}).get("precip_pct",0)
-            try:
-                if precip and int(precip) >= 80:
-                    triggers.append("Rain 80%+ at "+gd["home"])
-            except (ValueError, TypeError):
-                pass
-            # Check SP scratch — SP changed from what was in locked picks
-            for lp in locked_picks:
-                if gd["away"]+" @ "+gd["home"] == lp.get("game",""):
+            game_label = gd["away"]+" @ "+gd["home"]
+            game_status = gd.get("status","")
+            if game_status in ("In Progress","Live","Final","Game Over","Completed"):
+                continue
+            # SP scratch is the ONLY valid regen trigger after picks are locked
+            for lp in active_today:
+                if game_label == lp.get("game",""):
                     old_home_sp = lp.get("home_sp","")
                     old_away_sp = lp.get("away_sp","")
                     if old_home_sp and old_home_sp != gd["home_sp"] and gd["home_sp"] != "TBD":
                         triggers.append("SP scratch: "+old_home_sp+" → "+gd["home_sp"])
                     if old_away_sp and old_away_sp != gd["away_sp"] and gd["away_sp"] != "TBD":
                         triggers.append("SP scratch: "+old_away_sp+" → "+gd["away_sp"])
-            # Check line movement 40+ cents — ONLY on games where we have an active pick
-            game_status = gd.get("status","")
-            if game_status in ("In Progress","Live","Final","Game Over","Completed"):
-                continue
-            new_odds = gd.get("odds",{})
-            game_label = gd["away"]+" @ "+gd["home"]
-            active_picks_for_game = [lp for lp in locked_picks
-                                     if lp.get("game","") == game_label
-                                     and not lp.get("result")
-                                     and lp.get("tier") not in ("WATCH","SKIP")]
-            for lp in active_picks_for_game:
-                try:
-                    old_line = float(str(lp.get("open_line","0")).replace("+",""))
-                    if old_line == 0:
-                        continue
-                    bet_type = lp.get("bet_type","")
-                    # Compare against the right market
-                    if "ML" in bet_type:
-                        for team, price in new_odds.get("moneyline",{}).items():
-                            if team in lp.get("pick","") and abs(float(price) - old_line) >= 40:
-                                triggers.append("Line moved 40+ cents on "+team)
-                    elif "Total" in bet_type:
-                        new_total = new_odds.get("total",{})
-                        new_over = new_total.get("over","")
-                        if new_over and abs(float(str(new_over).replace("+","")) - old_line) >= 40:
-                            triggers.append("Line moved 40+ cents on total for "+game_label)
-                    elif "Run Line" in bet_type:
-                        pick_team = lp.get("pick","").split(" +")[0].split(" -")[0]
-                        for team, rl in new_odds.get("runline",{}).items():
-                            if team in pick_team:
-                                new_price = rl.get("price","")
-                                if new_price and abs(float(str(new_price).replace("+","")) - old_line) >= 40:
-                                    triggers.append("Line moved 40+ cents on "+team+" run line")
-                except: pass
         return triggers
 
     force_regen = False
@@ -3691,18 +3894,42 @@ def main():
         _now_et = (_now_utc.hour - 4) % 24
         if _now_et >= 12:  # After noon ET — umps are posted
             ump_updated = 0
+            clv_updated = 0
             for g in games_with_data:
                 hp_ump = g.get("hp_ump","")
-                if not hp_ump or hp_ump == "TBD":
-                    continue
                 game_key = g["away"]+" @ "+g["home"]
+                current_odds = g.get("odds",{})
                 for p in record["picks"]:
-                    if p.get("game","") == game_key and p.get("date") == TODAY and not p.get("result"):
-                        if p.get("hp_ump","") != hp_ump:
-                            p["hp_ump"] = hp_ump
-                            ump_updated += 1
-            if ump_updated:
-                print(f"3PM ump patch: updated {ump_updated} picks with real ump assignments")
+                    if p.get("game","") != game_key or p.get("date") != TODAY or p.get("result"):
+                        continue
+                    # Inject real ump
+                    if hp_ump and hp_ump != "TBD" and p.get("hp_ump","") != hp_ump:
+                        p["hp_ump"] = hp_ump
+                        ump_updated += 1
+                    # Capture closing line if not already set
+                    if not p.get("close_line") and current_odds:
+                        bet_type = p.get("bet_type","")
+                        pick_str = p.get("pick","").upper()
+                        cl = ""
+                        try:
+                            if "ML" in bet_type:
+                                for team, price in current_odds.get("moneyline",{}).items():
+                                    if team.upper() in pick_str or pick_str in team.upper():
+                                        cl = str(price); break
+                            elif "OVER" in bet_type:
+                                cl = str(current_odds.get("total",{}).get("over",""))
+                            elif "UNDER" in bet_type:
+                                cl = str(current_odds.get("total",{}).get("under",""))
+                            elif "Run Line" in bet_type:
+                                for team, rl in current_odds.get("runline",{}).items():
+                                    if team.upper() in pick_str or pick_str in team.upper():
+                                        cl = str(rl.get("price","")); break
+                        except: pass
+                        if cl and cl not in ("","None","0"):
+                            p["close_line"] = cl
+                            clv_updated += 1
+            if ump_updated or clv_updated:
+                print(f"3PM patch: {ump_updated} ump updates, {clv_updated} closing lines captured")
                 save_record(record)
                 picks = [p for p in record.get("picks",[]) if p.get("date")==TODAY]
 
