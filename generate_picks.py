@@ -686,30 +686,42 @@ def fetch_and_cache_stats():
                 return cached
         except: pass
     print("Fetching fresh stats...")
+    import time as _t, concurrent.futures
+
+    # Run all API calls in parallel — cuts fetch time from ~3min to ~30s
+    _t0 = _t.time()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
+        f_sp25      = ex.submit(fetch_sp_stats_bulk, 2025)
+        f_sp26      = ex.submit(fetch_sp_stats_bulk, 2026)
+        f_tp25      = ex.submit(fetch_team_pitching, 2025)
+        f_tp26      = ex.submit(fetch_team_pitching, 2026)
+        f_tb25      = ex.submit(fetch_team_batting,  2025)
+        f_tb26      = ex.submit(fetch_team_batting,  2026)
+        f_sv_p26    = ex.submit(fetch_savant_pitcher_data, 2026)
+        f_sv_p25    = ex.submit(fetch_savant_pitcher_data, 2025)
+        f_sv_b26    = ex.submit(fetch_savant_batter_data,  2026)
+        f_sv_b25    = ex.submit(fetch_savant_batter_data,  2025)
+
     stats = {
-        "date":TODAY,
-        "version":STATS_CACHE_VERSION,
-        "sp_2025":fetch_sp_stats_bulk(2025),
-        "sp_2026":fetch_sp_stats_bulk(2026),
-        "team_pitching_2025":fetch_team_pitching(2025),
-        "team_pitching_2026":fetch_team_pitching(2026),
-        "team_batting_2025":fetch_team_batting(2025),
-        "team_batting_2026":fetch_team_batting(2026),
-        "player_id_cache":{},
+        "date": TODAY,
+        "version": STATS_CACHE_VERSION,
+        "sp_2025":             f_sp25.result(),
+        "sp_2026":             f_sp26.result(),
+        "team_pitching_2025":  f_tp25.result(),
+        "team_pitching_2026":  f_tp26.result(),
+        "team_batting_2025":   f_tb25.result(),
+        "team_batting_2026":   f_tb26.result(),
+        "savant_pitchers_2026":f_sv_p26.result(),
+        "savant_pitchers_2025":f_sv_p25.result(),
+        "savant_batting_2026": f_sv_b26.result(),
+        "savant_batting_2025": f_sv_b25.result(),
+        "player_id_cache": {},
     }
-    # Enrich with Baseball Savant Statcast data
-    print("Fetching Baseball Savant data...")
-    import time as _st
-    _sv_t = _st.time()
-    stats["savant_pitchers_2026"] = fetch_savant_pitcher_data(2026)
-    stats["savant_pitchers_2025"] = fetch_savant_pitcher_data(2025)
-    stats["savant_batting_2026"] = fetch_savant_batter_data(2026)
-    stats["savant_batting_2025"] = fetch_savant_batter_data(2025)
-    print(f"Savant fetch total: {round(_st.time()-_sv_t,1)}s")
-    print("SP stats: "+str(len(stats["sp_2025"]))+" in 2025, "+str(len(stats["sp_2026"]))+" in 2026")
-    savant_p = len(stats["savant_pitchers_2026"]) + len(stats["savant_pitchers_2025"])
-    if savant_p > 0:
-        print(f"Savant pitcher data: {savant_p} records loaded")
+    print(f"Stats fetch: {round(_t.time()-_t0,1)}s total (parallel)")
+    print(f"SP stats: {len(stats['sp_2025'])} in 2025, {len(stats['sp_2026'])} in 2026")
+    sv_p = len(stats['savant_pitchers_2026']) + len(stats['savant_pitchers_2025'])
+    sv_b = len(stats['savant_batting_2026']) + len(stats['savant_batting_2025'])
+    print(f"Savant: {sv_p} pitcher records, {sv_b} batting records")
     STATS_CACHE.write_text(json.dumps(stats))
     return stats
 
@@ -3704,10 +3716,7 @@ def main():
     if not _can_generate:
         print("Outside generation window ("+str(_now_et_hour).zfill(2)+":xx ET). Rebuilding pages only — no new picks.")
 
-    import time as _time
-    _t0 = _time.time()
     stats = fetch_and_cache_stats()
-    print(f"Stats fetch: {round(_time.time()-_t0,1)}s")
     games = fetch_mlb_games()
     if not games:
         print("No games found -- exiting")
