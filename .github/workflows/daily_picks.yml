@@ -2,22 +2,18 @@ name: Daily MLB Picks
 
 on:
   schedule:
-    - cron: '0 11 * * *'
-    - cron: '0 19 * * *'
+    - cron: '0 11 * * *'   # 7AM ET
+    - cron: '0 19 * * *'   # 3PM ET
   workflow_dispatch:
     inputs:
       force_regenerate:
-        description: 'Force regenerate picks? (yes/no)'
+        description: 'Force regenerate picks (yes/no)'
         required: false
         default: 'no'
 
-env:
-  FORCE_REGENERATE: ${{ github.event.inputs.force_regenerate || 'no' }}
-
 jobs:
-  generate-picks:
+  generate:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -30,19 +26,19 @@ jobs:
       - name: Install dependencies
         run: pip install requests
 
-      - name: Generate picks
+      - name: Run picks generator
         env:
-          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
-          WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          FORCE_REGENERATE: ${{ env.FORCE_REGENERATE }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
+          FORCE_REGENERATE: ${{ github.event.inputs.force_regenerate || 'no' }}
         run: python generate_picks.py
 
       - name: Commit and push output
         run: |
-          git config --global user.name "mlb-model-bot"
-          git config --global user.email "bot@mlbmodel.local"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add output/
-          git diff --staged --quiet || git commit -m "picks: $(date +%Y-%m-%d)"
+          git diff --staged --quiet || git commit -m "chore: update picks $(date -u '+%Y-%m-%d %H:%M UTC')"
           git push
