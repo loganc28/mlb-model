@@ -3533,10 +3533,9 @@ def main():
     record["updated"] = TODAY
     save_record(record)
     
-    # Write lock file to prevent 3PM run from regenerating
-    if not FORCE_REGEN:
-        LOCK_FILE.write_text("Picks generated "+TODAY+" at "+datetime.datetime.utcnow().isoformat())
-        print("Lock file written: "+str(LOCK_FILE))
+    # Write lock file to prevent duplicate generation today
+    LOCK_FILE.write_text("Picks generated "+TODAY+" at "+datetime.datetime.utcnow().isoformat())
+    print("Lock file written: "+str(LOCK_FILE))
 
     output = {
         "date":         TODAY,
