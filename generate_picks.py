@@ -1931,16 +1931,38 @@ def enforce_ev_rules(picks):
             enforced.append(p)
             continue
 
-        # Auto-downgrade if flags explicitly say factors contradict pick direction
+        # Hard wind contradiction check — don't rely on Claude to self-flag this
+        pick_str_upper = p.get("pick","").upper()
+        is_over = "OVER" in pick_str_upper and "Total" in p.get("bet_type","")
+        is_under = "UNDER" in pick_str_upper and "Total" in p.get("bet_type","")
+        weather_impact = (p.get("weather_impact","") or "").lower()
+
+        if is_over and ("blowing in" in weather_impact or "wind in" in weather_impact):
+            # Check wind speed — only matters if meaningful
+            import re
+            mph_nums = re.findall(r'(\d+\.?\d*)\s*mph', weather_impact)
+            wind_speed = max([float(m) for m in mph_nums], default=0) if mph_nums else 0
+            if wind_speed >= 12:
+                print(f"WIND CONTRADICTION: {p.get('game','')} — OVER pick but wind IN {wind_speed}mph, downgrading to WATCH")
+                p["tier"] = "WATCH"; p["units"] = 0
+                p["avoid_reason"] = f"Wind IN {wind_speed}mph directly contradicts OVER pick"
+
+        if is_under and ("blowing out" in weather_impact or "wind out" in weather_impact):
+            import re
+            mph_nums = re.findall(r'(\d+\.?\d*)\s*mph', weather_impact)
+            wind_speed = max([float(m) for m in mph_nums], default=0) if mph_nums else 0
+            if wind_speed >= 12:
+                print(f"WIND CONTRADICTION: {p.get('game','')} — UNDER pick but wind OUT {wind_speed}mph, downgrading to WATCH")
+                p["tier"] = "WATCH"; p["units"] = 0
+                p["avoid_reason"] = f"Wind OUT {wind_speed}mph directly contradicts UNDER pick"
+
+        # Text-based contradiction check as additional safety net
         if tier in ("B","C"):
             flags_lower = (p.get("flags","") + " " + p.get("rationale","")).lower()
-            pick_str = p.get("pick","").upper()
-            is_under = "UNDER" in pick_str
-            is_over = "OVER" in pick_str
-            contradictions = 0
-            if is_under and "contradicts under" in flags_lower: contradictions += 1
-            if is_over and "contradicts over" in flags_lower: contradictions += 1
-            if contradictions >= 1:
+            if is_under and "contradicts under" in flags_lower:
+                print("CONTRADICTION: "+p.get("game","")+" — contradicting factors, downgrading to WATCH")
+                p["tier"] = "WATCH"; p["units"] = 0
+            if is_over and "contradicts over" in flags_lower:
                 print("CONTRADICTION: "+p.get("game","")+" — contradicting factors, downgrading to WATCH")
                 p["tier"] = "WATCH"; p["units"] = 0
 
@@ -2073,6 +2095,22 @@ def enforce_ev_rules(picks):
                     p["tier"] = "WATCH"
                     p["units"] = 0
                     p["avoid_reason"] = "Line validation failed — price inconsistent with run line direction"
+                # Weak offense should never be -1.5 favorite
+                lineup = p.get("lineup_analysis","").lower()
+                if "-1.5" in pick_str:
+                    # Extract OPS from lineup analysis
+                    import re
+                    ops_nums = re.findall(r'ops\s*([\d.]+)', lineup)
+                    for ops_str in ops_nums:
+                        try:
+                            ops_val = float(ops_str)
+                            if ops_val > 0 and ops_val < 0.720:
+                                print(f"WEAK OFFENSE -1.5: {p.get('game','')} — OPS {ops_val} too weak to cover -1.5, downgrading to WATCH")
+                                p["tier"] = "WATCH"
+                                p["units"] = 0
+                                p["avoid_reason"] = f"Run line -1.5 requires strong offense — OPS {ops_val} below 0.720 threshold"
+                                break
+                        except: pass
             except: pass
 
         enforced.append(p)
@@ -2169,13 +2207,17 @@ def enforce_ev_rules(picks):
             p["units"] = 1.0
             p["avoid_reason"] = ""
 
-    # Clean up stale cap messages from avoid_reason
+    # Clean up stale cap messages and empty avoid_reason
     for p in enforced:
         ar = p.get("avoid_reason","")
         if "[Daily 5u cap reached]" in str(ar):
             p["avoid_reason"] = str(ar).replace(" [Daily 5u cap reached]","").strip()
-        if p.get("avoid_reason","") == "":
-            p["avoid_reason"] = ""
+        # Fill empty avoid_reason on WATCH/SKIP picks
+        if p.get("tier") in ("WATCH","SKIP") and not p.get("avoid_reason","").strip():
+            if p.get("tier") == "WATCH":
+                p["avoid_reason"] = "Insufficient edge — tracking only"
+            else:
+                p["avoid_reason"] = "No clear edge identified"
 
     return enforced
 
@@ -2287,8 +2329,8 @@ def estimate_nrfi_odds(away_sp_stats, home_sp_stats, park_factor, game_total):
     # Base NRFI probability
     nrfi_prob = lg_nrfi_pct * combined_sp * park_adj * total_adj
 
-    # Clamp to reasonable range
-    nrfi_prob = min(max(nrfi_prob, 0.30), 0.80)
+    # Clamp to realistic range — NRFI historically 57% league avg, max ~70% even for elite matchups
+    nrfi_prob = min(max(nrfi_prob, 0.35), 0.70)
     yrfi_prob = 1.0 - nrfi_prob
 
     # Convert to American odds
