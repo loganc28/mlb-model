@@ -32,6 +32,161 @@ if LOCK_FILE.exists() and not FORCE_REGEN and INDEX_FILE.exists():
 # ──────────────────────────────────────────────────────────────────────────────
 
 
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+def safe_float(val, default=0.0):
+    try:
+        if val in (None,"","-","--","-.--","---"): return default
+        return float(val)
+    except: return default
+
+def score_id(game_str):
+    return "s_" + game_str.replace(" @ ","_AT_").replace(" ","_")
+
+def normalize_team(name):
+    return TEAM_NAME_MAP.get(name, name)
+
+def mlb_api(path, params=None):
+    try:
+        r = requests.get("https://statsapi.mlb.com/api/v1"+path, params=params, timeout=15)
+        r.raise_for_status()
+        return r.json()
+    except Exception as e:
+        print("MLB API error ("+path+"): "+str(e))
+        return {}
+
+def wind_impact(team_name, wind_dir_str, wind_mph):
+    """Calculate whether wind is blowing in or out at this specific stadium."""
+    sd = STADIUMS.get(team_name, {})
+    if sd.get("dome"):
+        return "Dome — weather irrelevant"
+    if wind_mph == "N/A" or wind_mph < 5:
+        return "Wind minimal (<5 mph)"
+
+    # Convert wind direction string to degrees (wind is FROM this direction)
+    dir_map = {"N":0,"NNE":22,"NE":45,"ENE":67,"E":90,"ESE":112,"SE":135,"SSE":157,
+               "S":180,"SSW":202,"SW":225,"WSW":247,"W":270,"WNW":292,"NW":315,"NNW":337}
+    wind_from_deg = dir_map.get(wind_dir_str.upper(), -1)
+    if wind_from_deg < 0:
+        return str(wind_mph)+" mph "+wind_dir_str+" — direction unclear"
+
+    of_facing = sd.get("of_facing", -1)
+    if of_facing < 0:
+        return str(wind_mph)+" mph "+wind_dir_str
+
+    # Angle between wind direction (FROM) and outfield facing
+    # Wind blowing FROM same direction as OF faces = blowing IN (toward home plate)
+    # Wind blowing FROM opposite direction = blowing OUT (toward OF)
+    angle_diff = abs(((wind_from_deg - of_facing + 180) % 360) - 180)
+
+    if angle_diff < 45:
+        direction = "blowing IN from CF"
+        impact = "suppresses scoring" if wind_mph >= 12 else "slight scoring suppression"
+        lean = "UNDER lean" if wind_mph >= 12 else ""
+    elif angle_diff > 135:
+        direction = "blowing OUT to CF"
+        impact = "boosts HR/scoring" if wind_mph >= 12 else "slight scoring boost"
+        lean = "OVER lean" if wind_mph >= 12 else ""
+    else:
+        direction = "crosswind"
+        impact = "minimal scoring impact"
+        lean = ""
+
+    # Temperature modifier — cold kills wind OUT benefit for OVER
+    temp_note = ""
+    if lean == "OVER lean":
+        # Below 50F: wind OUT loses all OVER value (cold = dead ball)
+        # 50-60F: partial value
+        # Above 60F: full value
+        pass  # temp is passed via weather dict; note added in summarize_game
+
+    result = str(wind_mph)+" mph "+wind_dir_str+" — "+direction
+    if lean:
+        result += " ("+lean+")"
+    return result
+
+def effective_wind_lean(wind_impact_str, temp_f):
+    """
+    Calculate wind's directional contribution to scoring environment.
+    Returns a string describing the wind factor — NOT a pick recommendation.
+    Wind is ONE factor among many. Claude weighs it alongside SP quality,
+    bullpen fatigue, park factor, and lineup data.
+    """
+    if not wind_impact_str or "Dome" in wind_impact_str:
+        return "Dome or no wind — weather not a factor"
+    try:
+        temp = float(temp_f) if temp_f not in ("N/A","Dome","") else 72.0
+    except:
+        temp = 72.0
+
+    is_out = "blowing OUT" in wind_impact_str and "OVER lean" in wind_impact_str
+    is_in  = "blowing IN" in wind_impact_str and "UNDER lean" in wind_impact_str
+    is_cross = "crosswind" in wind_impact_str
+
+    if is_cross or "minimal" in wind_impact_str:
+        return "Crosswind or minimal — no directional scoring impact"
+
+    if is_out:
+        if temp < 50:
+            return "Wind OUT but below 50F — cold air neutralizes carry, minimal scoring impact"
+        elif temp < 60:
+            return "Wind OUT with cool temps ("+str(int(temp))+"F) — partial OVER lean, weight other factors more"
+        else:
+            return "Wind OUT at "+str(int(temp))+"F — meaningful OVER lean, ball carries well"
+
+    if is_in:
+        if temp < 50:
+            return "Wind IN at "+str(int(temp))+"F — strong UNDER lean, cold+wind IN suppresses offense"
+        else:
+            return "Wind IN at "+str(int(temp))+"F — moderate UNDER lean, factor alongside SP/bullpen data"
+
+    return "Wind direction unclear — treat as neutral"
+
+def get_park_factor(venue):
+    if venue in PARK_FACTORS:
+        return PARK_FACTORS[venue]
+    for k,v in PARK_FACTORS.items():
+        if k.lower() in venue.lower() or venue.lower() in k.lower():
+            return v
+    return {"runs":1.0,"hr":1.0,"note":"No park data — using neutral"}
+
+def get_ump_stats(ump_name):
+    if not ump_name or ump_name == "TBD":
+        return {"name":"TBD","rpg":8.8,"k_pct":0.22,"note":"Unknown — using league average"}
+    # Try full name match first
+    for k,v in UMP_DATA.items():
+        if ump_name.lower() == k.lower():
+            return dict(v, name=ump_name)
+    # Try last name match
+    last = ump_name.split()[-1] if ump_name else ""
+    for k,v in UMP_DATA.items():
+        if last.lower() in k.lower() or k.lower().endswith(last.lower()):
+            return dict(v, name=ump_name)
+    # Try first name match
+    first = ump_name.split()[0] if ump_name else ""
+    for k,v in UMP_DATA.items():
+        if first.lower() in k.lower():
+            return dict(v, name=ump_name)
+    return {"name":ump_name,"rpg":8.8,"k_pct":0.22,"note":"No data — using league average"}
+
+# ── Stats ─────────────────────────────────────────────────────────────────────
+
+# Baseball Savant uses team abbreviations — map to full MLB team names
+SAVANT_TEAM_MAP = {
+    "ARI":"Arizona Diamondbacks","ATL":"Atlanta Braves","BAL":"Baltimore Orioles",
+    "BOS":"Boston Red Sox","CHC":"Chicago Cubs","CWS":"Chicago White Sox",
+    "CIN":"Cincinnati Reds","CLE":"Cleveland Guardians","COL":"Colorado Rockies",
+    "DET":"Detroit Tigers","HOU":"Houston Astros","KC":"Kansas City Royals",
+    "LAA":"Los Angeles Angels","LAD":"Los Angeles Dodgers","MIA":"Miami Marlins",
+    "MIL":"Milwaukee Brewers","MIN":"Minnesota Twins","NYM":"New York Mets",
+    "NYY":"New York Yankees","ATH":"Athletics","PHI":"Philadelphia Phillies",
+    "PIT":"Pittsburgh Pirates","SD":"San Diego Padres","SF":"San Francisco Giants",
+    "SEA":"Seattle Mariners","STL":"St. Louis Cardinals","TB":"Tampa Bay Rays",
+    "TEX":"Texas Rangers","TOR":"Toronto Blue Jays","WSH":"Washington Nationals",
+    "OAK":"Athletics",
+}
+SAVANT_TEAM_MAP_REV = {v:k for k,v in SAVANT_TEAM_MAP.items()}
+
 def fetch_savant_pitcher_data(season):
     """
     Fetch pitcher Statcast data from Baseball Savant expected statistics leaderboard.
