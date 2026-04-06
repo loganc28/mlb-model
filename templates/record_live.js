@@ -5,7 +5,6 @@
 var PICK_DATA = [];
 
 function parsePicksFromPage() {
-    // Extract pick data from table rows
     var rows = document.querySelectorAll("tbody tr");
     rows.forEach(function(row, idx) {
         var cells = row.querySelectorAll("td");
@@ -18,202 +17,91 @@ function parsePicksFromPage() {
         var unitsCell = cells[9];
         var resultSpan = resultCell ? resultCell.querySelector("span") : null;
         if (resultSpan && resultSpan.textContent.trim() === "PENDING") {
-            PICK_DATA.push({
-                idx: idx,
-                pick: pick,
-                game: game,
-                tier: tier,
-                line: line,
-                resultSpan: resultSpan,
-                unitsCell: unitsCell,
-                row: row
-            });
+            PICK_DATA.push({idx:idx,pick:pick,game:game,tier:tier,line:line,resultSpan:resultSpan,unitsCell:unitsCell,row:row});
         }
     });
 }
 
 function americanToDecimal(odds) {
     odds = parseFloat(odds);
-    if (isNaN(odds)) return 1.909; // default -110
+    if (isNaN(odds)) return 1.909;
     if (odds < 0) return 1 + (100 / Math.abs(odds));
     return 1 + (odds / 100);
 }
 
 function calcUnitsResult(result, line, units) {
     units = parseFloat(units) || 1.0;
-    if (result === "W") {
-        var dec = americanToDecimal(line);
-        return Math.round((units * (dec - 1)) * 100) / 100;
-    } else if (result === "L") {
-        return -units;
-    }
+    if (result === "W") return Math.round((units * (americanToDecimal(line) - 1)) * 100) / 100;
+    if (result === "L") return -units;
     return 0;
 }
 
 function settlePick(pick, game, line, scores) {
-    // Parse game string "AWAY @ HOME"
     var parts = game.split(" @ ");
     if (parts.length !== 2) return null;
-    var away = parts[0].trim();
-    var home = parts[1].trim();
-    
-    // Find score
+    var away = parts[0].trim(), home = parts[1].trim();
     var score = null;
     for (var key in scores) {
-        if (key.indexOf(away) >= 0 && key.indexOf(home) >= 0) {
-            score = scores[key];
-            break;
-        }
+        if (key.indexOf(away) >= 0 && key.indexOf(home) >= 0) { score = scores[key]; break; }
     }
     if (!score) return null;
-    
-    var awayScore = score.away_score;
-    var homeScore = score.home_score;
-    var total = awayScore + homeScore;
-    var pickUp = pick.toUpperCase();
-    
-    // Total OVER/UNDER
+    var awayScore = score.away_score, homeScore = score.home_score;
+    var total = awayScore + homeScore, pickUp = pick.toUpperCase();
     if (pickUp.indexOf("OVER") >= 0 || pickUp.indexOf("UNDER") >= 0) {
-        var lineMatch = pick.match(/[0-9.]+/);
-        if (!lineMatch) return null;
-        var lineNum = parseFloat(lineMatch[0]);
-        if (total > lineNum) return pickUp.indexOf("OVER") >= 0 ? "W" : "L";
-        if (total < lineNum) return pickUp.indexOf("UNDER") >= 0 ? "W" : "L";
+        var m = pick.match(/[0-9.]+/); if (!m) return null;
+        var ln = parseFloat(m[0]);
+        if (total > ln) return pickUp.indexOf("OVER") >= 0 ? "W" : "L";
+        if (total < ln) return pickUp.indexOf("UNDER") >= 0 ? "W" : "L";
         return "P";
     }
-    
-    // ML
     if (pickUp.indexOf("ML") >= 0) {
         var winner = homeScore > awayScore ? home : away;
-        for (var team of [away, home]) {
-            if (pickUp.indexOf(team.toUpperCase().split(" ").pop()) >= 0) {
-                return winner === team ? "W" : "L";
-            }
+        for (var t of [away, home]) {
+            if (pickUp.indexOf(t.toUpperCase().split(" ").pop()) >= 0) return winner === t ? "W" : "L";
         }
     }
-    
-    // Run Line +1.5 / -1.5
     if (pickUp.indexOf("+1.5") >= 0 || pickUp.indexOf("-1.5") >= 0) {
         var spread = pickUp.indexOf("+1.5") >= 0 ? 1.5 : -1.5;
-        for (var team of [away, home]) {
-            if (pickUp.indexOf(team.toUpperCase().split(" ").pop()) >= 0) {
-                var teamScore = team === home ? homeScore : awayScore;
-                var oppScore = team === home ? awayScore : homeScore;
-                var adjusted = teamScore - oppScore + spread;
-                if (adjusted > 0) return "W";
-                if (adjusted < 0) return "L";
-                return "P";
+        for (var t of [away, home]) {
+            if (pickUp.indexOf(t.toUpperCase().split(" ").pop()) >= 0) {
+                var ts = t === home ? homeScore : awayScore, os = t === home ? awayScore : homeScore;
+                var adj = ts - os + spread;
+                if (adj > 0) return "W"; if (adj < 0) return "L"; return "P";
             }
         }
     }
-
-    // NRFI / YRFI — uses inning1 from linescore hydration
     if (pickUp === "NRFI" || pickUp === "YRFI") {
         if (!score.inning1) return null;
-        var inn1away = score.inning1.away || 0;
-        var inn1home = score.inning1.home || 0;
-        var firstInningRuns = inn1away + inn1home;
-        if (pickUp === "NRFI") return firstInningRuns === 0 ? "W" : "L";
-        if (pickUp === "YRFI") return firstInningRuns > 0 ? "W" : "L";
+        var r1 = (score.inning1.away || 0) + (score.inning1.home || 0);
+        if (pickUp === "NRFI") return r1 === 0 ? "W" : "L";
+        if (pickUp === "YRFI") return r1 > 0 ? "W" : "L";
     }
-
     return null;
 }
 
 function updateRecordDisplay(scores) {
-    var wins = 0, losses = 0, pushes = 0, totalUnits = 0;
-
-    // First count already-settled picks from server (non-WATCH, non-PENDING)
-    document.querySelectorAll("tbody tr").forEach(function(row) {
-        var cells = row.querySelectorAll("td");
-        if (cells.length < 10) return;
-        var tier = cells[3] ? cells[3].textContent.trim() : "";
-        var resultSpan = cells[8] ? cells[8].querySelector("span") : null;
-        var unitsCell = cells[9];
-        if (!resultSpan) return;
-        var existingResult = resultSpan.textContent.trim();
-        if (existingResult !== "WIN" && existingResult !== "LOSS" && existingResult !== "PUSH") return;
-        if (tier === "WATCH") return; // WATCH picks don't count
-        var unitsText = unitsCell ? unitsCell.textContent.trim() : "0u";
-        var unitsVal = parseFloat(unitsText.replace("u","")) || 0;
-        if (existingResult === "WIN") { wins++; totalUnits += unitsVal; }
-        else if (existingResult === "LOSS") { losses++; totalUnits += unitsVal; }
-        else pushes++;
-    });
-
     PICK_DATA.forEach(function(pd) {
         var result = settlePick(pd.pick, pd.game, pd.line, scores);
         if (!result) return;
-
         var isWatch = pd.tier === "WATCH";
         var units = isWatch ? 0 : parseFloat(pd.tier === "A" ? 1.5 : pd.tier === "MAX" ? 3.0 : pd.tier === "C" ? 0.5 : 1.0);
         var unitsResult = isWatch ? 0 : calcUnitsResult(result, pd.line, units);
-
-        // Update result cell
-        var color = result === "W" ? "#1D9E75" : result === "L" ? "#A32D2D" : "#888";
+        var color = result === "W" ? "#22D47A" : result === "L" ? "#F04D5A" : "#8A95A8";
         pd.resultSpan.textContent = result === "W" ? "WIN" : result === "L" ? "LOSS" : "PUSH";
-        pd.resultSpan.style.background = color + "22";
         pd.resultSpan.style.color = color;
-
-        // Update units cell
         if (pd.unitsCell) {
             pd.unitsCell.textContent = (unitsResult >= 0 ? "+" : "") + unitsResult + "u";
             pd.unitsCell.style.color = color;
         }
-
-        // Update score cell if available
-        var scoreCell = pd.row.querySelector("td:nth-child(8)");
-        if (scoreCell && scores[pd.game]) {
-            var s = scores[pd.game];
-            var parts = pd.game.split(" @ ");
-            scoreCell.textContent = parts[0] + " " + s.away_score + " - " + parts[1] + " " + s.home_score;
-        }
-
-        // Count (non-WATCH only, not already counted from server)
-        if (!isWatch) {
-            if (result === "W") { wins++; totalUnits += unitsResult; }
-            else if (result === "L") { losses++; totalUnits += unitsResult; }
-            else pushes++;
-        }
-
-        // Highlight row
-        pd.row.style.background = result === "W" ? "#f0fff8" : result === "L" ? "#fff0f0" : "";
     });
-
-    // Update summary stats
-    var total = wins + losses + pushes;
-    if (total > 0) {
-        var wrEl = document.querySelector(".sn[data-stat=winrate]");
-        var wlEl = document.querySelector(".sn[data-stat=wl]");
-        var uEl  = document.querySelector(".sn[data-stat=units]");
-        if (wrEl) wrEl.textContent = Math.round(wins/total*100) + "%";
-        if (wlEl) wlEl.textContent = wins + "-" + losses;
-        if (uEl) {
-            uEl.textContent = (totalUnits >= 0 ? "+" : "") + Math.round(totalUnits*100)/100 + "u";
-            uEl.style.color = totalUnits >= 0 ? "#1D9E75" : "#A32D2D";
-        }
-    }
-    
-    // Update last refreshed
     var lu = document.getElementById("live_update");
     if (lu) lu.textContent = "Live results updated " + new Date().toLocaleTimeString("en-US", {timeZone:"America/New_York",hour:"numeric",minute:"2-digit"}) + " ET";
 }
 
 function fetchScoresForRecord() {
-    // Get unique dates from picks
     var dates = new Set();
-    PICK_DATA.forEach(function(pd) {
-        // Extract date from row
-        var dateCell = pd.row.querySelector("td:first-child");
-        if (dateCell) dates.add(dateCell.textContent.trim());
-    });
-    
-    // Also always check today
     dates.add(new Date().toLocaleDateString("en-CA", {timeZone:"America/New_York"}));
-    
-    var allScores = {};
-    var promises = [];
-    
+    var allScores = {}, promises = [];
     dates.forEach(function(date) {
         if (!date || date.length < 8) return;
         var p = fetch("https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=" + date + "&hydrate=linescore,team")
@@ -222,531 +110,22 @@ function fetchScoresForRecord() {
                 (data.dates || []).forEach(function(d) {
                     (d.games || []).forEach(function(g) {
                         if (g.status.abstractGameState !== "Final") return;
-                        var away = g.teams.away.team.name;
-                        var home = g.teams.home.team.name;
-                        // Parse first inning from linescore
-                        var inning1 = null;
+                        var away = g.teams.away.team.name, home = g.teams.home.team.name;
                         var innings = (g.linescore && g.linescore.innings) ? g.linescore.innings : [];
-                        if (innings.length > 0) {
-                            inning1 = {
-                                away: innings[0].away ? (innings[0].away.runs || 0) : 0,
-                                home: innings[0].home ? (innings[0].home.runs || 0) : 0
-                            };
-                        }
-                        allScores[away + " @ " + home] = {
-                            away_score: g.teams.away.score || 0,
-                            home_score: g.teams.home.score || 0,
-                            inning1: inning1
-                        };
+                        var inning1 = innings.length > 0 ? {away: innings[0].away ? (innings[0].away.runs||0) : 0, home: innings[0].home ? (innings[0].home.runs||0) : 0} : null;
+                        allScores[away + " @ " + home] = {away_score: g.teams.away.score||0, home_score: g.teams.home.score||0, inning1: inning1};
                     });
                 });
             }).catch(function() {});
         promises.push(p);
     });
-    
     Promise.all(promises).then(function() {
-        if (Object.keys(allScores).length > 0) {
-            updateRecordDisplay(allScores);
-        }
+        if (Object.keys(allScores).length > 0) updateRecordDisplay(allScores);
     });
 }
 
-// Initialize on page load
 document.addEventListener("DOMContentLoaded", function() {
     parsePicksFromPage();
-    if (PICK_DATA.length > 0) {
-        fetchScoresForRecord();
-        // Refresh every 2 minutes
-        setInterval(fetchScoresForRecord, 120000);
-    }
+    if (PICK_DATA.length > 0) { fetchScoresForRecord(); setInterval(fetchScoresForRecord, 120000); }
 });
 </script>
-"""
-
-def build_record_html(record):
-    picks = record.get("picks",[])
-    # Real picks only (exclude WATCH) for headline W-L, win rate, units
-    settled     = [p for p in picks if p.get("result") in ("W","L","P") and p.get("tier") != "WATCH"]
-    wins        = [p for p in settled if p["result"]=="W"]
-    losses      = [p for p in settled if p["result"]=="L"]
-    total_bets  = len(settled)
-    win_rate    = round(len(wins)/total_bets*100,1) if total_bets else 0
-    units_won   = round(sum(p.get("units_result",0) for p in settled),2)
-
-    # CLV analysis
-    clv_picks = [p for p in settled if p.get("open_line") and p.get("close_line")]
-    avg_clv = 0
-    if clv_picks:
-        clvs = []
-        for p in clv_picks:
-            try:
-                ol = float(str(p["open_line"]).replace("+",""))
-                cl = float(str(p["close_line"]).replace("+",""))
-                # Positive CLV = we got a better number than closing line
-                # Negative odds: -110 open vs -120 close = +10 CLV (line moved against us, we got better)
-                # Positive odds: +130 open vs +120 close = +10 CLV (line moved against us, we got better)
-                if ol < 0:
-                    clv = cl - ol  # e.g. -120 - (-110) = -10 (bad), -110 - (-120) = +10 (good)
-                else:
-                    clv = ol - cl  # e.g. +130 - +120 = +10 (good), +120 - +130 = -10 (bad)
-                clvs.append(clv)
-            except: pass
-        avg_clv = round(sum(clvs)/len(clvs),1) if clvs else 0
-
-    # By tier — real picks only (WATCH tracked separately below)
-    tiers = {}
-    for p in settled:
-        t = p.get("tier","?")
-        if t not in tiers: tiers[t] = {"W":0,"L":0,"P":0,"units":0.0}
-        tiers[t][p["result"]] += 1
-        tiers[t]["units"] += p.get("units_result",0)
-    # Add WATCH to tier table separately
-    watch_settled = [p for p in picks if p.get("tier")=="WATCH" and p.get("result") in ("W","L","P")]
-    watch_wins  = len([p for p in watch_settled if p.get("result")=="W"])
-    watch_losses = len([p for p in watch_settled if p.get("result")=="L"])
-    watch_total = len(watch_settled)
-    watch_rate  = round(watch_wins/watch_total*100,1) if watch_total else 0
-    if watch_settled:
-        tiers["WATCH"] = {"W":watch_wins,"L":watch_losses,"P":0,"units":0.0}
-
-    # By bet type — real picks only
-    bet_types = {}
-    for p in settled:
-        bt = p.get("bet_type","?")
-        if bt not in bet_types: bet_types[bt] = {"W":0,"L":0,"P":0,"units":0.0}
-        bet_types[bt][p["result"]] += 1
-        bet_types[bt]["units"] += p.get("units_result",0)
-
-    pending = [p for p in picks if not p.get("result") and p.get("tier") not in ("WATCH","SKIP")]
-
-    # Loss reason breakdown
-    REASON_LABELS = {
-        "SP_OUTPERFORMED": "SP Outperformed",
-        "BULLPEN_HELD":    "Bullpen Held",
-        "LINEUP_DIFF":     "Lineup Diff",
-        "WEATHER_WRONG":   "Weather Wrong",
-        "PURE_VARIANCE":   "Variance",
-        "BAD_DATA":        "Bad Data",
-    }
-    loss_reasons = {}
-    for p in settled:
-        if p.get("result") == "L" and p.get("loss_reason"):
-            r = p["loss_reason"]
-            loss_reasons[r] = loss_reasons.get(r, 0) + 1
-
-    def stat_row(label, d):
-        w=d["W"]; l=d["L"]; p=d.get("P",0); tot=w+l+p
-        wr = round(w/tot*100,1) if tot else 0
-        u = round(d["units"],2)
-        uc = "var(--green)" if u>=0 else "var(--red)"
-        dot = ('<span class="tier-dot '+label+'"></span>') if label in ("MAX","A","B","C","WATCH") else ""
-        return ('<tr>'
-                '<td style="font-weight:600">'+dot+label+'</td>'
-                '<td style="text-align:center;font-family:\'JetBrains Mono\',monospace">'+str(w)+'-'+str(l)+(('-'+str(p)) if p else '')+'</td>'
-                '<td style="text-align:center">'+str(wr)+'%</td>'
-                '<td style="text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:600;color:'+uc+'">'
-                +('+'if u>=0 else '')+str(u)+'u</td></tr>')
-
-    # Group picks by date for collapsible history
-    from collections import defaultdict
-    sorted_picks = sorted(picks, key=lambda p: p.get("date",""), reverse=True)
-    picks_by_date = defaultdict(list)
-    for p in sorted_picks:
-        picks_by_date[p.get("date","")].append(p)
-
-    def pick_card_html(p):
-        res = p.get("result","")
-        ur = p.get("units_result",0)
-        t = p.get("tier","?")
-        if t == "WATCH": ur = 0
-        if res=="W": rl,rc="WIN","var(--green)"
-        elif res=="L": rl,rc="LOSS","var(--red)"
-        elif res=="P": rl,rc="PUSH","var(--muted)"
-        else: rl,rc="PENDING","var(--gold)"
-        open_l = p.get("open_line","")
-        close_l = p.get("close_line","")
-        clv_str = ""
-        if open_l and close_l:
-            try:
-                ol = float(str(open_l).replace("+",""))
-                cl2 = float(str(close_l).replace("+",""))
-                clv = round(ol-cl2 if ol<0 else cl2-ol, 0)
-                clv_str = ("+" if clv>0 else "")+str(int(clv))
-            except: pass
-        clv_color = "var(--green)" if clv_str.startswith('+') else "var(--red)" if clv_str.startswith('-') else "var(--muted)"
-        loss_reason = p.get("loss_reason","")
-        reason_badge = ""
-        if res == "L" and loss_reason:
-            label2 = REASON_LABELS.get(loss_reason, loss_reason)
-            reason_badge = ('<span style="font-size:9px;background:#E8414B10;color:#E8414B80;'
-                           'padding:1px 7px;border-radius:10px;border:1px solid #E8414B20;margin-left:4px">'+label2+'</span>')
-        score = p.get("final_score","—")
-        dot = '<span class="tier-dot '+t+'"></span>' if t in ("MAX","A","B","C","WATCH") else ""
-        ur_color = "var(--green)" if ur > 0 else "var(--red)" if ur < 0 else "var(--muted)"
-        watch_dim = 'opacity:.5;' if t == "WATCH" else ''
-        return (
-            '<div class="pick-row">'
-            '<div class="pick-row-left">'
-            '<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">'
-            '<span class="pick-name-sm">'+p.get("pick","")+'</span>'
-            +reason_badge+
-            '</div>'
-            '<div class="pick-game">'+p.get("game","")+'</div>'
-            '<div class="pick-meta">'
-            +dot+'<span style="color:var(--muted)">'+t+'</span>'
-            '<span style="color:var(--border2)">·</span>'
-            '<span style="font-family:\'JetBrains Mono\',monospace;color:var(--text)">'+str(open_l)+'</span>'
-            +(('<span style="color:var(--border2)">→</span>'
-               '<span style="font-family:\'JetBrains Mono\',monospace;color:var(--muted)">'+str(close_l)+'</span>'
-               +(('<span style="color:var(--border2)">·</span>'
-                  '<span style="font-family:\'JetBrains Mono\',monospace;color:'+clv_color+'">CLV '+clv_str+'</span>') if clv_str else '')
-               ) if close_l else '')+
-            '<span style="color:var(--border2)">·</span>'
-            '<span style="color:var(--muted)">'+str(score)+'</span>'
-            '</div>'
-            '</div>'
-            '<div class="pick-row-right">'
-            '<div class="result-badge '+res+('' if res else 'pending')+'">'+rl+'</div>'
-            '<div class="units-result" style="color:'+(
-                'var(--green)' if ur>0 else 'var(--red)' if ur<0 else 'var(--muted)'
-            )+'">'
-            +('+' if ur>0 else '')+str(round(ur,2))+'u</div>'
-            '</div>'
-            '</div>'
-        )
-
-    def date_group_html(date, picks_list):
-        real = [p for p in picks_list if p.get("tier") not in ("WATCH","SKIP")]
-        w = len([p for p in real if p.get("result")=="W"])
-        l = len([p for p in real if p.get("result")=="L"])
-        u = round(sum(p.get("units_result",0) for p in real),2)
-        pending_count = len([p for p in real if not p.get("result")])
-        if w+l == 0 and pending_count == 0:
-            summary = '<span style="color:var(--muted);font-size:11px">No active picks</span>'
-        elif pending_count > 0:
-            summary = '<span style="color:var(--gold);font-size:11px;font-family:\'JetBrains Mono\',monospace">'+str(pending_count)+' pending</span>'
-        else:
-            u_col = "var(--green)" if u>=0 else "var(--red)"
-            wl_col = "var(--green)" if w>l else "var(--red)" if l>w else "var(--muted)"
-            summary = ('<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:'+wl_col+';font-weight:600">'+str(w)+'-'+str(l)+'</span>'
-                      +' <span style="color:var(--faint)">·</span> '
-                      +'<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:'+u_col+';font-weight:600">'+('+'if u>=0 else '')+str(u)+'u</span>')
-        uid = "dg_"+date.replace("-","")
-        cards = "".join(pick_card_html(p) for p in picks_list)
-        return (
-            '<div class="dg" id="'+uid+'">'
-            '<div class="dg-hdr" onclick="toggleDG(\''+uid+'\')">'
-            '<div style="display:flex;align-items:center;gap:10px">'
-            '<span style="font-size:13px;font-weight:700;font-family:\'JetBrains Mono\',monospace">'+date+'</span>'
-            +summary+
-            '</div>'
-            '<span class="dg-arr">▾</span>'
-            '</div>'
-            '<div class="dg-body">'+cards+'</div>'
-            '</div>'
-        )
-
-    tier_rows = "".join(stat_row(t,d) for t,d in sorted(tiers.items()))
-    bt_rows   = "".join(stat_row(bt,d) for bt,d in sorted(bet_types.items()))
-
-    date_groups_html = ""
-    for date in sorted(picks_by_date.keys(), reverse=True):
-        date_groups_html += date_group_html(date, picks_by_date[date])
-
-    u_color = "var(--green)" if units_won>=0 else "var(--red)"
-    u_str   = ("+" if units_won>=0 else "")+str(units_won)+"u"
-    clv_color = "var(--green)" if avg_clv>0 else "var(--red)" if avg_clv<0 else "var(--muted)"
-
-    rec_css = (
-        '@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap");*{box-sizing:border-box;margin:0;padding:0}:root{--bg:#0A0C0F;--surface:#111418;--surface2:#181C22;--surface3:#1E2330;--border:#1A1F2A;--border2:#222836;--text:#F0F4F8;--muted:#5C6880;--faint:#1E2330;--subtle:#8A95A8;--gold:#F5C842;--green:#22D47A;--red:#F04D5A;--blue:#4B9EF5;--purple:#A78BFA;--radius:14px;--radius-sm:8px;--radius-xs:6px;--tier-max:#F5C842;--tier-a:#22D47A;--tier-b:#4B9EF5;--tier-c:#8A95A8;}body{font-family:"Inter",sans-serif;background:var(--bg);color:var(--text);padding:0;max-width:860px;margin:0 auto;font-size:15px;background-image:radial-gradient(ellipse at 50% 0%,#0D1520 0%,#0A0C0F 60%)}.page-header{padding:2.5rem 1.5rem 1.5rem;border-bottom:1px solid var(--border)}.brand{font-size:10px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;opacity:.7}.page-title{font-size:36px;font-weight:900;letter-spacing:-.04em;color:var(--text);margin-bottom:4px;line-height:1}.page-subtitle{font-size:13px;color:var(--muted);display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:8px}.page-subtitle a{color:var(--subtle);text-decoration:none;font-weight:500}.page-subtitle a:hover{color:var(--text)}.divider{color:var(--border2)}.stats-bar{display:grid;gap:8px;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border)}.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px}.stat-val{font-size:26px;font-weight:900;letter-spacing:-.03em;line-height:1}.stat-lbl{font-size:9px;color:var(--muted);margin-top:6px;text-transform:uppercase;letter-spacing:.12em;font-weight:600}.section-label{font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);padding:1.5rem 1.5rem 0.75rem;display:flex;align-items:center;gap:12px}.section-label::after{content:"";flex:1;height:1px;background:var(--border)}.tier-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:6px;vertical-align:middle;flex-shrink:0}.tier-dot.MAX{background:var(--gold)}.tier-dot.A{background:var(--green)}.tier-dot.B{background:var(--blue)}.tier-dot.C{background:var(--subtle)}.tier-dot.WATCH{background:var(--muted)}footer{font-size:11px;color:var(--muted);margin-top:2rem;text-align:center;padding:1.5rem 1.5rem 3rem;border-top:1px solid var(--border);line-height:2;opacity:.6}.stats-bar{grid-template-columns:repeat(5,1fr)}table{width:100%;border-collapse:collapse;margin:0 1.5rem 1rem;width:calc(100% - 3rem)}th{padding:9px 14px;font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;text-align:left;background:var(--surface);border-bottom:1px solid var(--border)}td{padding:10px 14px;font-size:12px;border-bottom:1px solid var(--border);color:var(--text)}tr:last-child td{border-bottom:none}tr:hover td{background:var(--surface2)}.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:0 1.5rem 1rem}.table-wrap table{margin:0;width:100%}.dg{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:0 1.5rem 6px}.dg-hdr{padding:13px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:background .15s;user-select:none}.dg-hdr:hover{background:var(--surface2)}.dg-arr{font-size:10px;color:var(--muted);transition:transform .2s}.dg.open .dg-arr{transform:rotate(180deg)}.dg-body{display:none;padding:0 16px 4px}.dg.open .dg-body{display:block}.dg-body>div:last-child{border-bottom:none!important}.pick-row{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}.pick-row-left{flex:1;min-width:0}.pick-row-right{flex-shrink:0;text-align:right}.pick-name-sm{font-size:13px;font-weight:700;color:var(--text)}.pick-game{font-size:11px;color:var(--muted);margin:2px 0}.pick-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:10px}.result-badge{font-size:10px;font-weight:700;font-family:"JetBrains Mono",monospace}.result-badge.W{color:var(--green)}.result-badge.L{color:var(--red)}.result-badge.P{color:var(--muted)}.result-badge.pending{color:var(--gold)}.units-result{font-size:12px;font-weight:700;font-family:"JetBrains Mono",monospace}.loss-badge{font-size:9px;background:#F04D5A10;color:#F04D5A80;padding:1px 7px;border-radius:10px;border:1px solid #F04D5A20;margin-left:4px}@media(max-width:600px){.stats-bar{grid-template-columns:repeat(3,1fr)}.dg,.table-wrap{margin:0 0.5rem 6px}.section-label{padding:1.5rem 0.75rem 0.75rem}}'
-    )
-
-    toggle_js = (
-        '<script>'
-        'function toggleDG(id){'
-        'var el=document.getElementById(id);'
-        'if(el)el.classList.toggle("open");'
-        '}'
-        'document.addEventListener("DOMContentLoaded",function(){'
-        'var first=document.querySelector(".dg");'
-        'if(first)first.classList.add("open");'
-        '});'
-        '</script>'
-    )
-
-    loss_breakdown = ""
-    if loss_reasons and losses:
-        loss_breakdown = (
-            '<div class="section-label">Loss Breakdown</div>'
-            '<table><thead><tr><th>Reason</th><th>Count</th><th>% of Losses</th></tr></thead><tbody>'
-            +"".join(
-                '<tr><td style="font-weight:600">'+REASON_LABELS.get(r,r)+'</td>'
-                '<td style="text-align:center;font-family:\'JetBrains Mono\',monospace">'+str(c)+'</td>'
-                '<td style="text-align:center;color:var(--muted)">'+str(round(c/len(losses)*100,1))+'%</td></tr>'
-                for r,c in sorted(loss_reasons.items(), key=lambda x: -x[1])
-            )
-            +'</tbody></table>'
-        )
-
-    return ('<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">'
-            '<meta name="viewport" content="width=device-width,initial-scale=1">'
-            '<title>MLB Record</title>'
-            '<style>'+rec_css+'</style></head><body>'
-            '<div class="page-header">'
-            '<div class="brand">MLB Betting Model</div>'
-            '<div class="page-title">Record</div>'
-            '<div class="page-subtitle">'
-            'Updated '+TODAY
-            +' <span class="divider">&middot;</span> '
-            '<a href="index.html">Today\'s picks</a>'
-            +' <span class="divider">&middot;</span> '
-            '<a href="archive.html">Archive</a>'
-            +' <span class="divider">&middot;</span> '
-            '<a href="scores.html">Scores</a>'
-            +'</div></div>'
-            '<div class="stats-bar">'
-            '<div class="stat-card"><div class="stat-val">'+str(len(wins))+'-'+str(len(losses))+'</div><div class="stat-lbl">Record</div></div>'
-            '<div class="stat-card"><div class="stat-val">'+str(win_rate)+'%</div><div class="stat-lbl">Win Rate</div></div>'
-            '<div class="stat-card"><div class="stat-val" style="color:'+u_color+'">'+u_str+'</div><div class="stat-lbl">Units P&L</div></div>'
-            '<div class="stat-card"><div class="stat-val" style="color:'+clv_color+'">'+('+'if avg_clv>=0 else '')+str(avg_clv)+'</div><div class="stat-lbl">Avg CLV</div></div>'
-            '<div class="stat-card"><div class="stat-val" style="color:var(--muted)">'+str(watch_rate)+'%</div><div class="stat-lbl">Watch Hit %</div></div>'
-            '</div>'
-            '<div class="section-label">By Tier</div>'
-            '<div class="table-wrap"><table><thead><tr><th>Tier</th><th>Record</th><th>Win %</th><th>Units</th></tr></thead><tbody>'+tier_rows+'</tbody></table></div>'
-            '<div class="section-label">By Bet Type</div>'
-            '<div class="table-wrap"><table><thead><tr><th>Type</th><th>Record</th><th>Win %</th><th>Units</th></tr></thead><tbody>'+bt_rows+'</tbody></table></div>'
-            +loss_breakdown+
-            '<div class="section-label">Pick History</div>'
-            +date_groups_html+
-            '<footer>EV model &middot; Track CLV for long-term edge &middot; Paper trading until 50+ picks verified</footer>'
-            + RECORD_LIVE_JS
-            + toggle_js
-            + '</body></html>')
-
-# ── Archive ───────────────────────────────────────────────────────────────────
-
-
-def fetch_all_teams_data():
-    """Fetch standings, stats, and schedule for all 30 MLB teams."""
-    teams_data = {}
-
-    # Fetch standings for both leagues in one call
-    data = mlb_api("/standings", {
-        "leagueId": "103,104",
-        "season": "2026",
-        "standingsTypes": "regularSeason",
-        "hydrate": "team,record,streak,records",
-    })
-    print("Standings records: "+str(len(data.get("records",[]))))
-    for rec in data.get("records", []):
-        division = rec.get("division", {}).get("name", "")
-        for tr in rec.get("teamRecords", []):
-            team = tr.get("team", {})
-            tid = team.get("id")
-            name = team.get("name", "")
-            streak = tr.get("streak", {})
-            split_records = tr.get("records", {}).get("splitRecords", [])
-            l10_rec = next((s for s in split_records if s.get("type") == "lastTen"), {})
-            gp = tr.get("gamesPlayed", 0) or (tr.get("wins",0) + tr.get("losses",0))
-            teams_data[tid] = {
-                "id": tid,
-                "name": name,
-                "division": division,
-                "wins": tr.get("wins", 0),
-                "losses": tr.get("losses", 0),
-                "pct": tr.get("winningPercentage", ".000"),
-                "gb": tr.get("gamesBack", "-"),
-                "streak_type": streak.get("streakType", ""),
-                "streak_number": streak.get("streakNumber", 0),
-                "last10_w": l10_rec.get("wins", 0),
-                "last10_l": l10_rec.get("losses", 0),
-                "runs_scored": tr.get("runsScored", 0),
-                "runs_allowed": tr.get("runsAllowed", 0),
-                "games_played": gp,
-            }
-    print("Teams loaded from standings: "+str(len(teams_data)))
-
-    # Fetch team batting stats
-    bat_data = mlb_api("/stats", {
-        "stats": "season", "group": "hitting", "gameType": "R",
-        "season": "2026", "sportId": "1", "playerPool": "All",
-    })
-    for split in bat_data.get("stats", [{}])[0].get("splits", []):
-        tid = split.get("team", {}).get("id")
-        stat = split.get("stat", {})
-        if tid and tid in teams_data:
-            teams_data[tid]["ops"] = safe_float(stat.get("ops"))
-            teams_data[tid]["avg"] = safe_float(stat.get("avg"))
-            teams_data[tid]["obp"] = safe_float(stat.get("obp"))
-            teams_data[tid]["slg"] = safe_float(stat.get("slg"))
-
-    # Fetch team pitching stats
-    pit_data = mlb_api("/stats", {
-        "stats": "season", "group": "pitching", "gameType": "R",
-        "season": "2026", "sportId": "1", "playerPool": "All",
-    })
-    for split in pit_data.get("stats", [{}])[0].get("splits", []):
-        tid = split.get("team", {}).get("id")
-        stat = split.get("stat", {})
-        if tid and tid in teams_data:
-            ip = safe_float(stat.get("inningsPitched", "0"))
-            so = int(stat.get("strikeOuts", 0) or 0)
-            teams_data[tid]["team_era"] = safe_float(stat.get("era"))
-            teams_data[tid]["team_whip"] = safe_float(stat.get("whip"))
-            teams_data[tid]["team_k9"] = round(so / ip * 9, 2) if ip > 0 else 0.0
-
-    # Fetch next 3 games for each team
-    tomorrow = (datetime.date.today() + datetime.timedelta(days=1)).isoformat()
-    in3days  = (datetime.date.today() + datetime.timedelta(days=3)).isoformat()
-    sched = mlb_api("/schedule", {
-        "sportId": "1", "startDate": TODAY, "endDate": in3days,
-        "hydrate": "probablePitcher,team",
-    })
-    # Build upcoming games per team
-    upcoming = {}
-    for de in sched.get("dates", []):
-        for g in de.get("games", []):
-            home_id = g["teams"]["home"]["team"]["id"]
-            away_id = g["teams"]["away"]["team"]["id"]
-            home_name = g["teams"]["home"]["team"]["name"]
-            away_name = g["teams"]["away"]["team"]["name"]
-            home_sp = g["teams"]["home"].get("probablePitcher", {}).get("fullName", "TBD")
-            away_sp = g["teams"]["away"].get("probablePitcher", {}).get("fullName", "TBD")
-            game_date = de.get("date", "")
-            game_time = g.get("gameDate", "")
-            entry = {
-                "date": game_date,
-                "home": home_name,
-                "away": away_name,
-                "home_sp": home_sp,
-                "away_sp": away_sp,
-            }
-            for tid in [home_id, away_id]:
-                if tid not in upcoming:
-                    upcoming[tid] = []
-                if len(upcoming[tid]) < 3:
-                    upcoming[tid].append(entry)
-
-    for tid, td in teams_data.items():
-        td["upcoming"] = upcoming.get(tid, [])
-
-    return teams_data
-
-
-def build_teams_html(teams_data):
-    """Build the team overview page sorted alphabetically."""
-    if not teams_data:
-        return ""
-
-    # Sort alphabetically by team name
-    sorted_teams = sorted(teams_data.values(), key=lambda x: x["name"])
-
-    def streak_badge(stype, snum):
-        if not stype or not snum: return ""
-        color = "#1D9E75" if stype == "W" else "#A32D2D"
-        label = stype + str(snum)
-        return ('<span style="background:'+color+'22;color:'+color+';font-size:11px;'
-                'font-weight:700;padding:2px 8px;border-radius:4px">'+label+'</span>')
-
-    def ops_color(ops):
-        if ops >= 0.800: return "#1D9E75"
-        if ops >= 0.720: return "#BA7517"
-        return "#A32D2D"
-
-    def era_color(era):
-        if era <= 3.50: return "#1D9E75"
-        if era <= 4.50: return "#BA7517"
-        return "#A32D2D"
-
-    def team_card(t):
-        gp = t.get("games_played", 0)
-        w = t.get("wins", 0)
-        l = t.get("losses", 0)
-        ops = t.get("ops", 0)
-        era = t.get("team_era", 0)
-        whip = t.get("team_whip", 0)
-        k9  = t.get("team_k9", 0)
-        rsg = round(t.get("runs_scored", 0) / gp, 2) if gp > 0 else 0
-        rag = round(t.get("runs_allowed", 0) / gp, 2) if gp > 0 else 0
-        l10w = t.get("last10_w", 0)
-        l10l = t.get("last10_l", 0)
-        streak = streak_badge(t.get("streak_type",""), t.get("streak_number",0))
-        upcoming = t.get("upcoming", [])
-
-        upcoming_html = ""
-        for g in upcoming:
-            is_home = g["home"] == t["name"]
-            opp = g["away"] if is_home else g["home"]
-            sp  = g["home_sp"] if is_home else g["away_sp"]
-            loc = "vs" if is_home else "@"
-            upcoming_html += ('<div style="font-size:11px;color:#666;padding:3px 0;border-bottom:0.5px solid #f5f5f3">'
-                              +g["date"]+" "+loc+" "+opp+" — SP: "+sp+'</div>')
-
-        return (
-            '<div style="background:#fff;border:0.5px solid #e8e8e5;border-radius:10px;'
-            'padding:1rem 1.25rem;margin-bottom:10px">'
-            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
-            '<div>'
-            '<div style="font-size:16px;font-weight:700">'+t["name"]+'</div>'
-            '<div style="font-size:12px;color:#888;margin-top:2px">'+t.get("division","")+'</div>'
-            '</div>'
-            '<div style="text-align:right">'
-            '<div style="font-size:18px;font-weight:700">'+str(w)+'-'+str(l)+'</div>'
-            '<div style="font-size:11px;color:#888;margin-top:2px">'+str(l10w)+'-'+str(l10l)+' L10 &nbsp; '+streak+'</div>'
-            '</div>'
-            '</div>'
-            '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:10px">'
-            '<div style="background:#f9f9f7;border-radius:7px;padding:6px 8px;text-align:center">'
-            '<div style="font-size:13px;font-weight:700;color:'+ops_color(ops)+'">'+str(ops)+'</div>'
-            '<div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.04em">OPS</div></div>'
-            '<div style="background:#f9f9f7;border-radius:7px;padding:6px 8px;text-align:center">'
-            '<div style="font-size:13px;font-weight:700">'+str(rsg)+'</div>'
-            '<div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.04em">R/G</div></div>'
-            '<div style="background:#f9f9f7;border-radius:7px;padding:6px 8px;text-align:center">'
-            '<div style="font-size:13px;font-weight:700;color:'+era_color(era)+'">'+str(era)+'</div>'
-            '<div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.04em">ERA</div></div>'
-            '<div style="background:#f9f9f7;border-radius:7px;padding:6px 8px;text-align:center">'
-            '<div style="font-size:13px;font-weight:700">'+str(whip)+'</div>'
-            '<div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.04em">WHIP</div></div>'
-            '<div style="background:#f9f9f7;border-radius:7px;padding:6px 8px;text-align:center">'
-            '<div style="font-size:13px;font-weight:700">'+str(k9)+'</div>'
-            '<div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.04em">K/9</div></div>'
-            '<div style="background:#f9f9f7;border-radius:7px;padding:6px 8px;text-align:center">'
-            '<div style="font-size:13px;font-weight:700">'+str(rag)+'</div>'
-            '<div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.04em">RA/G</div></div>'
-            '</div>'
-            +(('<div style="border-top:0.5px solid #f0f0ee;padding-top:8px">'
-               '<div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Upcoming</div>'
-               +upcoming_html+'</div>') if upcoming else '')
-            +'</div>'
-        )
-
-    cards = "".join(team_card(t) for t in sorted_teams)
-
-    css = (
-        '<style>*{box-sizing:border-box;margin:0;padding:0}'
-        'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;'
-        'background:#f9f9f7;color:#1a1a1a;padding:1.25rem;max-width:700px;margin:0 auto}'
-        'h1{font-size:20px;font-weight:700;margin-bottom:3px}'
-        '.meta{font-size:13px;color:#888;margin-bottom:1.5rem}'
-        'footer{font-size:11px;color:#bbb;margin-top:1.5rem;text-align:center;padding-bottom:1rem}'
-        '</style>'
-    )
-
-    return (
-        '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">'
-        '<meta name="viewport" content="width=device-width,initial-scale=1">'
-        '<title>MLB Team Overview</title>'+css+'</head><body>'
-        '<h1>MLB Team Overview</h1>'
-        '<div class="meta">Updated '+TODAY+' &nbsp;&middot;&nbsp; '
-        '<a href="index.html" style="color:#378ADD;text-decoration:none">Today&#39;s picks &rarr;</a>'
-        ' &nbsp;&middot;&nbsp; <a href="record.html" style="color:#8B6FBA;text-decoration:none">&#128200; Record &rarr;</a>'
-        ' &nbsp;&middot;&nbsp; <a href="archive.html" style="color:#378ADD;text-decoration:none">Archive &rarr;</a>'
-        ' &nbsp;&middot;&nbsp; <span style="font-size:11px;color:#1D9E75">&#9679; Live data</span></div>'
-        '<div style="font-size:12px;color:#888;margin-bottom:1rem">'
-        'Green OPS = .800+ &nbsp; Yellow = .720-.799 &nbsp; Red = below .720 &nbsp;&middot;&nbsp; '
-        'ERA: Green = 3.50 or below &nbsp; Yellow = 3.51-4.50 &nbsp; Red = above 4.50</div>'
-        +cards+
-        '<footer>2026 season stats &nbsp;&middot;&nbsp; Updates every workflow run</footer>'
-        '</body></html>'
-    )
