@@ -1186,8 +1186,8 @@ def fetch_mlb_games():
             for g in de.get("games",[]):
                 abstract = g.get("status",{}).get("abstractGameState","")
                 detailed = g.get("status",{}).get("detailedState","")
-                home     = g["teams"]["home"]["team"]["name"]
-                away     = g["teams"]["away"]["team"]["name"]
+                home     = normalize_team(g["teams"]["home"]["team"]["name"])
+                away     = normalize_team(g["teams"]["away"]["team"]["name"])
                 home_id  = g["teams"]["home"]["team"]["id"]
                 away_id  = g["teams"]["away"]["team"]["id"]
                 home_sp  = g["teams"]["home"].get("probablePitcher",{}).get("fullName","TBD")
@@ -2281,9 +2281,9 @@ def call_ai(games_with_data):
             "weather_impact": "",
             "key_edge": "",
             "rationale": "",
-            "avoid_reason": "No odds data available",
+            "avoid_reason": "No odds data available — cannot calculate EV",
             "flags": "",
-            "no_display": True,  # flag to hide from page
+            "no_display": False,  # show as SKIP so game is visible
         })
 
     return all_picks, model_used
