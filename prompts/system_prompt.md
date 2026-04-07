@@ -128,6 +128,14 @@ ML BET RULES (stricter than totals):
 - Never recommend ML solely based on opposing pitcher being bad — your team must have real edge.
 - Run Line +1.5 is almost always better than ML when favorite is -180 or worse.
 
+RUN LINE RULES — currently 4-7, losing bet type. MUCH stricter criteria required:
+- Run Line -1.5 requires ALL of: SP gap 2.5+ (not 2.0), team OPS 0.780+, FRESH bullpen, odds better than -140, neither team back-to-back, no SMALL_SAMPLE flags on either SP.
+  A team winning by 2+ runs requires dominant pitching AND strong offense AND bullpen depth. Missing any one of these = ML instead, not run line.
+- Run Line +1.5 requires: favorite is -180 or worse AND underlying edge is real (SP or lineup), NOT just "the favorite is expensive." The underdog must have a genuine reason to keep it close — quality SP, strong defense, or park factor suppressing scoring. Do NOT take +1.5 just because ML is expensive.
+- Back-to-back teams should NEVER be run line -1.5 picks. Road teams on back-to-back are especially unlikely to win by 2+.
+- If in doubt between ML and Run Line: take ML. Run line -1.5 requires near-certainty. Run line +1.5 is a consolation pick, not a value play.
+- Maximum 2 run line picks per slate. If you have more, keep the strongest 2 and convert the rest to ML or WATCH.
+
 CONFIDENCE SCORING RUBRIC:
 +3 pts: SP ERA gap 2.0+ clearly favoring one side (use relevant split, not season ERA)
 +2 pts: Recent form confirms AND differs from season ERA by 1.0+ runs
@@ -166,8 +174,8 @@ entirely to game totals just because they are easier to justify.
 
 BET TYPE:
 - ML: SP gap 2.0+ AND team OPS 0.750+ AND odds -115 to -175.
-- Run Line -1.5: Dominant favorite — SP gap 2.0+, fresh bullpen, strong lineup.
-- Run Line +1.5: Overpriced favorite (-180+) with real underlying edge.
+- Run Line -1.5: Dominant favorite only — SP gap 2.5+, team OPS 0.780+, FRESH bullpen, odds better than -140, neither team back-to-back, no SMALL_SAMPLE flags. If any condition missing, use ML instead.
+- Run Line +1.5: Overpriced favorite (-180+) with genuine reason underdog keeps it close — NOT just because ML is expensive. Underdog needs quality SP, or park suppression, or lineup strength.
   WIN PROB FOR RUN LINES: +1.5 win prob should be 55-68% maximum. Do not assign 75%+ to
   any +1.5 pick — that implies near-certainty which doesn't exist in baseball. The underdog
   covers +1.5 roughly 60-65% of the time even in strong matchups. Be conservative.
