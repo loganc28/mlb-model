@@ -1843,6 +1843,13 @@ def enforce_ev_rules(picks):
                 p["avoid_reason"] = "Insufficient edge — tracking only"
             else:
                 p["avoid_reason"] = "No clear edge identified"
+        # Clean up pick name for WATCH picks — remove (WATCH) suffix
+        if p.get("tier") == "WATCH":
+            raw = str(p.get("pick",""))
+            cleaned = raw.replace("(WATCH)","").replace("(watch)","").strip()
+            if cleaned.upper() == "WATCH" or not cleaned:
+                cleaned = p.get("game","")
+            p["pick"] = cleaned
 
     return enforced
 
@@ -3017,14 +3024,21 @@ def build_html(data):
     def watch_card(p):
         game = str(p.get("game",""))
         avoid = str(p.get("avoid_reason",""))
+        # Fix: clean up pick name — remove "(WATCH)" suffix, never show bare "WATCH"
+        raw_pick = str(p.get("pick", game))
+        pick_display = raw_pick.replace("(WATCH)","").replace("(watch)","").strip()
+        if not pick_display or pick_display.upper() == "WATCH":
+            pick_display = game  # fall back to game string
+        line = str(p.get("line",""))
+        line_display = line if line and line not in ("N/A","null","None","") else "—"
         return (
             '<div class="pick-card tier-WATCH">'
             '<div class="card-inner">'
             '<div class="card-top">'
             '<div class="tier-badge WATCH">WATCH — TRACK ONLY</div>'
-            '<span class="odds-badge">'+str(p.get("line",""))+'</span>'
+            '<span class="odds-badge" style="opacity:.5">'+line_display+'</span>'
             '</div>'
-            '<div class="pick-name" style="font-size:17px;color:var(--muted)">'+str(p.get("pick",game))+'</div>'
+            '<div class="pick-name" style="font-size:17px;color:var(--subtle)">'+pick_display+'</div>'
             '<div class="pick-sub"><span class="game-label">'+game+'</span>'+score_span(game)+'</div>'
             +(('<div class="watch-reason">'+avoid+'</div>') if avoid else '')+
             '</div></div>'
@@ -3034,21 +3048,27 @@ def build_html(data):
         game = str(p.get("game",""))
         away_sp = str(p.get("away_sp","TBD"))
         home_sp = str(p.get("home_sp","TBD"))
-        avoid = str(p.get("avoid_reason","No clear edge"))
+        avoid = str(p.get("avoid_reason","No clear edge identified"))
         return (
             '<div class="pick-card tier-SKIP">'
             '<div class="card-inner">'
             '<div class="tier-badge SKIP">SKIP — NO EDGE</div>'
-            '<div class="pick-name" style="font-size:15px;color:var(--faint)">'+game+' '+score_span(game)+'</div>'
+            '<div class="pick-name" style="font-size:15px;color:var(--muted);margin-top:6px">'+game+' '+score_span(game)+'</div>'
             '<div class="sp-grid" style="margin-top:8px">'+sp_box("Away SP",away_sp)+sp_box("Home SP",home_sp)+'</div>'
             '<div class="skip-reason">'+avoid+'</div>'
             '</div></div>'
         )
 
 
-    cards = ("".join(pick_card(p) for p in active)
-             +"".join(watch_card(p) for p in watched)
-             +"".join(skip_card(p) for p in skipped))
+    active_cards = "".join(pick_card(p) for p in active)
+    watch_cards = "".join(watch_card(p) for p in watched)
+    skip_cards = "".join(skip_card(p) for p in skipped)
+
+    cards = active_cards
+    if watch_cards:
+        cards += '<div class="section-label" style="margin-top:1rem">Watching</div>' + watch_cards
+    if skip_cards:
+        cards += '<div class="section-label" style="margin-top:1rem">No Edge</div>' + skip_cards
     if not cards:
         cards = '<p style="color:#888;font-size:14px;padding:1.5rem 0;text-align:center">No games found today.</p>'
 
