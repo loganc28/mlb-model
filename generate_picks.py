@@ -1843,10 +1843,12 @@ def enforce_ev_rules(picks):
                 p["avoid_reason"] = "Insufficient edge — tracking only"
             else:
                 p["avoid_reason"] = "No clear edge identified"
-        # Clean up pick name for WATCH picks — remove (WATCH) suffix
+        # Clean up pick name for WATCH picks — remove (WATCH) suffix and WATCH prefix
         if p.get("tier") == "WATCH":
             raw = str(p.get("pick",""))
             cleaned = raw.replace("(WATCH)","").replace("(watch)","").strip()
+            if cleaned.upper().startswith("WATCH "):
+                cleaned = cleaned[6:].strip()
             if cleaned.upper() == "WATCH" or not cleaned:
                 cleaned = p.get("game","")
             p["pick"] = cleaned
@@ -3027,6 +3029,9 @@ def build_html(data):
         # Fix: clean up pick name — remove "(WATCH)" suffix, never show bare "WATCH"
         raw_pick = str(p.get("pick", game))
         pick_display = raw_pick.replace("(WATCH)","").replace("(watch)","").strip()
+        # Strip WATCH prefix if Claude prepended it
+        if pick_display.upper().startswith("WATCH "):
+            pick_display = pick_display[6:].strip()
         if not pick_display or pick_display.upper() == "WATCH":
             pick_display = game  # fall back to game string
         line = str(p.get("line",""))
