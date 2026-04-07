@@ -1793,10 +1793,16 @@ def enforce_ev_rules(picks):
         if p.get("tier") not in ("MAX","A","B","C"): continue
         flags = (p.get("flags","") or "").lower()
         bullpen = (p.get("bullpen_note","") or "").lower()
-        # If we're betting on a team that's on a back-to-back, downgrade confidence
         pick_str = p.get("pick","").upper()
         game = p.get("game","")
-        # Look for back-to-back in flags or bullpen note
+        # Hard block: run line -1.5 on back-to-back teams → convert to WATCH
+        if "-1.5" in pick_str and p.get("bet_type") == "Run Line":
+            if "back-to-back" in flags or "back to back" in flags:
+                print(f"B2B RUN LINE BLOCK: {game} — cannot take -1.5 on back-to-back team, downgrading to WATCH")
+                p["tier"] = "WATCH"; p["units"] = 0
+                p["avoid_reason"] = "Run line -1.5 blocked — back-to-back team cannot reliably win by 2+"
+                continue
+        # If we're betting on a team that's on a back-to-back, downgrade confidence
         if "back-to-back" in flags or "back to back" in flags:
             if p["tier"] == "MAX":
                 print(f"B2B PENALTY: {game} — back-to-back, downgrading MAX→A")
@@ -1819,6 +1825,16 @@ def enforce_ev_rules(picks):
                     ev_current = float(p.get("ev_pct",0) or 0)
                     p["ev_pct"] = min(ev_current + 1.0, 15.0)
                     print(f"SHARP CONFIRMED: {p.get('game','')} — sharp money aligns, +1% EV")
+
+    # Run line cap — max 2 per slate, keep highest EV
+    MAX_RUN_LINES = 2
+    rl_picks = [p for p in enforced if p.get("bet_type") == "Run Line" and p.get("tier") in ("MAX","A","B","C")]
+    if len(rl_picks) > MAX_RUN_LINES:
+        rl_sorted = sorted(rl_picks, key=lambda x: float(x.get("ev_pct",0) or 0), reverse=True)
+        for p in rl_sorted[MAX_RUN_LINES:]:
+            print(f"RUN LINE CAP: {p.get('game','')} downgraded to WATCH — max {MAX_RUN_LINES} run line picks per day")
+            p["tier"] = "WATCH"; p["units"] = 0
+            p["avoid_reason"] = "Run line cap — maximum 2 run line picks per slate"
 
     # After April 10 audit, remove this if CLV shows consistent edge
     MAX_TIER_A = 3
