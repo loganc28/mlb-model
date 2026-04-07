@@ -35,8 +35,14 @@ STADIUMS = {
 }
 
 TEAM_NAME_MAP = {
+    # Athletics name chaos — API uses different names across endpoints
     "Los Angeles Angels of Anaheim": "Los Angeles Angels",
-    "Athletics": "Oakland Athletics",
+    "Athletics":                     "Oakland Athletics",
+    "Oakland Athletics":             "Oakland Athletics",
+    "Las Vegas Athletics":           "Oakland Athletics",
+    # Other known variations
+    "Cleveland Indians":             "Cleveland Guardians",
+    "Miami Marlins":                 "Miami Marlins",
 }
 
 PARK_FACTORS = {
