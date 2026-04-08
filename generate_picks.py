@@ -1836,7 +1836,58 @@ def enforce_ev_rules(picks):
             p["tier"] = "WATCH"; p["units"] = 0
             p["avoid_reason"] = "Run line cap — maximum 2 run line picks per slate"
 
-    # After April 10 audit, remove this if CLV shows consistent edge
+    # OVER cap — audit showed 5-5 coin flip. Require stronger signal.
+    # Hard requirement: park factor 1.10+ OR temp above 65F to qualify as active pick
+    for p in enforced:
+        if p.get("tier") not in ("MAX","A","B","C"): continue
+        if p.get("bet_type") != "Total OVER": continue
+        park = p.get("park_note","").lower()
+        weather = p.get("weather_impact","").lower()
+        # Extract park factor from park note
+        import re
+        pf_match = re.search(r'runs?\s*(?:factor\s*)?([0-9]\.[0-9]+)', park)
+        park_factor = float(pf_match.group(1)) if pf_match else 1.0
+        # Extract temp
+        temp_match = re.search(r'(\d+)f', weather)
+        temp = int(temp_match.group(1)) if temp_match else 72
+        # Check bullpen condition
+        bullpen = (p.get("bullpen_note","") or "").lower()
+        both_severe = bullpen.count("severe") >= 2
+        # OVER needs: Coors-level park OR warm + wind out OR both bullpens SEVERE + hitter park
+        has_park_edge = park_factor >= 1.10
+        has_weather_edge = temp >= 65 and "blowing out" in weather
+        has_bullpen_edge = both_severe and park_factor >= 1.05
+        if not (has_park_edge or has_weather_edge or has_bullpen_edge):
+            print(f"OVER SIGNAL GATE: {p.get('game','')} — insufficient OVER signal (park {park_factor}, temp {temp}F), downgrading to WATCH")
+            p["tier"] = "WATCH"; p["units"] = 0
+            p["avoid_reason"] = f"OVER requires park factor 1.10+ or warm+wind out or both SEVERE pens + hitter park. Park: {park_factor}"
+
+    # OVER slate cap — max 2 active OVERs per slate
+    MAX_OVERS = 2
+    over_picks = [p for p in enforced if p.get("bet_type") == "Total OVER" and p.get("tier") in ("MAX","A","B","C")]
+    if len(over_picks) > MAX_OVERS:
+        over_sorted = sorted(over_picks, key=lambda x: float(x.get("ev_pct",0) or 0), reverse=True)
+        for p in over_sorted[MAX_OVERS:]:
+            print(f"OVER CAP: {p.get('game','')} downgraded to WATCH — max {MAX_OVERS} OVER picks per day")
+            p["tier"] = "WATCH"; p["units"] = 0
+            p["avoid_reason"] = "OVER cap — maximum 2 OVER picks per slate"
+
+    # ML quarter-Kelly sizing — audit showed 11-1, 91.7%. Justified to size up quality ML picks.
+    # Quarter-Kelly: for ML at plus money with EV 7%+, size to 1.25u instead of flat 1.0u
+    for p in enforced:
+        if p.get("tier") not in ("B","A","MAX"): continue
+        if p.get("bet_type") != "ML": continue
+        try:
+            line = float(str(p.get("line","")).replace("+",""))
+            ev = float(p.get("ev_pct",0) or 0)
+            # Plus money ML with strong EV — bump to 1.25u
+            if line > 0 and ev >= 7:
+                p["units"] = 1.25
+                print(f"KELLY SIZING: {p.get('game','')} — plus money ML at +{int(line)}, EV {ev}%, sizing to 1.25u")
+            # Negative ML with strong EV — keep at 1.0u, no Kelly adjustment yet
+        except: pass
+
+    # After April 10 audit — Tier A cap maintained until reliability data confirms
     MAX_TIER_A = 3
     tier_a_picks = [p for p in enforced if p.get("tier") == "A"]
     if len(tier_a_picks) > MAX_TIER_A:
