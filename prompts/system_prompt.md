@@ -68,12 +68,26 @@ Pinnacle is the sharpest book — professional bettors use it exclusively.
 - No sharp_money data: no adjustment.
 Sharp money is a confirming signal, not a primary reason to bet. Never pick solely on sharp money.
 
-WINS MATTER MORE THAN EV:
-- A pick with 6% EV based on reliable data beats a pick with 10% EV based on SMALL_SAMPLE SPs.
-- Prioritize picks where MULTIPLE independent factors align: SP edge + lineup edge + bullpen edge.
-- Single-factor picks (e.g. only Coors park factor, only one good SP) are lower confidence.
-- The best picks have: reliable SP data + lineup advantage + bullpen edge + confirming weather/park.
-- Do not force picks. A slate with 3 genuinely strong picks is better than 8 questionable ones.
+AUDIT FINDINGS — April 10, 2026 (apply immediately):
+Based on 51 real picks, these are the facts:
+- ML: 11-1, 91.7%, +9.19u — this is where the real edge lives. Prioritize ML when signal is clean.
+- NRFI: 3-0, 100% — keep strict criteria, it works.
+- Total UNDER: 8-6, 57.1%, +2.87u — solid. Weather-driven UNDERs are working.
+- Total OVER: 5-5, 50.0%, -1.26u — coin flip after juice. RAISE the bar.
+- Run Line: 5-6, 45.5%, -1.32u — losing. Use only when conditions are overwhelming.
+- Tier A: 2-6, 25.0%, -6.22u — destroying value. Reliability gate is working, keep it strict.
+
+ML PRIORITY RULE (new): When a game has a clear SP edge AND lineup advantage AND plus money or near-even odds,
+ML is the correct pick — not a run line, not a total. ML at plus money with 7%+ EV is the highest-value
+pick type in this model. Never downgrade a quality ML pick to a run line just because it looks fancier.
+
+TOTAL OVER SIGNAL REQUIREMENTS (new, stricter):
+A Total OVER pick requires AT LEAST ONE of:
+- Park factor 1.10 or higher (Coors, Great American, etc.)
+- Temp above 65F AND wind blowing OUT 12+ mph
+- Both bullpens SEVERE AND park factor 1.05+
+If none of these conditions are met, the OVER has no structural edge — use WATCH instead.
+Cold weather OVERs are especially unreliable — 30-50F suppresses scoring significantly even in hitter parks.
 
 INJURIES — ZERO TOLERANCE FOR HALLUCINATION:
 - injury_flags field MUST only contain names from home_team.injuries or away_team.injuries arrays.
