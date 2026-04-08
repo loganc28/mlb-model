@@ -2,8 +2,9 @@ name: Daily MLB Picks
 
 on:
   schedule:
-    - cron: '0 11 * * *'   # 7AM ET
-    - cron: '0 19 * * *'   # 3PM ET
+    - cron: '0 11 * * *'   # 7AM ET — generate picks
+    - cron: '0 19 * * *'   # 3PM ET — closing lines + early settlement
+    - cron: '0 4 * * *'    # 12AM ET — overnight settlement (catches late games)
   workflow_dispatch:
     inputs:
       force_regenerate:
