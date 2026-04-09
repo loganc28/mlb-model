@@ -1214,7 +1214,7 @@
       "away_sp": "Zac Gallen",
       "line": -105,
       "open_line": -105,
-      "close_line": "",
+      "close_line": "-108",
       "tier": "WATCH",
       "units": 0,
       "ev_pct": 3,
@@ -1341,9 +1341,10 @@
       "tier": "B",
       "units": 1.0,
       "ev_pct": 9.0,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "W",
+      "units_result": 0.769,
+      "loss_reason": "",
+      "final_score": "Los Angeles Dodgers 3 - Toronto Blue Jays 4"
     },
     {
       "date": "2026-04-08",
@@ -1358,9 +1359,10 @@
       "tier": "B",
       "units": 1.0,
       "ev_pct": 13.5,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "W",
+      "units_result": 0.769,
+      "loss_reason": "",
+      "final_score": "Baltimore Orioles 5 - Chicago White Sox 3"
     },
     {
       "date": "2026-04-08",
@@ -1375,9 +1377,10 @@
       "tier": "B",
       "units": 1.0,
       "ev_pct": 9.0,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "L",
+      "units_result": -1.0,
+      "loss_reason": "",
+      "final_score": "Houston Astros 1 - Colorado Rockies 9"
     },
     {
       "date": "2026-04-08",
@@ -1388,13 +1391,14 @@
       "away_sp": "Ryne Nelson",
       "line": "100",
       "open_line": "100",
-      "close_line": "",
+      "close_line": "-134",
       "tier": "B",
       "units": 1.0,
       "ev_pct": 7.0,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "L",
+      "units_result": -1.0,
+      "loss_reason": "",
+      "final_score": "Arizona Diamondbacks 7 - New York Mets 2"
     },
     {
       "date": "2026-04-08",
@@ -1405,13 +1409,14 @@
       "away_sp": "Brady Singer",
       "line": "118",
       "open_line": "118",
-      "close_line": "",
+      "close_line": "109",
       "tier": "B",
       "units": 1.0,
       "ev_pct": 10.1,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "L",
+      "units_result": -1.0,
+      "loss_reason": "",
+      "final_score": "Cincinnati Reds 4 - Miami Marlins 7"
     },
     {
       "date": "2026-04-08",
@@ -1426,9 +1431,10 @@
       "tier": "C",
       "units": 0.5,
       "ev_pct": 3.9,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "W",
+      "units_result": 0.424,
+      "loss_reason": "",
+      "final_score": "St. Louis Cardinals 6 - Washington Nationals 1"
     },
     {
       "date": "2026-04-08",
@@ -1443,9 +1449,10 @@
       "tier": "B",
       "units": 1.0,
       "ev_pct": 5,
-      "result": "",
+      "result": "P",
       "units_result": 0,
-      "loss_reason": ""
+      "loss_reason": "",
+      "final_score": "Chicago Cubs 6 - Tampa Bay Rays 2"
     },
     {
       "date": "2026-04-08",
@@ -1460,9 +1467,10 @@
       "tier": "WATCH",
       "units": 0,
       "ev_pct": 2.5,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "L",
+      "units_result": -0.0,
+      "loss_reason": "",
+      "final_score": "Seattle Mariners 0 - Texas Rangers 3"
     },
     {
       "date": "2026-04-08",
@@ -1477,9 +1485,10 @@
       "tier": "WATCH",
       "units": 0,
       "ev_pct": 2.5,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "W",
+      "units_result": 0.0,
+      "loss_reason": "",
+      "final_score": "Kansas City Royals 2 - Cleveland Guardians 10"
     },
     {
       "date": "2026-04-08",
@@ -1494,9 +1503,10 @@
       "tier": "WATCH",
       "units": 0,
       "ev_pct": 4.1,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "W",
+      "units_result": 0.0,
+      "loss_reason": "",
+      "final_score": "Milwaukee Brewers 0 - Boston Red Sox 5"
     },
     {
       "date": "2026-04-08",
@@ -1507,13 +1517,14 @@
       "away_sp": "Framber Valdez",
       "line": "-148",
       "open_line": "-148",
-      "close_line": "",
+      "close_line": "-136",
       "tier": "WATCH",
       "units": 0,
       "ev_pct": 2.3,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "L",
+      "units_result": -0.0,
+      "loss_reason": "",
+      "final_score": "Detroit Tigers 6 - Minnesota Twins 8"
     }
   ],
   "updated": "2026-04-08",
