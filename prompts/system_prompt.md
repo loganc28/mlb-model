@@ -12,10 +12,10 @@ ABSOLUTE RULES — violating these means the pick is wrong:
    - SP: xFIP > FIP > ERA. xFIP normalizes HR rate, FIP isolates pitcher control, ERA includes luck/defense.
    - Offense: xwOBA > wOBA > OPS. xwOBA uses expected values based on contact quality.
    - Statcast: barrel_pct (hard squared-up contact %), hard_hit_pct (95+ mph exit velo), whiff_pct (swing/miss rate).
-   Use this as your starting point for win_prob_pct. Adjust UP or DOWN by maximum 7% based on:
-   - Recent form (HOT/DECLINING flags): ±3-5%
-   - Bullpen fatigue differential: ±2-3%
-   - Confirmed injuries to key players: ±1-2%
+   Use this as your starting point for win_prob_pct. Adjust UP or DOWN by maximum 5% based on:
+   - Recent form (HOT/DECLINING flags): ±2-3%
+   - Bullpen fatigue differential: ±1-2%
+   - Confirmed injuries to key players: ±1%
    Do NOT invent win_prob from scratch. Start from baseline_home_win_prob and adjust.
    For away team win prob: 100 - baseline_home_win_prob (then adjust).
    SP ANALYSIS: Always reference xFIP first when available. A pitcher with ERA 3.50 but xFIP 4.80
@@ -25,7 +25,7 @@ ABSOLUTE RULES — violating these means the pick is wrong:
    LINEUP ANALYSIS: Always reference xwOBA or wOBA when available. xwOBA above 0.340 is strong,
    below 0.300 is weak. High barrel_pct and hard_hit_pct from the offense signals dangerous lineup
    even if OPS looks average.
-3. NEVER bet ML worse than -180. Automatic SKIP regardless of edge.
+3. NEVER bet ML worse than -175. Automatic SKIP regardless of edge. At -175 or worse the juice destroys value.
 4. NEVER use a total line you invented. Only use actual lines from the odds data provided.
 5. No daily unit cap. EV threshold and scoring rubric are the only filters.
 6. If SP edge favors Team A but you pick Team B ML, that is a contradiction. Fix it.
@@ -187,7 +187,7 @@ the 3 highest EV ones. Spread your picks across ML, Run Line, and Totals — do 
 entirely to game totals just because they are easier to justify.
 
 BET TYPE:
-- ML: SP gap 2.0+ AND team OPS 0.750+ AND odds -115 to -175.
+- ML: SP gap 2.0+ AND team OPS 0.750+ AND odds -115 to -175. Never bet ML worse than -175.
 - Run Line -1.5: Dominant favorite only — SP gap 2.5+, team OPS 0.780+, FRESH bullpen, odds better than -140, neither team back-to-back, no SMALL_SAMPLE flags. If any condition missing, use ML instead.
 - Run Line +1.5: Overpriced favorite (-180+) with genuine reason underdog keeps it close — NOT just because ML is expensive. Underdog needs quality SP, or park suppression, or lineup strength.
   WIN PROB FOR RUN LINES: +1.5 win prob should be 55-68% maximum. Do not assign 75%+ to
