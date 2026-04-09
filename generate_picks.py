@@ -510,9 +510,12 @@ def fetch_team_batting(season):
         if not team: continue
         g = int(stat.get("gamesPlayed",1) or 1)
         runs = int(stat.get("runs",0) or 0)
-        if g < 5 and season == 2026: continue
+        # Lower threshold — by April 9 every team has 8+ games
+        if g < 3 and season == 2026: continue
         ops = safe_float(stat.get("ops"))
+        # Skip clearly bad data
         if ops > 1.2: continue
+        if ops <= 0 and season == 2026: continue  # 0.000 OPS means fetch failed, skip
         # Calculate wOBA from component stats
         bb  = int(stat.get("baseOnBalls",0) or 0)
         hbp = int(stat.get("hitByPitch",0) or 0)
@@ -563,7 +566,7 @@ def fetch_team_home_away_splits(team_id, season):
     _SPLITS_CACHE[cache_key] = result
     return result
 
-STATS_CACHE_VERSION = "v4"  # bump when fetch logic changes to force cache refresh
+STATS_CACHE_VERSION = "v5"  # bump when fetch logic changes to force cache refresh
 
 def fetch_and_cache_stats():
     if STATS_CACHE.exists():
@@ -874,19 +877,61 @@ def get_pitcher_stats(name, stats, is_home=False):
 def get_team_stats(team, stats, stat_type):
     s26 = stats.get(stat_type+"_2026",{}).get(team,{})
     s25 = stats.get(stat_type+"_2025",{}).get(team,{})
+
+    # Validate 2026 data — must have real OPS/ERA, not zero
+    s26_valid = bool(s26) and (
+        (stat_type == "team_batting" and safe_float(s26.get("ops",0)) > 0.400) or
+        (stat_type == "team_pitching" and safe_float(s26.get("era",0)) > 0)
+    )
+    s25_valid = bool(s25)
+
     result = {}
-    if s26: s26["note"]="2026 YTD"; result = dict(s26)
-    elif s25: s25["note"]="2025 full season"; result = dict(s25)
+
+    if s26_valid and s25_valid:
+        g26 = s26.get("games_played", 0) or 0
+        # Blend based on 2026 sample size
+        # Under 20 games: 40% 2026 / 60% 2025 (still early)
+        # 20-40 games: 60% 2026 / 40% 2025
+        # 40+ games: 80% 2026 / 20% 2025
+        if g26 >= 40:
+            w26, w25 = 0.80, 0.20
+        elif g26 >= 20:
+            w26, w25 = 0.60, 0.40
+        else:
+            w26, w25 = 0.40, 0.60
+
+        result = dict(s26)
+        # Blend key offensive metrics
+        if stat_type == "team_batting":
+            for key in ["ops","avg","obp","slg","woba","runs_per_game"]:
+                v26 = safe_float(s26.get(key, 0))
+                v25 = safe_float(s25.get(key, 0))
+                if v26 > 0 and v25 > 0:
+                    result[key] = round(v26 * w26 + v25 * w25, 3)
+        if stat_type == "team_pitching":
+            for key in ["era","whip","k9","bb9"]:
+                v26 = safe_float(s26.get(key, 0))
+                v25 = safe_float(s25.get(key, 0))
+                if v26 > 0 and v25 > 0:
+                    result[key] = round(v26 * w26 + v25 * w25, 3)
+        result["note"] = f"Blended {int(w26*100)}/{int(w25*100)} 2026/2025 ({g26} games)"
+
+    elif s26_valid:
+        result = dict(s26)
+        result["note"] = "2026 YTD"
+    elif s25_valid:
+        result = dict(s25)
+        result["note"] = "2025 full season (2026 data unavailable)"
+    else:
+        return {}
 
     # Merge Savant batting data for hitting stats
     if stat_type == "team_batting":
         sv26 = stats.get("savant_batting_2026",{})
         sv25 = stats.get("savant_batting_2025",{})
-        # Try full name first, then abbreviation lookup
         abbrev = SAVANT_TEAM_MAP_REV.get(team,"")
         sv = sv26.get(team) or sv25.get(team) or sv26.get(abbrev) or sv25.get(abbrev)
         if not sv:
-            # Last resort partial match
             for k,v in {**sv26,**sv25}.items():
                 full = SAVANT_TEAM_MAP.get(k,k)
                 if full == team or k in team or team.split()[-1] in k:
@@ -897,7 +942,7 @@ def get_team_stats(team, stats, stat_type):
             if sv.get("hard_hit_pct"): result["hard_hit_pct"] = sv["hard_hit_pct"]
             if sv.get("exit_velo"): result["exit_velo"] = sv["exit_velo"]
 
-    return result if result else {}
+    return result
 
 # ── Lineups ───────────────────────────────────────────────────────────────────
 
@@ -1535,7 +1580,7 @@ def enforce_ev_rules(picks):
     Claude sometimes miscalculates or ignores thresholds — this catches it.
     """
     MIN_EV = {"ML":3,"Run Line":3,"Total OVER":4,"Total UNDER":4,"F5 OVER":4,"F5 UNDER":4}
-    MAX_ML_ODDS = -180
+    MAX_ML_ODDS = -175
     enforced = []
     for p in picks:
         tier = p.get("tier","SKIP")
@@ -1944,14 +1989,13 @@ def estimate_win_prob(home_sp_era, away_sp_era, home_ops, away_ops,
                       home_woba=None, away_woba=None):
     """
     Estimate home team win probability using Pythagorean run expectation.
-    Uses FIP over ERA when available — FIP is more predictive (removes defense/luck).
-    Uses wOBA over OPS when available — wOBA weights hits correctly.
-    Incorporates team bullpen ERA for full pitching picture.
-    Claude adjusts this baseline by max ±7%.
+    Uses FIP over ERA when available. Uses wOBA over OPS when available.
+    Clamps output to 35-65% — extreme values indicate bad data not real edge.
+    Claude adjusts this baseline by max ±5%.
     """
     lg_era = 4.20; lg_ops = 0.720; lg_woba = 0.320; lg_runs_pg = 4.5
 
-    # Prefer xFIP > FIP > ERA — xFIP is most predictive (normalizes HR rate)
+    # Prefer xFIP > FIP > ERA
     h_era = (home_sp_fip if home_sp_fip and home_sp_fip > 0 else
              (home_recent_era if home_recent_era and home_recent_era > 0 else home_sp_era))
     a_era = (away_sp_fip if away_sp_fip and away_sp_fip > 0 else
@@ -1963,40 +2007,41 @@ def estimate_win_prob(home_sp_era, away_sp_era, home_ops, away_ops,
     if away_bullpen_era and away_bullpen_era > 0:
         a_era = a_era * 0.55 + away_bullpen_era * 0.45
 
-    h_era = min(max(h_era, 1.0), 9.0)
-    a_era = min(max(a_era, 1.0), 9.0)
+    h_era = min(max(h_era, 1.5), 8.0)  # tighter clamp — extreme ERA values are bad data
+    a_era = min(max(a_era, 1.5), 8.0)
 
-    # Use wOBA when available — convert to run scoring scale relative to league
-    # wOBA 0.320 = league average OPS ~0.720
-    if home_woba and home_woba > 0.100:
-        h_off = min(max(home_woba / lg_woba, 0.6), 1.5)
-    else:
-        h_ops = min(max(home_ops, 0.550), 1.000) if home_ops and home_ops > 0.100 else lg_ops
+    # Use wOBA when available — fall back to league average if OPS is zero (missing data)
+    if home_woba and home_woba > 0.200:
+        h_off = min(max(home_woba / lg_woba, 0.65), 1.45)
+    elif home_ops and home_ops > 0.400:
+        h_ops = min(max(home_ops, 0.550), 1.000)
         h_off = h_ops / lg_ops
-
-    if away_woba and away_woba > 0.100:
-        a_off = min(max(away_woba / lg_woba, 0.6), 1.5)
     else:
-        a_ops = min(max(away_ops, 0.550), 1.000) if away_ops and away_ops > 0.100 else lg_ops
+        h_off = 1.0  # missing data — use league average, don't distort the calc
+
+    if away_woba and away_woba > 0.200:
+        a_off = min(max(away_woba / lg_woba, 0.65), 1.45)
+    elif away_ops and away_ops > 0.400:
+        a_ops = min(max(away_ops, 0.550), 1.000)
         a_off = a_ops / lg_ops
+    else:
+        a_off = 1.0  # missing data — use league average
 
-    pf = min(max(park_runs, 0.80), 1.30)
-
-    # Recalibrate based on SP reliability — key fix for early-season overconfidence
-    # When SPs are unreliable, regress toward 50% (coin flip)
-    home_rel = home_sp_fip if home_sp_fip else (home_recent_era if home_recent_era else home_sp_era)
-    away_rel = away_sp_fip if away_sp_fip else (away_recent_era if away_recent_era else away_sp_era)
+    pf = min(max(park_runs, 0.80), 1.35)
 
     # Expected runs per game
     home_runs = lg_runs_pg * (a_era / lg_era) * h_off * pf * 1.03  # home advantage
     away_runs = lg_runs_pg * (h_era / lg_era) * a_off * pf
 
-    # Pythagorean expectation (Davenport exponent 1.83)
-    exp = 1.83
     if home_runs <= 0 or away_runs <= 0:
-        return 54.0
+        return 52.0
+
+    # Pythagorean expectation
+    exp = 1.83
     home_win_pct = home_runs**exp / (home_runs**exp + away_runs**exp)
-    result = round(home_win_pct * 100, 1)
+
+    # Clamp to realistic range — no game is truly 90%+ from pre-game data alone
+    result = round(min(max(home_win_pct * 100, 35.0), 65.0), 1)
     return result
 
 def estimate_nrfi_odds(away_sp_stats, home_sp_stats, park_factor, game_total):
