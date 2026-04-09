@@ -1916,8 +1916,23 @@ def enforce_ev_rules(picks):
             cleaned = raw.replace("(WATCH)","").replace("(watch)","").strip()
             if cleaned.upper().startswith("WATCH "):
                 cleaned = cleaned[6:].strip()
-            if cleaned.upper() == "WATCH" or not cleaned:
-                cleaned = p.get("game","")
+            # If pick is bare "WATCH" or empty, use bet type + key info
+            if not cleaned or cleaned.upper() == "WATCH":
+                bet = p.get("bet_type","")
+                pick_str = p.get("pick","")
+                # Try to extract a meaningful label from bet type
+                if "OVER" in bet.upper() or "UNDER" in bet.upper():
+                    # Keep the total line if present
+                    import re as _re
+                    nums = _re.findall(r'[0-9]+\.?[0-9]*', pick_str)
+                    if nums:
+                        cleaned = bet.split()[-1] + " " + nums[-1]
+                    else:
+                        cleaned = bet
+                elif bet:
+                    cleaned = bet
+                else:
+                    cleaned = ""  # let watch_card show game only
             p["pick"] = cleaned
 
     return enforced
@@ -3100,7 +3115,9 @@ def build_html(data):
         if pick_display.upper().startswith("WATCH "):
             pick_display = pick_display[6:].strip()
         if not pick_display or pick_display.upper() == "WATCH":
-            pick_display = game  # fall back to game string
+            pick_display = ""  # will show game only, no duplicate
+        # Build card — only show pick name if it adds info beyond the game string
+        show_pick_name = pick_display and pick_display != game
         line = str(p.get("line",""))
         line_display = line if line and line not in ("N/A","null","None","") else "—"
         return (
@@ -3110,7 +3127,7 @@ def build_html(data):
             '<div class="tier-badge WATCH">WATCH — TRACK ONLY</div>'
             '<span class="odds-badge" style="opacity:.5">'+line_display+'</span>'
             '</div>'
-            '<div class="pick-name" style="font-size:17px;color:var(--subtle)">'+pick_display+'</div>'
+            +(('<div class="pick-name" style="font-size:17px;color:var(--subtle)">'+pick_display+'</div>') if show_pick_name else '')+
             '<div class="pick-sub"><span class="game-label">'+game+'</span>'+score_span(game)+'</div>'
             +(('<div class="watch-reason">'+avoid+'</div>') if avoid else '')+
             '</div></div>'
