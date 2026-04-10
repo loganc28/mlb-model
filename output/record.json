@@ -1539,9 +1539,10 @@
       "tier": "B",
       "units": 1.25,
       "ev_pct": 10.4,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "L",
+      "units_result": -1.25,
+      "loss_reason": "",
+      "final_score": "Cincinnati Reds 1 - Miami Marlins 8"
     },
     {
       "date": "2026-04-09",
@@ -1556,9 +1557,10 @@
       "tier": "C",
       "units": 0.5,
       "ev_pct": 6.4,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "L",
+      "units_result": -0.5,
+      "loss_reason": "",
+      "final_score": "Arizona Diamondbacks 7 - New York Mets 1"
     },
     {
       "date": "2026-04-09",
@@ -1569,13 +1571,14 @@
       "away_sp": "Anthony Kay",
       "line": "-177",
       "open_line": "-177",
-      "close_line": "",
+      "close_line": "144",
       "tier": "B",
       "units": 1.0,
       "ev_pct": 4.1,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "L",
+      "units_result": -1.0,
+      "loss_reason": "",
+      "final_score": "Chicago White Sox 2 - Kansas City Royals 0"
     },
     {
       "date": "2026-04-09",
@@ -1590,9 +1593,10 @@
       "tier": "WATCH",
       "units": 0,
       "ev_pct": -4.4,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "W",
+      "units_result": 0.0,
+      "loss_reason": "",
+      "final_score": "Detroit Tigers 1 - Minnesota Twins 3"
     }
   ],
   "updated": "2026-04-09",
