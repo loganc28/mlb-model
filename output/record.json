@@ -1607,13 +1607,14 @@
       "away_sp": "Landen Roupp",
       "line": "-119",
       "open_line": "-119",
-      "close_line": "",
+      "close_line": "-120",
       "tier": "B",
       "units": 1.0,
       "ev_pct": 4,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "L",
+      "units_result": -1.0,
+      "loss_reason": "",
+      "final_score": "San Francisco Giants 6 - Baltimore Orioles 3"
     },
     {
       "date": "2026-04-10",
@@ -1624,13 +1625,14 @@
       "away_sp": "Slade Cecconi",
       "line": "-132",
       "open_line": "-132",
-      "close_line": "",
+      "close_line": "-102",
       "tier": "B",
       "units": 1.0,
       "ev_pct": 3.1,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "W",
+      "units_result": 0.758,
+      "loss_reason": "",
+      "final_score": "Cleveland Guardians 5 - Atlanta Braves 11"
     },
     {
       "date": "2026-04-10",
@@ -1641,13 +1643,14 @@
       "away_sp": "Connelly Early",
       "line": "-142",
       "open_line": "-142",
-      "close_line": "",
+      "close_line": "-143",
       "tier": "B",
       "units": 1.0,
       "ev_pct": 7.0,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "L",
+      "units_result": -1.0,
+      "loss_reason": "",
+      "final_score": "Boston Red Sox 2 - St. Louis Cardinals 3"
     },
     {
       "date": "2026-04-10",
@@ -1658,13 +1661,14 @@
       "away_sp": "Tomoyuki Sugano",
       "line": "166",
       "open_line": "166",
-      "close_line": "",
+      "close_line": "135",
       "tier": "B",
       "units": 1.25,
       "ev_pct": 8.4,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "L",
+      "units_result": -1.25,
+      "loss_reason": "",
+      "final_score": "Colorado Rockies 2 - San Diego Padres 5"
     },
     {
       "date": "2026-04-10",
@@ -1675,13 +1679,14 @@
       "away_sp": "Carmen Mlodzinski",
       "line": "-102",
       "open_line": "-102",
-      "close_line": "",
+      "close_line": "100",
       "tier": "WATCH",
       "units": 0,
       "ev_pct": 7.0,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "W",
+      "units_result": 0.0,
+      "loss_reason": "",
+      "final_score": "Pittsburgh Pirates 2 - Chicago Cubs 0"
     },
     {
       "date": "2026-04-10",
@@ -1709,13 +1714,14 @@
       "away_sp": "Michael Soroka",
       "line": "-177",
       "open_line": "-177",
-      "close_line": "",
+      "close_line": "113",
       "tier": "WATCH",
       "units": 0,
       "ev_pct": 3,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "L",
+      "units_result": -0.0,
+      "loss_reason": "",
+      "final_score": "Arizona Diamondbacks 5 - Philadelphia Phillies 4"
     },
     {
       "date": "2026-04-10",
@@ -1747,9 +1753,10 @@
       "tier": "WATCH",
       "units": 0,
       "ev_pct": 4.2,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "W",
+      "units_result": 0.0,
+      "loss_reason": "",
+      "final_score": "Minnesota Twins 4 - Toronto Blue Jays 10"
     },
     {
       "date": "2026-04-10",
