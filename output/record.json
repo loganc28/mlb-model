@@ -1822,9 +1822,10 @@
       "tier": "B",
       "units": 1.0,
       "ev_pct": 13.5,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "L",
+      "units_result": -1.0,
+      "loss_reason": "",
+      "final_score": "Minnesota Twins 7 - Toronto Blue Jays 4"
     },
     {
       "date": "2026-04-11",
@@ -1839,9 +1840,10 @@
       "tier": "B",
       "units": 1.0,
       "ev_pct": 9.0,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "L",
+      "units_result": -1.0,
+      "loss_reason": "",
+      "final_score": "Pittsburgh Pirates 4 - Chicago Cubs 3"
     },
     {
       "date": "2026-04-11",
@@ -1856,9 +1858,10 @@
       "tier": "B",
       "units": 1.25,
       "ev_pct": 13,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "L",
+      "units_result": -1.25,
+      "loss_reason": "",
+      "final_score": "Arizona Diamondbacks 3 - Philadelphia Phillies 4"
     },
     {
       "date": "2026-04-11",
@@ -1873,9 +1876,10 @@
       "tier": "B",
       "units": 1.0,
       "ev_pct": 9.0,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "L",
+      "units_result": -1.0,
+      "loss_reason": "",
+      "final_score": "Miami Marlins 1 - Detroit Tigers 6"
     },
     {
       "date": "2026-04-11",
@@ -1907,9 +1911,10 @@
       "tier": "B",
       "units": 1.0,
       "ev_pct": 10.0,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "L",
+      "units_result": -1.0,
+      "loss_reason": "",
+      "final_score": "San Francisco Giants 2 - Baltimore Orioles 6"
     },
     {
       "date": "2026-04-11",
@@ -1924,9 +1929,10 @@
       "tier": "B",
       "units": 1.0,
       "ev_pct": 5,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "W",
+      "units_result": 0.741,
+      "loss_reason": "",
+      "final_score": "Boston Red Sox 7 - St. Louis Cardinals 1"
     },
     {
       "date": "2026-04-11",
@@ -1941,9 +1947,10 @@
       "tier": "B",
       "units": 1.25,
       "ev_pct": 8,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "W",
+      "units_result": 1.25,
+      "loss_reason": "",
+      "final_score": "Cleveland Guardians 6 - Atlanta Braves 0"
     },
     {
       "date": "2026-04-11",
@@ -1958,9 +1965,10 @@
       "tier": "B",
       "units": 1.25,
       "ev_pct": 10,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "L",
+      "units_result": -1.25,
+      "loss_reason": "",
+      "final_score": "Texas Rangers 3 - Los Angeles Dodgers 6"
     },
     {
       "date": "2026-04-11",
@@ -1975,9 +1983,10 @@
       "tier": "WATCH",
       "units": 0,
       "ev_pct": 2.2,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "L",
+      "units_result": -0.0,
+      "loss_reason": "",
+      "final_score": "New York Yankees 4 - Tampa Bay Rays 5"
     },
     {
       "date": "2026-04-11",
@@ -1992,9 +2001,10 @@
       "tier": "WATCH",
       "units": 0,
       "ev_pct": 5,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "L",
+      "units_result": -0.0,
+      "loss_reason": "",
+      "final_score": "Washington Nationals 3 - Milwaukee Brewers 1"
     },
     {
       "date": "2026-04-11",
@@ -2009,9 +2019,10 @@
       "tier": "WATCH",
       "units": 0,
       "ev_pct": 6,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "L",
+      "units_result": -0.0,
+      "loss_reason": "",
+      "final_score": "Houston Astros 7 - Seattle Mariners 8"
     }
   ],
   "updated": "2026-04-11",
