@@ -575,6 +575,21 @@ def fetch_team_batting(season):
     return result
 
 _SPLITS_CACHE = {}
+_THROWS_CACHE = {}  # pitcher_id → "L" or "R"
+
+def fetch_pitcher_throws(pid):
+    """Fetch pitcher throwing arm — cached to avoid repeated calls."""
+    if not pid: return ""
+    if pid in _THROWS_CACHE: return _THROWS_CACHE[pid]
+    try:
+        data = mlb_api("/people/"+str(pid), {"hydrate":"currentTeam"})
+        people = data.get("people",[])
+        if people:
+            throws = people[0].get("pitchHand",{}).get("code","")
+            _THROWS_CACHE[pid] = throws
+            return throws
+    except: pass
+    return ""
 
 def fetch_team_home_away_splits(team_id, season):
     """Fetch home vs away batting splits + W/L record for a team."""
@@ -621,7 +636,7 @@ def fetch_team_home_away_splits(team_id, season):
     _SPLITS_CACHE[cache_key] = result
     return result
 
-STATS_CACHE_VERSION = "v6"  # bump when fetch logic changes to force cache refresh
+STATS_CACHE_VERSION = "v7"  # bump when fetch logic changes to force cache refresh
 
 def fetch_and_cache_stats():
     if STATS_CACHE.exists():
@@ -932,6 +947,11 @@ def get_pitcher_stats(name, stats, is_home=False):
     primary["reliability"] = reliability
     primary["reliability_label"] = reliability_label
 
+    # Add throws (L/R) — needed for platoon split calculation
+    pid_for_throws = primary.get("player_id") or s25.get("player_id") or s26.get("player_id")
+    if pid_for_throws and not primary.get("throws"):
+        primary["throws"] = fetch_pitcher_throws(pid_for_throws)
+
     return primary
 
 def get_team_stats(team, stats, stat_type):
@@ -1041,20 +1061,67 @@ def fetch_lineup(game_pk):
     return lineups
 
 def analyze_lineup_handedness(batters, sp_throws):
-    """Calculate platoon advantage — what % of lineup is at disadvantage vs SP hand."""
+    """
+    Calculate platoon advantage — full breakdown of lineup vs SP handedness.
+    Same hand = platoon disadvantage for hitters (e.g. RHB vs RHP).
+    Opposite hand = platoon advantage for hitters (e.g. LHB vs RHP).
+    
+    Returns rich data: % disadvantaged, avg OPS by hand matchup, named disadvantaged hitters.
+    """
     if not batters or not sp_throws:
         return {}
-    same_hand = sum(1 for b in batters if b.get("bats") == sp_throws and b.get("bats"))
-    total_known = sum(1 for b in batters if b.get("bats"))
-    if total_known == 0:
+
+    sp_throws = sp_throws.upper()  # normalize to L or R
+    same_hand = []    # hitters at platoon disadvantage
+    opp_hand  = []    # hitters with platoon advantage
+    unknown   = []
+
+    for b in batters:
+        bats = (b.get("bats") or "").upper()
+        if not bats or bats == "S":  # switch hitters get advantage
+            opp_hand.append(b)
+        elif bats == sp_throws:
+            same_hand.append(b)   # disadvantage
+        else:
+            opp_hand.append(b)    # advantage
+
+    total = len(batters)
+    if total == 0:
         return {}
-    pct = round(same_hand/total_known*100)
-    # Same hand = platoon disadvantage for hitters
+
+    disadvantaged_pct = round(len(same_hand) / total * 100)
+    advantaged_pct    = round(len(opp_hand)  / total * 100)
+
+    # Average OPS for each group (when available)
+    same_ops = [b.get("ops",0) for b in same_hand if b.get("ops",0) > 0.400]
+    opp_ops  = [b.get("ops",0) for b in opp_hand  if b.get("ops",0) > 0.400]
+    avg_same_ops = round(sum(same_ops)/len(same_ops), 3) if same_ops else None
+    avg_opp_ops  = round(sum(opp_ops)/len(opp_ops),   3) if opp_ops  else None
+
+    # Determine overall platoon edge
+    if disadvantaged_pct >= 70:
+        platoon_edge = "STRONG — SP throws " + sp_throws + ", " + str(disadvantaged_pct) + "% of lineup at platoon disadvantage"
+        edge_score = 2  # significant edge for SP
+    elif disadvantaged_pct >= 55:
+        platoon_edge = "MODERATE — " + str(disadvantaged_pct) + "% of lineup same-handed as SP"
+        edge_score = 1
+    elif advantaged_pct >= 70:
+        platoon_edge = "LINEUP ADVANTAGE — " + str(advantaged_pct) + "% of lineup has platoon edge vs SP"
+        edge_score = -1  # edge for offense
+    else:
+        platoon_edge = "NEUTRAL — balanced lineup vs SP"
+        edge_score = 0
+
     return {
-        "pct_same_hand_as_pitcher": pct,
-        "platoon_note": ("Strong platoon advantage for SP — "+str(pct)+"% of lineup same-handed"
-                        if pct >= 60 else
-                        "Balanced lineup vs SP handedness"),
+        "sp_throws": sp_throws,
+        "disadvantaged_pct": disadvantaged_pct,
+        "advantaged_pct": advantaged_pct,
+        "disadvantaged_batters": [b["name"] for b in same_hand[:4]],
+        "advantaged_batters": [b["name"] for b in opp_hand[:4]],
+        "avg_ops_disadvantaged": avg_same_ops,
+        "avg_ops_advantaged": avg_opp_ops,
+        "platoon_edge": platoon_edge,
+        "edge_score": edge_score,  # positive = SP advantage, negative = lineup advantage
     }
 
 # ── Bullpen fatigue ───────────────────────────────────────────────────────────
@@ -1522,10 +1589,10 @@ def fetch_odds():
 
             odds_map[away+"@"+home] = {"moneyline":ml,"total":total,"runline":runline}
         print("Fetched odds for "+str(len(odds_map))+" games")
-        return odds_map
+        return odds_map, event_ids
     except Exception as e:
         print("Odds error: "+str(e))
-        return {}
+        return {}, {}
 
 def fetch_nrfi_odds(event_ids):
     """
@@ -1547,7 +1614,7 @@ def fetch_nrfi_odds(event_ids):
                 params={
                     "apiKey": ODDS_API_KEY,
                     "regions": "us",
-                    "markets": "totals_1st_1_innings",
+                    "markets": "totals_1st_1_innings,h2h_1st_5_innings,totals_1st_5_innings",
                     "oddsFormat": "american",
                     "bookmakers": "draftkings,fanduel,betmgm,caesars,betonlineag",
                 },
@@ -1556,21 +1623,67 @@ def fetch_nrfi_odds(event_ids):
             if not r.ok:
                 return game_key, None
             best_nrfi = None; best_yrfi = None
-            for bm in r.json().get("bookmakers", []):
+            f5_ml_away = None; f5_ml_home = None
+            f5_total_line = None; f5_over = None; f5_under = None
+            # Parse event teams for F5 ML matching
+            event_data = r.json()
+            home_team = normalize_team(event_data.get("home_team",""))
+            away_team = normalize_team(event_data.get("away_team",""))
+
+            for bm in event_data.get("bookmakers", []):
                 for market in bm.get("markets", []):
-                    if market["key"] != "totals_1st_1_innings":
-                        continue
-                    for o in market.get("outcomes", []):
-                        price = o.get("price")
-                        name = o.get("name","").upper()
-                        if name == "UNDER":
-                            if best_nrfi is None or price > best_nrfi:
-                                best_nrfi = price
-                        elif name == "OVER":
-                            if best_yrfi is None or price > best_yrfi:
-                                best_yrfi = price
+                    # NRFI/YRFI
+                    if market["key"] == "totals_1st_1_innings":
+                        for o in market.get("outcomes", []):
+                            price = o.get("price")
+                            name = o.get("name","").upper()
+                            if name == "UNDER":
+                                if best_nrfi is None or price > best_nrfi:
+                                    best_nrfi = price
+                            elif name == "OVER":
+                                if best_yrfi is None or price > best_yrfi:
+                                    best_yrfi = price
+                    # F5 ML
+                    elif market["key"] == "h2h_1st_5_innings":
+                        for o in market.get("outcomes", []):
+                            price = o.get("price")
+                            nm = normalize_team(o.get("name",""))
+                            if nm == away_team:
+                                if f5_ml_away is None or price > f5_ml_away:
+                                    f5_ml_away = price
+                            elif nm == home_team:
+                                if f5_ml_home is None or price > f5_ml_home:
+                                    f5_ml_home = price
+                    # F5 Total
+                    elif market["key"] == "totals_1st_5_innings":
+                        for o in market.get("outcomes", []):
+                            price = o.get("price")
+                            name = o.get("name","").upper()
+                            if not f5_total_line:
+                                f5_total_line = str(o.get("point",""))
+                            if name == "OVER":
+                                if f5_over is None or price > f5_over:
+                                    f5_over = price
+                            elif name == "UNDER":
+                                if f5_under is None or price > f5_under:
+                                    f5_under = price
+
+            result = {}
             if best_nrfi or best_yrfi:
-                return game_key, {"nrfi_price": best_nrfi, "yrfi_price": best_yrfi, "source": "book"}
+                result["nrfi_price"] = best_nrfi
+                result["yrfi_price"] = best_yrfi
+                result["source"] = "book"
+            if f5_ml_away or f5_ml_home:
+                result["f5_ml_away"] = f5_ml_away
+                result["f5_ml_home"] = f5_ml_home
+                result["f5_away_team"] = away_team
+                result["f5_home_team"] = home_team
+            if f5_total_line:
+                result["f5_total_line"] = f5_total_line
+                result["f5_over"] = f5_over
+                result["f5_under"] = f5_under
+            if result:
+                return game_key, result
             return game_key, None
         except Exception:
             return game_key, None
@@ -2416,8 +2529,10 @@ def summarize_game(g):
             "relevant_split": away_sp.get("relevant_split",""),
             "recent_era": away_rec.get("era_last3",0),
             "recent_starts": away_rec.get("starts",0),
+            "ip_per_start": away_rec.get("ip_per_start",0),
             "reliability": away_sp.get("reliability",0.5),
             "reliability_label": away_sp.get("reliability_label","UNKNOWN"),
+            "throws": away_sp.get("throws",""),
         },
         "home_sp_stats": {
             "era": home_sp.get("era",0),
@@ -2436,8 +2551,10 @@ def summarize_game(g):
             "relevant_split": home_sp.get("relevant_split",""),
             "recent_era": home_rec.get("era_last3",0),
             "recent_starts": home_rec.get("starts",0),
+            "ip_per_start": home_rec.get("ip_per_start",0),
             "reliability": home_sp.get("reliability",0.5),
             "reliability_label": home_sp.get("reliability_label","UNKNOWN"),
+            "throws": home_sp.get("throws",""),
         },
         "away_team": {
             "ops": away_bat.get("ops",0),
@@ -2460,6 +2577,7 @@ def summarize_game(g):
             "bullpen_avg_era": away_bp.get("avg_era"),
             "bullpen_quality_note": away_bp.get("quality_note",""),
             "fatigued_arms": away_bp.get("fatigued_arms",[])[:3],
+            "platoon_vs_home_sp": g.get("away_platoon",{}),
             "injuries": [i["name"] for i in g.get("away_injuries",[])[:2]],
             "streak": str(away_streak.get("streak_type",""))+str(away_streak.get("streak_number","")) if away_streak else "",
             "rest_days": away_rest.get("rest_days", 2),
@@ -2486,6 +2604,7 @@ def summarize_game(g):
             "bullpen_avg_era": home_bp.get("avg_era"),
             "bullpen_quality_note": home_bp.get("quality_note",""),
             "fatigued_arms": home_bp.get("fatigued_arms",[])[:3],
+            "platoon_vs_away_sp": g.get("home_platoon",{}),
             "injuries": [i["name"] for i in g.get("home_injuries",[])[:2]],
             "streak": str(home_streak.get("streak_type",""))+str(home_streak.get("streak_number","")) if home_streak else "",
             "rest_days": home_rest.get("rest_days", 2),
@@ -2544,6 +2663,14 @@ def summarize_game(g):
                 "yrfi_book_price": odds.get("nrfi",{}).get("yrfi_price"),
                 "nrfi_source": "book"} if odds.get("nrfi",{}).get("nrfi_price") else {"nrfi_source": "model_estimate"}),
         },
+        "f5_odds": {
+            "ml_away": odds.get("f5",{}).get("ml_away"),
+            "ml_home": odds.get("f5",{}).get("ml_home"),
+            "total_line": odds.get("f5",{}).get("total_line"),
+            "over": odds.get("f5",{}).get("over"),
+            "under": odds.get("f5",{}).get("under"),
+            "available": bool(odds.get("f5")),
+        } if odds.get("f5") else {"available": False},
         "baseline_home_win_prob": estimate_win_prob(
             home_sp.get("era", 4.20) or 4.20,
             away_sp.get("era", 4.20) or 4.20,
@@ -3597,7 +3724,28 @@ def main():
         print("No games found -- exiting")
         return
 
-    odds_map = fetch_odds()
+    odds_map, event_ids = fetch_odds()
+
+    # Fetch NRFI + F5 odds in parallel using same per-game calls — no extra API credits
+    if event_ids:
+        nrfi_f5_map = fetch_nrfi_odds(event_ids)
+        for game_key, data in nrfi_f5_map.items():
+            if game_key in odds_map:
+                odds_map[game_key]["nrfi"] = data
+                # Add F5 odds as separate key for clean access
+                if data.get("f5_ml_away") or data.get("f5_total_line"):
+                    odds_map[game_key]["f5"] = {
+                        "ml_away": data.get("f5_ml_away"),
+                        "ml_home": data.get("f5_ml_home"),
+                        "away_team": data.get("f5_away_team"),
+                        "home_team": data.get("f5_home_team"),
+                        "total_line": data.get("f5_total_line"),
+                        "over": data.get("f5_over"),
+                        "under": data.get("f5_under"),
+                    }
+        f5_count = sum(1 for v in odds_map.values() if v.get("f5"))
+        nrfi_count = sum(1 for v in odds_map.values() if v.get("nrfi"))
+        print(f"NRFI lines: {nrfi_count} games, F5 lines: {f5_count} games")
 
     # Fetch ESPN injuries once for all teams
     espn_injuries = fetch_espn_injuries()
