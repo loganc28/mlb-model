@@ -374,7 +374,6 @@ def fetch_sp_stats_bulk(season):
         bb = int(stat.get("baseOnBalls",0) or 0)
         hr = int(stat.get("homeRuns",0) or 0)
         hbp = int(stat.get("hitBatsmen",0) or 0)
-        # Calculate FIP: (13*HR + 3*(BB+HBP) - 2*K) / IP + 3.10
         fip = round((13*hr + 3*(bb+hbp) - 2*so) / ip + 3.10, 2) if ip > 0 else None
         result[name] = {
             "player_id":pid,"season":season,"gs":gs,"ip":round(ip,1),
@@ -384,6 +383,43 @@ def fetch_sp_stats_bulk(season):
             "k9":round(so/ip*9,2) if ip>0 else 0,
             "bb9":round(bb/ip*9,2) if ip>0 else 0,
             "hr9":round(hr/ip*9,2) if ip>0 else 0,
+        }
+    return result
+
+def fetch_reliever_stats_bulk(season):
+    """Fetch season stats for all relievers — used for bullpen quality scoring."""
+    data = mlb_api("/stats", {
+        "stats":"season","playerPool":"All","sportId":"1",
+        "season":str(season),"group":"pitching","limit":"800",
+    })
+    result = {}
+    for split in data.get("stats",[{}])[0].get("splits",[]):
+        name = split.get("player",{}).get("fullName","")
+        pid  = split.get("player",{}).get("id")
+        stat = split.get("stat",{})
+        gs = int(stat.get("gamesStarted",0) or 0)
+        g  = int(stat.get("gamesPitched",0) or 0)
+        if gs >= 1: continue  # skip starters
+        if g < 3: continue    # need meaningful sample
+        ip = safe_float(stat.get("inningsPitched","0"))
+        if ip < 3: continue
+        so = int(stat.get("strikeOuts",0) or 0)
+        bb = int(stat.get("baseOnBalls",0) or 0)
+        hr = int(stat.get("homeRuns",0) or 0)
+        hbp = int(stat.get("hitBatsmen",0) or 0)
+        sv = int(stat.get("saves",0) or 0)
+        holds = int(stat.get("holds",0) or 0)
+        fip = round((13*hr + 3*(bb+hbp) - 2*so) / ip + 3.10, 2) if ip > 0 else None
+        result[name] = {
+            "player_id": pid, "season": season,
+            "era": safe_float(stat.get("era")),
+            "fip": fip,
+            "whip": safe_float(stat.get("whip")),
+            "k9": round(so/ip*9,2) if ip>0 else 0,
+            "ip": round(ip,1),
+            "saves": sv,
+            "holds": holds,
+            "role": "closer" if sv >= 3 else ("setup" if holds >= 3 else "middle"),
         }
     return result
 
@@ -541,8 +577,8 @@ def fetch_team_batting(season):
 _SPLITS_CACHE = {}
 
 def fetch_team_home_away_splits(team_id, season):
-    """Fetch home vs away batting splits for a team."""
-    cache_key = str(team_id)+"-"+str(season)
+    """Fetch home vs away batting splits + W/L record for a team."""
+    cache_key = str(team_id)+"-"+str(season)+"-splits"
     if cache_key in _SPLITS_CACHE:
         return _SPLITS_CACHE[cache_key]
     result = {}
@@ -554,19 +590,38 @@ def fetch_team_home_away_splits(team_id, season):
         for split in data.get("stats",[{}])[0].get("splits",[]):
             stat = split.get("stat",{})
             g = int(stat.get("gamesPlayed",1) or 1)
-            if g < 5: continue
+            if g < 3: continue
             runs = int(stat.get("runs",0) or 0)
             ops = safe_float(stat.get("ops"))
             if ops > 1.2: continue
+            if ops <= 0: continue
+            bb  = int(stat.get("baseOnBalls",0) or 0)
+            hbp = int(stat.get("hitByPitch",0) or 0)
+            h   = int(stat.get("hits",0) or 0)
+            d   = int(stat.get("doubles",0) or 0)
+            t   = int(stat.get("triples",0) or 0)
+            hr  = int(stat.get("homeRuns",0) or 0)
+            ab  = int(stat.get("atBats",0) or 0)
+            sf  = int(stat.get("sacFlies",0) or 0)
+            singles = h - d - t - hr
+            pa = ab + bb + hbp + sf
+            woba = round((0.69*bb + 0.72*hbp + 0.89*singles + 1.27*d + 1.62*t + 2.10*hr) / pa, 3) if pa > 0 else None
+            wins = int(stat.get("wins",0) or 0)
+            losses_s = int(stat.get("losses",0) or 0)
+            win_pct = round(wins/(wins+losses_s),3) if wins+losses_s > 0 else None
             result[label] = {
-                "ops":ops,
-                "runs_per_game":round(runs/g,2) if g>0 else 0,
-                "games":g,
+                "ops": ops,
+                "woba": woba,
+                "runs_per_game": round(runs/g,2) if g>0 else 0,
+                "games": g,
+                "wins": wins,
+                "losses": losses_s,
+                "win_pct": win_pct,
             }
     _SPLITS_CACHE[cache_key] = result
     return result
 
-STATS_CACHE_VERSION = "v5"  # bump when fetch logic changes to force cache refresh
+STATS_CACHE_VERSION = "v6"  # bump when fetch logic changes to force cache refresh
 
 def fetch_and_cache_stats():
     if STATS_CACHE.exists():
@@ -581,9 +636,11 @@ def fetch_and_cache_stats():
 
     # Run all API calls in parallel — cuts fetch time from ~3min to ~30s
     _t0 = _t.time()
-    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as ex:
         f_sp25      = ex.submit(fetch_sp_stats_bulk, 2025)
         f_sp26      = ex.submit(fetch_sp_stats_bulk, 2026)
+        f_rp25      = ex.submit(fetch_reliever_stats_bulk, 2025)
+        f_rp26      = ex.submit(fetch_reliever_stats_bulk, 2026)
         f_tp25      = ex.submit(fetch_team_pitching, 2025)
         f_tp26      = ex.submit(fetch_team_pitching, 2026)
         f_tb25      = ex.submit(fetch_team_batting,  2025)
@@ -598,6 +655,8 @@ def fetch_and_cache_stats():
         "version": STATS_CACHE_VERSION,
         "sp_2025":             f_sp25.result(),
         "sp_2026":             f_sp26.result(),
+        "rp_2025":             f_rp25.result(),
+        "rp_2026":             f_rp26.result(),
         "team_pitching_2025":  f_tp25.result(),
         "team_pitching_2026":  f_tp26.result(),
         "team_batting_2025":   f_tb25.result(),
@@ -610,6 +669,7 @@ def fetch_and_cache_stats():
     }
     print(f"Stats fetch: {round(_t.time()-_t0,1)}s total (parallel)")
     print(f"SP stats: {len(stats['sp_2025'])} in 2025, {len(stats['sp_2026'])} in 2026")
+    print(f"RP stats: {len(stats['rp_2025'])} in 2025, {len(stats['rp_2026'])} in 2026")
     sv_p = len(stats['savant_pitchers_2026']) + len(stats['savant_pitchers_2025'])
     sv_b = len(stats['savant_batting_2026']) + len(stats['savant_batting_2025'])
     print(f"Savant: {sv_p} pitcher records, {sv_b} batting records")
@@ -1002,11 +1062,67 @@ def analyze_lineup_handedness(batters, sp_throws):
 # Module-level bullpen cache to avoid redundant API calls
 _BULLPEN_CACHE = {}
 
-def fetch_bullpen_fatigue(team_id):
-    if team_id in _BULLPEN_CACHE:
-        return _BULLPEN_CACHE[team_id]
+def score_bullpen_quality(fatigued_arms, available_arms, rp_stats_2026, rp_stats_2025):
+    """
+    Score bullpen quality based on ERA/FIP of fatigued and available arms.
+    Returns a quality score and context string.
+    SEVERE + elite bullpen = still dangerous
+    SEVERE + poor bullpen = massive OVER edge
+    FRESH + elite bullpen = strong UNDER lean
+    """
+    def get_era(name):
+        for pool in [rp_stats_2026, rp_stats_2025]:
+            if name in pool:
+                return pool[name].get("era", 4.50)
+            # Partial name match
+            last = name.split()[-1].lower() if name else ""
+            for k,v in pool.items():
+                if k.split()[-1].lower() == last and last:
+                    return v.get("era", 4.50)
+        return 4.50  # league average if unknown
+
+    all_arms = list(set(fatigued_arms + available_arms))
+    if not all_arms:
+        return {"quality": "UNKNOWN", "avg_era": 4.50, "quality_note": "No reliever data"}
+
+    eras = [get_era(arm) for arm in all_arms if arm]
+    if not eras:
+        return {"quality": "UNKNOWN", "avg_era": 4.50, "quality_note": "No ERA data"}
+
+    avg_era = round(sum(eras) / len(eras), 2)
+    fatigued_eras = [get_era(arm) for arm in fatigued_arms if arm]
+    avg_fatigued_era = round(sum(fatigued_eras)/len(fatigued_eras), 2) if fatigued_eras else avg_era
+
+    if avg_era <= 3.50:
+        quality = "ELITE"
+    elif avg_era <= 4.00:
+        quality = "GOOD"
+    elif avg_era <= 4.50:
+        quality = "AVERAGE"
+    elif avg_era <= 5.00:
+        quality = "BELOW_AVERAGE"
+    else:
+        quality = "POOR"
+
+    note = f"Pen avg ERA {avg_era}"
+    if fatigued_eras:
+        note += f" (fatigued arms avg ERA {avg_fatigued_era})"
+
+    return {
+        "quality": quality,
+        "avg_era": avg_era,
+        "fatigued_avg_era": avg_fatigued_era,
+        "quality_note": note,
+    }
+
+
+def fetch_bullpen_fatigue(team_id, rp_stats_2026=None, rp_stats_2025=None):
+    cache_key = f"{team_id}_fatigue"
+    if cache_key in _BULLPEN_CACHE:
+        return _BULLPEN_CACHE[cache_key]
     fatigued = []
-    for days_ago in range(1, 3):  # Only check last 2 days — day 3 is rarely relevant
+    available = []
+    for days_ago in range(1, 3):
         date = (datetime.date.today() - datetime.timedelta(days=days_ago)).isoformat()
         data = mlb_api("/schedule", {
             "sportId":"1","date":date,"teamId":str(team_id),
@@ -1027,17 +1143,32 @@ def fetch_bullpen_fatigue(team_id):
                         ip = safe_float(s.get("inningsPitched","0"))
                         pc = int(s.get("pitchesThrown",0) or 0)
                         gs = int(s.get("gamesStarted",0) or 0)
+                        name = pdata.get("person",{}).get("fullName","")
                         if ip > 0 and gs == 0 and pc > 0:
-                            name = pdata.get("person",{}).get("fullName","")
                             fatigued.append({"name":name,"pitches":pc,"ip":ip,"days_ago":days_ago})
+                        elif gs == 0 and pc == 0 and ip == 0 and name:
+                            available.append(name)
+
     high_usage = [p for p in fatigued if p["pitches"] >= 20 and p["days_ago"] <= 2]
+    fatigue_level = "SEVERE" if len(high_usage) >= 2 else "MODERATE" if len(high_usage) == 1 else "FRESH"
+
+    # Score bullpen quality if reliever stats available
+    quality_data = {}
+    if rp_stats_2026 is not None:
+        fatigued_names = [p["name"] for p in high_usage]
+        quality_data = score_bullpen_quality(
+            fatigued_names, available[:5],
+            rp_stats_2026 or {}, rp_stats_2025 or {}
+        )
+
     result = {
         "recent_usage": fatigued[:10],
         "high_usage_count": len(high_usage),
         "fatigued_arms": [p["name"] for p in high_usage],
-        "fatigue_level": "SEVERE" if len(high_usage) >= 2 else "MODERATE" if len(high_usage) == 1 else "FRESH",
+        "fatigue_level": fatigue_level,
+        **quality_data,
     }
-    _BULLPEN_CACHE[team_id] = result
+    _BULLPEN_CACHE[cache_key] = result
     return result
 
 # ── Injuries ──────────────────────────────────────────────────────────────────
@@ -1882,20 +2013,38 @@ def enforce_ev_rules(picks):
                 print(f"B2B PENALTY: {game} — back-to-back, downgrading A→B")
                 p["tier"] = "B"; p["units"] = 1.0
 
-    # 5. Sharp money confirmation — if Pinnacle agrees with our pick, boost confidence
-    # If Pinnacle disagrees, downgrade
-    # (This uses data from line_movement in the pick's flags/rationale)
+    # 5. Closing Line Value filter — if sharp money moved the line against our pick
+    # by 15+ cents, that's a real signal we're on the wrong side
     for p in enforced:
         if p.get("tier") not in ("MAX","A","B","C"): continue
-        rationale = (p.get("rationale","") + " " + p.get("key_edge","")).lower()
-        if "sharp money" in rationale or "pinnacle" in rationale:
-            if "sharp money on" in rationale:
-                # Sharp money confirmed on our side — small boost
-                pick_str = p.get("pick","").upper()
-                if any(t in rationale for t in [pick_str[:6].lower()]):
-                    ev_current = float(p.get("ev_pct",0) or 0)
-                    p["ev_pct"] = min(ev_current + 1.0, 15.0)
-                    print(f"SHARP CONFIRMED: {p.get('game','')} — sharp money aligns, +1% EV")
+        game = p.get("game","")
+        bet_type = p.get("bet_type","")
+        try:
+            open_l = p.get("open_line","")
+            close_l = p.get("close_line","")
+            if not open_l or not close_l or str(open_l) in ("","N/A","null","None") or str(close_l) in ("","N/A","null","None"):
+                continue
+            ol = float(str(open_l).replace("+",""))
+            cl = float(str(close_l).replace("+",""))
+            # Calculate line movement against our pick
+            # For negative lines: line getting MORE negative = market moving against us
+            # For positive lines: line getting LESS positive = market moving against us
+            if ol < 0 and cl < 0:
+                movement = cl - ol  # e.g. -110 → -130 = movement of -20 (bad)
+            elif ol > 0 and cl > 0:
+                movement = ol - cl  # e.g. +130 → +110 = movement of +20 (market moved against dog)
+            else:
+                movement = 0  # line crossed zero, skip
+
+            if movement <= -20:  # market moved 20+ cents against our pick
+                ev = float(p.get("ev_pct",0) or 0)
+                print(f"CLV ALERT: {game} — line moved {int(movement)} cents against pick (open {open_l} → close {close_l})")
+                if movement <= -30:  # sharp money strongly against — downgrade one tier
+                    if p["tier"] == "MAX": p["tier"] = "A"; p["units"] = 1.5
+                    elif p["tier"] == "A": p["tier"] = "B"; p["units"] = 1.0
+                    elif p["tier"] == "B": p["tier"] = "C"; p["units"] = 0.5
+                    print(f"  → Downgraded one tier due to strong line movement against pick")
+        except: pass
 
     # Run line cap — 4-7 record (36%), losing bet type. MAX 1 per slate, require 8%+ EV.
     for p in enforced:
@@ -2224,6 +2373,19 @@ def summarize_game(g):
     away_rest = g.get("away_rest",{})
     line_movement = g.get("line_movement",{})
 
+    home_splits = g.get("home_team_splits",{})
+    away_splits = g.get("away_team_splits",{})
+
+    # Use home/away specific OPS for win probability if available — more accurate than season OPS
+    home_ops_context = (home_splits.get("home",{}).get("ops") or
+                        g.get("home_team_batting",{}).get("ops") or 0.720)
+    away_ops_context = (away_splits.get("away",{}).get("ops") or
+                        g.get("away_team_batting",{}).get("ops") or 0.720)
+    home_woba_context = (g.get("home_team_batting",{}).get("xwoba") or
+                         g.get("home_team_batting",{}).get("woba") or None)
+    away_woba_context = (g.get("away_team_batting",{}).get("xwoba") or
+                         g.get("away_team_batting",{}).get("woba") or None)
+
     game_num = g.get("game_num", 1)
     game_label = g["away"]+" @ "+g["home"]
     if game_num > 1:
@@ -2286,8 +2448,17 @@ def summarize_game(g):
             "exit_velo": away_bat.get("exit_velo"),
             "runs_per_game": away_bat.get("runs_per_game",0),
             "games_played": away_bat.get("games_played",0),
-            "data_note": away_bat.get("note",""),  # tells Claude how fresh/blended the stats are
+            "data_note": away_bat.get("note",""),
+            # Road-specific performance — critical for evaluating away teams
+            "away_ops": away_splits.get("away",{}).get("ops"),
+            "away_woba": away_splits.get("away",{}).get("woba"),
+            "away_rpg": away_splits.get("away",{}).get("runs_per_game"),
+            "away_games": away_splits.get("away",{}).get("games"),
+            "away_win_pct": away_splits.get("away",{}).get("win_pct"),
             "bullpen_fatigue": away_bp.get("fatigue_level","UNKNOWN"),
+            "bullpen_quality": away_bp.get("quality","UNKNOWN"),
+            "bullpen_avg_era": away_bp.get("avg_era"),
+            "bullpen_quality_note": away_bp.get("quality_note",""),
             "fatigued_arms": away_bp.get("fatigued_arms",[])[:3],
             "injuries": [i["name"] for i in g.get("away_injuries",[])[:2]],
             "streak": str(away_streak.get("streak_type",""))+str(away_streak.get("streak_number","")) if away_streak else "",
@@ -2303,8 +2474,17 @@ def summarize_game(g):
             "exit_velo": home_bat.get("exit_velo"),
             "runs_per_game": home_bat.get("runs_per_game",0),
             "games_played": home_bat.get("games_played",0),
-            "data_note": home_bat.get("note",""),  # tells Claude how fresh/blended the stats are
+            "data_note": home_bat.get("note",""),
+            # Home-specific performance — home teams play differently at home
+            "home_ops": home_splits.get("home",{}).get("ops"),
+            "home_woba": home_splits.get("home",{}).get("woba"),
+            "home_rpg": home_splits.get("home",{}).get("runs_per_game"),
+            "home_games": home_splits.get("home",{}).get("games"),
+            "home_win_pct": home_splits.get("home",{}).get("win_pct"),
             "bullpen_fatigue": home_bp.get("fatigue_level","UNKNOWN"),
+            "bullpen_quality": home_bp.get("quality","UNKNOWN"),
+            "bullpen_avg_era": home_bp.get("avg_era"),
+            "bullpen_quality_note": home_bp.get("quality_note",""),
             "fatigued_arms": home_bp.get("fatigued_arms",[])[:3],
             "injuries": [i["name"] for i in g.get("home_injuries",[])[:2]],
             "streak": str(home_streak.get("streak_type",""))+str(home_streak.get("streak_number","")) if home_streak else "",
@@ -2367,18 +2547,17 @@ def summarize_game(g):
         "baseline_home_win_prob": estimate_win_prob(
             home_sp.get("era", 4.20) or 4.20,
             away_sp.get("era", 4.20) or 4.20,
-            g.get("home_team_batting",{}).get("ops") or 0.720,
-            g.get("away_team_batting",{}).get("ops") or 0.720,
+            home_ops_context,   # home team's home OPS if available, else season OPS
+            away_ops_context,   # away team's road OPS if available, else season OPS
             g.get("park_factor",{}).get("runs", 1.0) or 1.0,
             home_rec.get("era_last3", 0) or 0,
             away_rec.get("era_last3", 0) or 0,
             home_pit.get("team_era") or None,
             away_pit.get("team_era") or None,
-            # Prefer xFIP over FIP — xFIP normalizes HR rate, most predictive
             home_sp.get("xfip") or home_sp.get("fip") or None,
             away_sp.get("xfip") or away_sp.get("fip") or None,
-            g.get("home_team_batting",{}).get("xwoba") or g.get("home_team_batting",{}).get("woba") or None,
-            g.get("away_team_batting",{}).get("xwoba") or g.get("away_team_batting",{}).get("woba") or None,
+            home_woba_context,
+            away_woba_context,
         ),
     }
 
@@ -3497,8 +3676,8 @@ def main():
         import concurrent.futures as _cf
         game_date = TODAY
         with _cf.ThreadPoolExecutor(max_workers=10) as ex:
-            f_hbp   = ex.submit(fetch_bullpen_fatigue, g["home_id"])
-            f_abp   = ex.submit(fetch_bullpen_fatigue, g["away_id"])
+            f_hbp   = ex.submit(fetch_bullpen_fatigue, g["home_id"], stats.get("rp_2026",{}), stats.get("rp_2025",{}))
+            f_abp   = ex.submit(fetch_bullpen_fatigue, g["away_id"], stats.get("rp_2026",{}), stats.get("rp_2025",{}))
             f_hinj  = ex.submit(fetch_injuries, g["home_id"])
             f_ainj  = ex.submit(fetch_injuries, g["away_id"])
             f_hspl  = ex.submit(fetch_team_home_away_splits, g["home_id"], 2026)
