@@ -1579,8 +1579,8 @@ def enforce_ev_rules(picks):
     Hard Python-level EV enforcement.
     Claude sometimes miscalculates or ignores thresholds — this catches it.
     """
-    MIN_EV = {"ML":3,"Run Line":3,"Total OVER":4,"Total UNDER":4,"F5 OVER":4,"F5 UNDER":4}
-    MAX_ML_ODDS = -175
+    MIN_EV = {"ML":5,"Run Line":5,"Total OVER":5,"Total UNDER":5,"NRFI":7,"YRFI":5,"F5 OVER":5,"F5 UNDER":5}
+    MAX_ML_ODDS = -150  # tightened — negative ML favorites have been losing, juice is brutal
     enforced = []
     for p in picks:
         tier = p.get("tier","SKIP")
@@ -1600,6 +1600,36 @@ def enforce_ev_rules(picks):
             p["avoid_reason"] = "SP has no statistical data — cannot make valid pick"
             enforced.append(p)
             continue
+
+        # Road underdog gate — model keeps losing on road dogs vs elite home teams
+        # Rangers at LAD +162, Rockies at SD +166 — the plus money is a trap
+        if tier in ("MAX","A","B","C") and p.get("bet_type") == "ML":
+            try:
+                line = float(str(p.get("line","")).replace("+",""))
+                if line >= 120:  # road underdog at +120 or higher
+                    sp_analysis = (p.get("sp_analysis","") or "").lower()
+                    # Check if home SP is an ace (xFIP < 3.20 is elite)
+                    import re as _re
+                    xfip_matches = _re.findall(r'xfip[:\s]+([0-9]\.[0-9]+)', sp_analysis)
+                    home_xfip = float(xfip_matches[0]) if xfip_matches else 4.5
+                    ev = float(p.get("ev_pct",0) or 0)
+                    # Block road underdogs facing ace home SPs unless massive EV
+                    if home_xfip <= 3.20 and ev < 10:
+                        game = p.get("game","")
+                        print(f"ROAD DOG BLOCK: {game} — road underdog +{int(line)} vs ace home SP (xFIP {home_xfip}), downgrading to WATCH")
+                        p["tier"] = "WATCH"; p["units"] = 0
+                        p["avoid_reason"] = f"Road underdog blocked — home SP xFIP {home_xfip} is elite, plus money is a trap not value"
+            except: pass
+        lineup = (p.get("lineup_analysis","") or "").lower()
+        bet_type = p.get("bet_type","")
+        if tier in ("MAX","A","B","C") and bet_type in ("ML","Run Line"):
+            if "ops 0.000" in lineup or "ops: 0.000" in lineup or "0.000 ops" in lineup:
+                game = p.get("game","")
+                print(f"OPS DATA BLOCK: {game} — team OPS 0.000, cannot evaluate lineup, downgrading to WATCH")
+                p["tier"] = "WATCH"; p["units"] = 0
+                p["avoid_reason"] = "Team OPS data unavailable (0.000) — cannot evaluate lineup strength"
+                enforced.append(p)
+                continue
 
         # Hard wind contradiction check — don't rely on Claude to self-flag this
         pick_str_upper = p.get("pick","").upper()
@@ -1917,20 +1947,49 @@ def enforce_ev_rules(picks):
             p["tier"] = "WATCH"; p["units"] = 0
             p["avoid_reason"] = "OVER cap — maximum 2 OVER picks per slate"
 
-    # ML quarter-Kelly sizing — audit showed 11-1, 91.7%. Justified to size up quality ML picks.
-    # Quarter-Kelly: for ML at plus money with EV 7%+, size to 1.25u instead of flat 1.0u
+    # NRFI cap — max 2 per slate, and require EV 7%+ given brutal juice
+    MAX_NRFI = 2
+    nrfi_picks = [p for p in enforced if p.get("bet_type") == "NRFI" and p.get("tier") in ("MAX","A","B","C")]
+    if len(nrfi_picks) > MAX_NRFI:
+        nrfi_sorted = sorted(nrfi_picks, key=lambda x: float(x.get("ev_pct",0) or 0), reverse=True)
+        for p in nrfi_sorted[MAX_NRFI:]:
+            print(f"NRFI CAP: {p.get('game','')} downgraded to WATCH — max {MAX_NRFI} NRFI picks per day")
+            p["tier"] = "WATCH"; p["units"] = 0
+            p["avoid_reason"] = "NRFI cap — maximum 2 NRFI picks per slate"
+
+    # Negative ML conviction gate — favorites losing badly in April variance
+    # Negative ML requires EV 7%+ AND SP gap 2.0+ to justify the juice risk
     for p in enforced:
-        if p.get("tier") not in ("B","A","MAX"): continue
+        if p.get("tier") not in ("MAX","A","B","C"): continue
         if p.get("bet_type") != "ML": continue
         try:
             line = float(str(p.get("line","")).replace("+",""))
             ev = float(p.get("ev_pct",0) or 0)
-            # Plus money ML with strong EV — bump to 1.25u
-            if line > 0 and ev >= 7:
-                p["units"] = 1.25
-                print(f"KELLY SIZING: {p.get('game','')} — plus money ML at +{int(line)}, EV {ev}%, sizing to 1.25u")
-            # Negative ML with strong EV — keep at 1.0u, no Kelly adjustment yet
+            if line < 0:  # negative ML (favorite)
+                if ev < 7:
+                    print(f"NEG ML GATE: {p.get('game','')} — favorite ML at {int(line)} needs 7%+ EV, only {ev}%, downgrading to WATCH")
+                    p["tier"] = "WATCH"; p["units"] = 0
+                    p["avoid_reason"] = f"Negative ML requires 7%+ EV to justify juice. Only {ev}% EV — insufficient edge."
         except: pass
+
+    # KELLY SIZING SUSPENDED — cold stretch April 8-11, 6-15 overall
+    # Flat 1.0u on all picks until we string together 3 winning days
+    # Do NOT apply 1.25u sizing during losing streaks
+    for p in enforced:
+        if p.get("units") == 1.25:
+            p["units"] = 1.0
+            print(f"KELLY SUSPENDED: {p.get('game','')} — reverting to flat 1.0u during cold stretch")
+
+    # Hard daily pick cap — 5 active picks max
+    # April 11 had 8 picks and went 2-6. Volume is the enemy right now.
+    MAX_DAILY_PICKS = 5
+    active = [p for p in enforced if p.get("tier") in ("MAX","A","B","C")]
+    if len(active) > MAX_DAILY_PICKS:
+        active_sorted = sorted(active, key=lambda x: float(x.get("ev_pct",0) or 0), reverse=True)
+        for p in active_sorted[MAX_DAILY_PICKS:]:
+            print(f"DAILY CAP: {p.get('game','')} downgraded to WATCH — max {MAX_DAILY_PICKS} active picks per day")
+            p["tier"] = "WATCH"; p["units"] = 0
+            p["avoid_reason"] = f"Daily pick cap — maximum {MAX_DAILY_PICKS} active picks per slate"
 
     # After April 10 audit — Tier A cap maintained until reliability data confirms
     MAX_TIER_A = 3
