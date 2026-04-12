@@ -135,7 +135,18 @@ ALL required:
 - Temperature above 55F minimum
 - Max 2 per slate
 
-### Run Line — Nearly banned (36% win rate)
+### F5 OVER/UNDER — Use this, it's already in the data
+F5 data (`f5_data.ml_away`, `f5_data.ml_home`, `f5_data.total_line`, `f5_data.over`, `f5_data.under`) is provided when available.
+
+F5 is the correct bet type when:
+- One SP has a clear quality edge but the opposing bullpen is unreliable (SEVERE + POOR quality)
+- You want SP edge without bullpen variance contaminating the result
+- The full-game total line is distorted by one bad bullpen but the first 5 innings are pitcher-controlled
+
+F5 UNDER: use when SP matchup strongly favors low scoring for 5 innings but you don't trust either bullpen for the full game
+F5 ML: use when a team has a dominant SP edge and you want to isolate the first 5 innings before the bad bullpen enters
+
+Always use the actual F5 line from `f5_data` — never invent it. If `f5_data.available` is false, skip F5 for that game.
 ALL required or don't take it:
 - SP gap 3.0+ (not 2.0 — 3.0)
 - Both teams OPS above 0.800
@@ -192,7 +203,27 @@ Bullpen fatigue alone is no longer sufficient to justify an OVER — quality mus
 
 ---
 
-## REST AND TRAVEL
+## PLATOON SPLITS — NOW FULLY LIVE
+
+Every team now provides platoon data for their lineup vs the opposing SP:
+- `away_team.platoon_vs_home_sp` — how much of the away lineup faces a platoon disadvantage vs the home SP
+- `home_team.platoon_vs_away_sp` — how much of the home lineup faces a platoon disadvantage vs the away SP
+
+Key fields:
+- `disadvantaged_pct` — % of lineup facing same-hand pitcher (e.g. RHB vs RHP = disadvantage)
+- `advantaged_pct` — % of lineup with platoon edge (opposite hand or switch hitters)
+- `platoon_edge` — STRONG / MODERATE / NEUTRAL / LINEUP ADVANTAGE
+- `edge_score` — +2 strong SP advantage, +1 moderate, 0 neutral, -1 lineup advantage
+- `disadvantaged_batters` / `advantaged_batters` — named players
+
+**How to use platoon data:**
+- STRONG platoon advantage for SP (70%+ of lineup same-handed) = +1 confidence point for SP-based picks (UNDER, F5 UNDER)
+- LINEUP ADVANTAGE (70%+ of lineup opposite-handed) = lineup is stronger than season OPS suggests. Factor into ML edge.
+- Switch hitters always count as advantaged — they flip to opposite side vs any pitcher.
+
+**Example:** A LHP facing a lineup with 7 righties has a massive platoon edge. That lineup's .780 season OPS likely performs more like .720 against that LHP. This is real structural edge that most models miss because they only use season OPS.
+
+Platoon splits combined with home/away OPS splits gives you the most accurate offensive projection available at the game level.
 
 Back-to-back: -3% win prob, one tier downgrade (MAX→A, A→B)
 Cross-timezone travel for night game: -1-2% win prob
