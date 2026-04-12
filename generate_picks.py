@@ -1616,9 +1616,9 @@ def enforce_ev_rules(picks):
                     # Block road underdogs facing ace home SPs unless massive EV
                     if home_xfip <= 3.20 and ev < 10:
                         game = p.get("game","")
-                        print(f"ROAD DOG BLOCK: {game} — road underdog +{int(line)} vs ace home SP (xFIP {home_xfip}), downgrading to WATCH")
-                        p["tier"] = "WATCH"; p["units"] = 0
-                        p["avoid_reason"] = f"Road underdog blocked — home SP xFIP {home_xfip} is elite, plus money is a trap not value"
+                        print(f"ROAD DOG BLOCK: {game} — road underdog +{int(line)} vs ace home SP (xFIP {home_xfip}), converting to SKIP")
+                        p["tier"] = "SKIP"; p["bet_type"] = "SKIP"; p["units"] = 0
+                        p["avoid_reason"] = f"Road underdog vs elite home SP (xFIP {home_xfip}) — no edge at plus money"
             except: pass
         lineup = (p.get("lineup_analysis","") or "").lower()
         bet_type = p.get("bet_type","")
@@ -1643,8 +1643,8 @@ def enforce_ev_rules(picks):
             mph_nums = re.findall(r'(\d+\.?\d*)\s*mph', weather_impact)
             wind_speed = max([float(m) for m in mph_nums], default=0) if mph_nums else 0
             if wind_speed >= 12:
-                print(f"WIND CONTRADICTION: {p.get('game','')} — OVER pick but wind IN {wind_speed}mph, downgrading to WATCH")
-                p["tier"] = "WATCH"; p["units"] = 0
+                print(f"WIND CONTRADICTION: {p.get('game','')} — OVER pick but wind IN {wind_speed}mph, converting to SKIP")
+                p["tier"] = "SKIP"; p["bet_type"] = "SKIP"; p["units"] = 0
                 p["avoid_reason"] = f"Wind IN {wind_speed}mph directly contradicts OVER pick"
 
         if is_under and ("blowing out" in weather_impact or "wind out" in weather_impact):
@@ -1652,19 +1652,19 @@ def enforce_ev_rules(picks):
             mph_nums = re.findall(r'(\d+\.?\d*)\s*mph', weather_impact)
             wind_speed = max([float(m) for m in mph_nums], default=0) if mph_nums else 0
             if wind_speed >= 12:
-                print(f"WIND CONTRADICTION: {p.get('game','')} — UNDER pick but wind OUT {wind_speed}mph, downgrading to WATCH")
-                p["tier"] = "WATCH"; p["units"] = 0
+                print(f"WIND CONTRADICTION: {p.get('game','')} — UNDER pick but wind OUT {wind_speed}mph, converting to SKIP")
+                p["tier"] = "SKIP"; p["bet_type"] = "SKIP"; p["units"] = 0
                 p["avoid_reason"] = f"Wind OUT {wind_speed}mph directly contradicts UNDER pick"
 
         # Text-based contradiction check as additional safety net
         if tier in ("B","C"):
             flags_lower = (p.get("flags","") + " " + p.get("rationale","")).lower()
             if is_under and "contradicts under" in flags_lower:
-                print("CONTRADICTION: "+p.get("game","")+" — contradicting factors, downgrading to WATCH")
-                p["tier"] = "WATCH"; p["units"] = 0
+                print("CONTRADICTION: "+p.get("game","")+" — contradicting factors, converting to SKIP")
+                p["tier"] = "SKIP"; p["bet_type"] = "SKIP"; p["units"] = 0
             if is_over and "contradicts over" in flags_lower:
-                print("CONTRADICTION: "+p.get("game","")+" — contradicting factors, downgrading to WATCH")
-                p["tier"] = "WATCH"; p["units"] = 0
+                print("CONTRADICTION: "+p.get("game","")+" — contradicting factors, converting to SKIP")
+                p["tier"] = "SKIP"; p["bet_type"] = "SKIP"; p["units"] = 0
 
         bet_type = p.get("bet_type","")
         ev = p.get("ev_pct",0)
@@ -1711,23 +1711,16 @@ def enforce_ev_rules(picks):
         except: pass
 
         # Check EV threshold — enforce on BOTH stated ev_pct AND calculated ev
-        min_ev = MIN_EV.get(bet_type, 3)
-        # Use the lower of stated vs calculated ev to be conservative
+        min_ev = MIN_EV.get(bet_type, 5)
         effective_ev = min(ev, calc_ev) if win_prob > 0 and implied > 0 else ev
         if effective_ev < min_ev and tier in ("A","B","C"):
-            if effective_ev >= 1:
-                print("ENFORCING: "+p.get("game","")+" — EV "+str(effective_ev)+"% below "+str(min_ev)+"% threshold for "+bet_type+", downgrading to WATCH")
-                p["tier"] = "WATCH"
-                p["units"] = 0
-                p["ev_pct"] = effective_ev
-                p["avoid_reason"] = "EV "+str(effective_ev)+"% below minimum "+str(min_ev)+"% threshold for "+bet_type
-            else:
-                print("ENFORCING: "+p.get("game","")+" — EV "+str(effective_ev)+"% below threshold, downgrading to SKIP")
-                p["tier"] = "SKIP"
-                p["bet_type"] = "SKIP"
-                p["pick"] = "SKIP"
-                p["units"] = 0
-                p["avoid_reason"] = "EV "+str(effective_ev)+"% below minimum threshold"
+            print("ENFORCING: "+p.get("game","")+" — EV "+str(effective_ev)+"% below "+str(min_ev)+"% threshold for "+bet_type+", converting to SKIP")
+            p["tier"] = "SKIP"
+            p["bet_type"] = "SKIP"
+            p["pick"] = "SKIP"
+            p["units"] = 0
+            p["ev_pct"] = effective_ev
+            p["avoid_reason"] = "EV "+str(effective_ev)+"% below minimum "+str(min_ev)+"% threshold for "+bet_type
 
         # Fix tier/units alignment — enforce standard unit sizes
         ev_val = p.get("ev_pct",0)
@@ -1750,7 +1743,10 @@ def enforce_ev_rules(picks):
                 print("MAX downgrade ("+p.get("game","")+") — "+", ".join(reasons))
                 p["tier"] = "A"
         if p["tier"] == "A" and ev_val < 7:
-            p["tier"] = "B" if ev_val >= 4 else ("C" if ev_val >= 3 else "WATCH")
+            p["tier"] = "B" if ev_val >= 5 else "SKIP"
+            if p["tier"] == "SKIP":
+                p["bet_type"] = "SKIP"; p["units"] = 0
+                p["avoid_reason"] = f"EV {ev_val}% insufficient for Tier A — below 5% minimum"
 
         # ── SP Reliability Gate — core fix for early-season overconfidence ────
         # When SP data is unreliable (small sample), cap confidence accordingly
@@ -1805,8 +1801,8 @@ def enforce_ev_rules(picks):
                         try:
                             ops_val = float(ops_str)
                             if ops_val > 0 and ops_val < 0.720:
-                                print(f"WEAK OFFENSE -1.5: {p.get('game','')} — OPS {ops_val} too weak to cover -1.5, downgrading to WATCH")
-                                p["tier"] = "WATCH"
+                                print(f"WEAK OFFENSE -1.5: {p.get('game','')} — OPS {ops_val} too weak to cover -1.5, converting to SKIP")
+                                p["tier"] = "SKIP"; p["bet_type"] = "SKIP"
                                 p["units"] = 0
                                 p["avoid_reason"] = f"Run line -1.5 requires strong offense — OPS {ops_val} below 0.720 threshold"
                                 break
@@ -1870,11 +1866,11 @@ def enforce_ev_rules(picks):
         bullpen = (p.get("bullpen_note","") or "").lower()
         pick_str = p.get("pick","").upper()
         game = p.get("game","")
-        # Hard block: run line -1.5 on back-to-back teams → convert to WATCH
+        # Hard block: run line -1.5 on back-to-back teams → SKIP
         if "-1.5" in pick_str and p.get("bet_type") == "Run Line":
             if "back-to-back" in flags or "back to back" in flags:
-                print(f"B2B RUN LINE BLOCK: {game} — cannot take -1.5 on back-to-back team, downgrading to WATCH")
-                p["tier"] = "WATCH"; p["units"] = 0
+                print(f"B2B RUN LINE BLOCK: {game} — cannot take -1.5 on back-to-back team, converting to SKIP")
+                p["tier"] = "SKIP"; p["bet_type"] = "SKIP"; p["units"] = 0
                 p["avoid_reason"] = "Run line -1.5 blocked — back-to-back team cannot reliably win by 2+"
                 continue
         # If we're betting on a team that's on a back-to-back, downgrade confidence
@@ -1901,15 +1897,24 @@ def enforce_ev_rules(picks):
                     p["ev_pct"] = min(ev_current + 1.0, 15.0)
                     print(f"SHARP CONFIRMED: {p.get('game','')} — sharp money aligns, +1% EV")
 
-    # Run line cap — max 2 per slate, keep highest EV
-    MAX_RUN_LINES = 2
+    # Run line cap — 4-7 record (36%), losing bet type. MAX 1 per slate, require 8%+ EV.
+    for p in enforced:
+        if p.get("tier") not in ("MAX","A","B","C"): continue
+        if p.get("bet_type") != "Run Line": continue
+        ev = float(p.get("ev_pct",0) or 0)
+        if ev < 8:
+            print(f"RUN LINE EV GATE: {p.get('game','')} — run line needs 8%+ EV (has {ev}%), converting to SKIP")
+            p["tier"] = "SKIP"; p["bet_type"] = "SKIP"; p["units"] = 0
+            p["avoid_reason"] = f"Run line requires 8%+ EV — only {ev}% (run lines are 4-7 historically)"
+
+    MAX_RUN_LINES = 1  # max 1 run line per slate
     rl_picks = [p for p in enforced if p.get("bet_type") == "Run Line" and p.get("tier") in ("MAX","A","B","C")]
     if len(rl_picks) > MAX_RUN_LINES:
         rl_sorted = sorted(rl_picks, key=lambda x: float(x.get("ev_pct",0) or 0), reverse=True)
         for p in rl_sorted[MAX_RUN_LINES:]:
-            print(f"RUN LINE CAP: {p.get('game','')} downgraded to WATCH — max {MAX_RUN_LINES} run line picks per day")
-            p["tier"] = "WATCH"; p["units"] = 0
-            p["avoid_reason"] = "Run line cap — maximum 2 run line picks per slate"
+            print(f"RUN LINE CAP: {p.get('game','')} — max {MAX_RUN_LINES} run line pick, converting to SKIP")
+            p["tier"] = "SKIP"; p["bet_type"] = "SKIP"; p["units"] = 0
+            p["avoid_reason"] = "Run line cap — maximum 1 run line pick per slate"
 
     # OVER cap — audit showed 5-5 coin flip. Require stronger signal.
     # Hard requirement: park factor 1.10+ OR temp above 65F to qualify as active pick
@@ -1934,7 +1939,7 @@ def enforce_ev_rules(picks):
         has_bullpen_edge = both_severe and park_factor >= 1.05
         if not (has_park_edge or has_weather_edge or has_bullpen_edge):
             print(f"OVER SIGNAL GATE: {p.get('game','')} — insufficient OVER signal (park {park_factor}, temp {temp}F), downgrading to WATCH")
-            p["tier"] = "WATCH"; p["units"] = 0
+            p["tier"] = "SKIP"; p["bet_type"] = "SKIP"; p["units"] = 0
             p["avoid_reason"] = f"OVER requires park factor 1.10+ or warm+wind out or both SEVERE pens + hitter park. Park: {park_factor}"
 
     # OVER slate cap — max 2 active OVERs per slate
@@ -1943,8 +1948,8 @@ def enforce_ev_rules(picks):
     if len(over_picks) > MAX_OVERS:
         over_sorted = sorted(over_picks, key=lambda x: float(x.get("ev_pct",0) or 0), reverse=True)
         for p in over_sorted[MAX_OVERS:]:
-            print(f"OVER CAP: {p.get('game','')} downgraded to WATCH — max {MAX_OVERS} OVER picks per day")
-            p["tier"] = "WATCH"; p["units"] = 0
+            print(f"OVER CAP: {p.get('game','')} — max {MAX_OVERS} OVER picks, converting to SKIP")
+            p["tier"] = "SKIP"; p["bet_type"] = "SKIP"; p["units"] = 0
             p["avoid_reason"] = "OVER cap — maximum 2 OVER picks per slate"
 
     # NRFI cap — max 2 per slate, and require EV 7%+ given brutal juice
@@ -1953,23 +1958,48 @@ def enforce_ev_rules(picks):
     if len(nrfi_picks) > MAX_NRFI:
         nrfi_sorted = sorted(nrfi_picks, key=lambda x: float(x.get("ev_pct",0) or 0), reverse=True)
         for p in nrfi_sorted[MAX_NRFI:]:
-            print(f"NRFI CAP: {p.get('game','')} downgraded to WATCH — max {MAX_NRFI} NRFI picks per day")
-            p["tier"] = "WATCH"; p["units"] = 0
+            print(f"NRFI CAP: {p.get('game','')} — max {MAX_NRFI} NRFI picks, converting to SKIP")
+            p["tier"] = "SKIP"; p["bet_type"] = "SKIP"; p["units"] = 0
             p["avoid_reason"] = "NRFI cap — maximum 2 NRFI picks per slate"
 
-    # Negative ML conviction gate — favorites losing badly in April variance
-    # Negative ML requires EV 7%+ AND SP gap 2.0+ to justify the juice risk
+    # Plus money ML gate — 4-6 record because model was backing random underdogs
+    # The fix is NOT banning plus money — it's requiring genuine structural edge
+    # A real plus money edge means: the line is wrong, not just that they're the underdog
     for p in enforced:
         if p.get("tier") not in ("MAX","A","B","C"): continue
         if p.get("bet_type") != "ML": continue
         try:
             line = float(str(p.get("line","")).replace("+",""))
             ev = float(p.get("ev_pct",0) or 0)
-            if line < 0:  # negative ML (favorite)
+            if line > 0:  # plus money underdog
+                sp = (p.get("sp_analysis","") or "").lower()
+                lineup = (p.get("lineup_analysis","") or "").lower()
+                # Real plus money edge requires SP and lineup evidence
+                # Not just "they're an underdog" or "the odds are juicy"
+                has_sp_edge = any(x in sp for x in ["favors","gap","advantage","vs","better era","lower xfip"])
+                has_lineup_edge = "ops" in lineup and ("gap" in lineup or "advantage" in lineup or "stronger" in lineup)
+                if ev < 6:
+                    print(f"PLUS ML EV: {p.get('game','')} — underdog needs 6%+ EV (has {ev}%), converting to SKIP")
+                    p["tier"] = "SKIP"; p["bet_type"] = "SKIP"; p["units"] = 0
+                    p["avoid_reason"] = f"Plus money ML needs 6%+ EV — only {ev}%. Plus money requires real structural edge, not just underdog status."
+                elif not has_sp_edge and not has_lineup_edge:
+                    print(f"PLUS ML STRUCTURE: {p.get('game','')} — no structural SP or lineup edge found in analysis, converting to SKIP")
+                    p["tier"] = "SKIP"; p["bet_type"] = "SKIP"; p["units"] = 0
+                    p["avoid_reason"] = "Plus money ML requires structural SP or lineup edge — cannot back underdog without specific data advantage"
+        except: pass
+
+    # Negative ML conviction gate
+    for p in enforced:
+        if p.get("tier") not in ("MAX","A","B","C"): continue
+        if p.get("bet_type") != "ML": continue
+        try:
+            line = float(str(p.get("line","")).replace("+",""))
+            ev = float(p.get("ev_pct",0) or 0)
+            if line < 0:
                 if ev < 7:
-                    print(f"NEG ML GATE: {p.get('game','')} — favorite ML at {int(line)} needs 7%+ EV, only {ev}%, downgrading to WATCH")
-                    p["tier"] = "WATCH"; p["units"] = 0
-                    p["avoid_reason"] = f"Negative ML requires 7%+ EV to justify juice. Only {ev}% EV — insufficient edge."
+                    print(f"NEG ML GATE: {p.get('game','')} — favorite ML at {int(line)} needs 7%+ EV, only {ev}%, converting to SKIP")
+                    p["tier"] = "SKIP"; p["bet_type"] = "SKIP"; p["units"] = 0
+                    p["avoid_reason"] = f"Negative ML requires 7%+ EV. Only {ev}% — no edge at this juice."
         except: pass
 
     # KELLY SIZING SUSPENDED — cold stretch April 8-11, 6-15 overall
@@ -1987,8 +2017,8 @@ def enforce_ev_rules(picks):
     if len(active) > MAX_DAILY_PICKS:
         active_sorted = sorted(active, key=lambda x: float(x.get("ev_pct",0) or 0), reverse=True)
         for p in active_sorted[MAX_DAILY_PICKS:]:
-            print(f"DAILY CAP: {p.get('game','')} downgraded to WATCH — max {MAX_DAILY_PICKS} active picks per day")
-            p["tier"] = "WATCH"; p["units"] = 0
+            print(f"DAILY CAP: {p.get('game','')} — max {MAX_DAILY_PICKS} active picks, converting to SKIP")
+            p["tier"] = "SKIP"; p["bet_type"] = "SKIP"; p["units"] = 0
             p["avoid_reason"] = f"Daily pick cap — maximum {MAX_DAILY_PICKS} active picks per slate"
 
     # After April 10 audit — Tier A cap maintained until reliability data confirms
@@ -2011,7 +2041,7 @@ def enforce_ev_rules(picks):
         # Fill empty avoid_reason on WATCH/SKIP picks
         if p.get("tier") in ("WATCH","SKIP") and not p.get("avoid_reason","").strip():
             if p.get("tier") == "WATCH":
-                p["avoid_reason"] = "Insufficient edge — tracking only"
+                p["avoid_reason"] = "Operational hold — waiting on data or weather"
             else:
                 p["avoid_reason"] = "No clear edge identified"
         # Clean up pick name for WATCH picks — remove (WATCH) suffix and WATCH prefix
@@ -2254,6 +2284,9 @@ def summarize_game(g):
             "barrel_pct": away_bat.get("barrel_pct"),
             "hard_hit_pct": away_bat.get("hard_hit_pct"),
             "exit_velo": away_bat.get("exit_velo"),
+            "runs_per_game": away_bat.get("runs_per_game",0),
+            "games_played": away_bat.get("games_played",0),
+            "data_note": away_bat.get("note",""),  # tells Claude how fresh/blended the stats are
             "bullpen_fatigue": away_bp.get("fatigue_level","UNKNOWN"),
             "fatigued_arms": away_bp.get("fatigued_arms",[])[:3],
             "injuries": [i["name"] for i in g.get("away_injuries",[])[:2]],
@@ -2268,6 +2301,9 @@ def summarize_game(g):
             "barrel_pct": home_bat.get("barrel_pct"),
             "hard_hit_pct": home_bat.get("hard_hit_pct"),
             "exit_velo": home_bat.get("exit_velo"),
+            "runs_per_game": home_bat.get("runs_per_game",0),
+            "games_played": home_bat.get("games_played",0),
+            "data_note": home_bat.get("note",""),  # tells Claude how fresh/blended the stats are
             "bullpen_fatigue": home_bp.get("fatigue_level","UNKNOWN"),
             "fatigued_arms": home_bp.get("fatigued_arms",[])[:3],
             "injuries": [i["name"] for i in g.get("home_injuries",[])[:2]],
@@ -2862,8 +2898,9 @@ def build_record_html(record):
         u = round(d["units"],2)
         uc = "var(--green)" if u>=0 else "var(--red)"
         dot = ('<span class="tier-dot '+label+'"></span>') if label in ("MAX","A","B","C","WATCH") else ""
+        display_label = "On Hold" if label == "WATCH" else label
         return ('<tr>'
-                '<td style="font-weight:600">'+dot+label+'</td>'
+                '<td style="font-weight:600">'+dot+display_label+'</td>'
                 '<td style="text-align:center;font-family:\'JetBrains Mono\',monospace">'+str(w)+'-'+str(l)+(('-'+str(p)) if p else '')+'</td>'
                 '<td style="text-align:center">'+str(wr)+'%</td>'
                 '<td style="text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:600;color:'+uc+'">'
@@ -3030,7 +3067,7 @@ def build_record_html(record):
             '<div class="stat-card"><div class="stat-val">'+str(win_rate)+'%</div><div class="stat-lbl">Win Rate</div></div>'
             '<div class="stat-card"><div class="stat-val" style="color:'+u_color+'">'+u_str+'</div><div class="stat-lbl">Units P&L</div></div>'
             '<div class="stat-card"><div class="stat-val" style="color:'+clv_color+'">'+('+'if avg_clv>=0 else '')+str(avg_clv)+'</div><div class="stat-lbl">Avg CLV</div></div>'
-            '<div class="stat-card"><div class="stat-val" style="color:var(--muted)">'+str(watch_rate)+'%</div><div class="stat-lbl">Watch Hit %</div></div>'
+            '<div class="stat-card"><div class="stat-val" style="color:var(--muted)">'+str(watch_rate)+'%</div><div class="stat-lbl">Hold Hit %</div></div>'
             '</div>'
             '<div class="section-label">By Tier</div>'
             '<div class="table-wrap"><table><thead><tr><th>Tier</th><th>Record</th><th>Win %</th><th>Units</th></tr></thead><tbody>'+tier_rows+'</tbody></table></div>'
@@ -3109,7 +3146,7 @@ def build_html(data):
     TBAR={"MAX":"#0A0A0A","A":"#1D9E75","B":"#378ADD","C":"#BA7517","WATCH":"#8B6FBA"}
     TBG ={"MAX":"#1a1a1a","A":"#E1F5EE","B":"#E6F1FB","C":"#FAEEDA","WATCH":"#F0ECFB"}
     TTC ={"MAX":"#FFD700","A":"#0F6E56","B":"#185FA5","C":"#854F0B","WATCH":"#4A2D8F"}
-    TLBL={"MAX":"&#9733; MAX BET &mdash; HIGHEST CONFIDENCE","A":"TIER A &mdash; PLAY","B":"TIER B &mdash; PLAY","C":"TIER C &mdash; LEAN","WATCH":"WATCH &mdash; TRACK ONLY"}
+    TLBL={"MAX":"&#9733; MAX BET &mdash; HIGHEST CONFIDENCE","A":"TIER A &mdash; PLAY","B":"TIER B &mdash; PLAY","C":"TIER C &mdash; LEAN","WATCH":"ON HOLD &mdash; OPERATIONAL BLOCK"}
 
     def sp_box(label, name):
         return ('<div class="sp-box">'
@@ -3228,7 +3265,7 @@ def build_html(data):
             '<div class="pick-card tier-WATCH">'
             '<div class="card-inner">'
             '<div class="card-top">'
-            '<div class="tier-badge WATCH">WATCH — TRACK ONLY</div>'
+            '<div class="tier-badge WATCH">ON HOLD</div>'
             '<span class="odds-badge" style="opacity:.5">'+line_display+'</span>'
             '</div>'
             +(('<div class="pick-name" style="font-size:17px;color:var(--subtle)">'+pick_display+'</div>') if show_pick_name else '')+
@@ -3259,7 +3296,7 @@ def build_html(data):
 
     cards = active_cards
     if watch_cards:
-        cards += '<div class="section-label" style="margin-top:1rem">Watching</div>' + watch_cards
+        cards += '<div class="section-label" style="margin-top:1rem">On Hold</div>' + watch_cards
     if skip_cards:
         cards += '<div class="section-label" style="margin-top:1rem">No Edge</div>' + skip_cards
     if not cards:
@@ -3327,7 +3364,7 @@ def build_html(data):
         '<div class="stat-card"><div class="stat-val" style="color:var(--gold)">'+str(total_u)+'u</div>'
         '<div class="stat-lbl">Total units</div></div>'
         '<div class="stat-card"><div class="stat-val" style="color:var(--muted)">'+str(len(watched))+'</div>'
-        '<div class="stat-lbl">Watching</div></div>'
+        '<div class="stat-lbl">On Hold</div></div>'
         '<div class="stat-card"><div class="stat-val" style="color:var(--muted)">'+str(len(skipped))+'</div>'
         '<div class="stat-lbl">No edge</div></div>'
         '</div>'
