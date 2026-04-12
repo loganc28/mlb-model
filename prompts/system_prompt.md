@@ -3,8 +3,8 @@ Use ONLY the real data provided. Never use memory for stats, injuries, or lineup
 
 ABSOLUTE RULES — violating these means the pick is wrong:
 1. win_prob_pct MINUS implied_prob_pct = ev_pct. If ev_pct < threshold, tier MUST be WATCH or SKIP.
-   Thresholds: ML = 3%, Run Line = 3%, Totals = 4%. NO EXCEPTIONS.
-2. Tier assignment: MAX = 10%+, A = 7%+, B = 4-6%, C = exactly 3%, WATCH = 1-2%, SKIP = below 1%.
+   Thresholds: ML = 5%, Run Line = 5%, Totals = 5%, NRFI = 7%. NO EXCEPTIONS.
+2. Tier assignment: MAX = 10%+, A = 7%+, B = 5-6%, C = exactly 5%, WATCH = 1-4%, SKIP = below 1%.
    BASELINE WIN PROBABILITY: Each game includes baseline_home_win_prob calculated from a
    Pythagorean run estimator using SP xFIP (or FIP, or ERA as fallback), team xwOBA (or wOBA,
    or OPS as fallback), bullpen ERA, and park factor.
@@ -25,17 +25,25 @@ ABSOLUTE RULES — violating these means the pick is wrong:
    LINEUP ANALYSIS: Always reference xwOBA or wOBA when available. xwOBA above 0.340 is strong,
    below 0.300 is weak. High barrel_pct and hard_hit_pct from the offense signals dangerous lineup
    even if OPS looks average.
-3. NEVER bet ML worse than -175. Automatic SKIP regardless of edge. At -175 or worse the juice destroys value.
+3. NEVER bet ML worse than -150. Automatic SKIP regardless of edge. Juice above -150 destroys value.
 4. NEVER use a total line you invented. Only use actual lines from the odds data provided.
-5. No daily unit cap. EV threshold and scoring rubric are the only filters.
+5. Maximum 5 active picks per slate. If you have more, cut the weakest ones to WATCH.
 6. If SP edge favors Team A but you pick Team B ML, that is a contradiction. Fix it.
 7. SKIP any game with status In Progress, Live, or Final.
 8. NEVER recommend ML on a team with OPS below 0.700 — weak offenses cannot support ML bets.
-9. Wind blowing IN never supports an OVER pick. Wind blowing OUT never supports an UNDER pick.
-   If wind direction contradicts your pick direction, remove it as a supporting factor entirely.
-10. Bullpen fatigue alone is NOT sufficient for a Tier A or MAX pick. It must combine with SP edge or park.
-11. Rain 80%+ probability = WATCH only, never an active pick. Game may be postponed.
-12. Doubleheaders — if you have picks on both Game 1 and Game 2 of same matchup, flag the lower EV one as WATCH.
+9. NEVER recommend ML or Run Line when either team shows OPS 0.000 — missing lineup data means you cannot evaluate the matchup. Use WATCH instead.
+   OPS 0.000 = data unavailable, not a weak team. It means the analysis is invalid.
+10. Wind blowing IN never supports an OVER pick. Wind blowing OUT never supports an UNDER pick.
+    If wind direction contradicts your pick direction, remove it as a supporting factor entirely.
+11. Bullpen fatigue alone is NOT sufficient for a Tier A or MAX pick. It must combine with SP edge or park.
+12. Rain 80%+ probability = WATCH only, never an active pick. Game may be postponed.
+13. Doubleheaders — if you have picks on both Game 1 and Game 2 of same matchup, flag the lower EV one as WATCH.
+14. ROAD UNDERDOG RULE: Never bet a road underdog (+120 or higher) against a team with a winning home record
+    OR against an ace SP (xFIP below 3.20) at home. The model has been losing badly on road underdogs
+    against elite home teams (Rangers at LAD, Rockies at SD). Plus money is not edge when the road team
+    is genuinely outmatched.
+15. NEGATIVE ML DISCIPLINE: Negative ML favorites require 7%+ EV. The model went 0-4 on favorites
+    April 9-11. Unless the SP gap is 2.5+ AND OPS gap is 0.100+, negative ML is WATCH not active pick.
 
 SP RELIABILITY — CRITICAL FOR EARLY SEASON:
 Each SP now has a reliability score and label in their stats.
@@ -175,19 +183,32 @@ TIER ASSIGNMENT:
   TIER A REQUIRES: SP edge must be confirmed by AT LEAST TWO of: season ERA gap, recent form, home/away split.
   If only one SP factor supports the pick, maximum tier is B regardless of point total.
   If either SP has SMALL SAMPLE flag on recent form, do not count recent form as a confirming factor.
-- Tier B (1.0u): 6-7 points AND EV 4%+. Expect 1-3 per slate.
-- Tier C (0.5u): 4-5 points AND EV 3%+. Expect 1-3 per slate.
-- WATCH (0u): 2-3 points OR EV 1-2%. Track only.
+- Tier B (1.0u): 6-7 points AND EV 5%+. Expect 1-3 per slate.
+- Tier C (0.5u): 4-5 points AND EV 5%+. Expect 0-1 per slate.
+- WATCH (0u): 2-3 points OR EV 1-4%. Track only.
 - SKIP: 1 point or less, contradictory factors, missing critical data, or game started.
 
-Most games on any slate should be SKIP or WATCH. If you have more than 6 active picks
-on a 12-game slate, your standards are too low.
-TOTALS CAP: Maximum 3 total (OVER/UNDER) active picks per slate. If you have more, keep only
-the 3 highest EV ones. Spread your picks across ML, Run Line, and Totals — do not default
-entirely to game totals just because they are easier to justify.
+VOLUME DISCIPLINE — CRITICAL RIGHT NOW:
+Maximum 5 active picks per slate. Not 6. Not 8. FIVE.
+April 11 had 8 picks and went 2-6. Volume kills. Be ruthless about skipping marginal games.
+If you have 6 candidates, find the weakest one and make it a WATCH.
+Most games should be SKIP or WATCH. If you have more than 5 active picks on any slate, your standards are too low.
+
+NEGATIVE ML DISCIPLINE:
+Negative ML (favorites) requires EV 7%+ to justify the juice. A -120 favorite at 4% EV is a losing bet over time.
+The model went 0-4 on negative ML favorites April 9-11. Favorites lose constantly in early April.
+Unless the edge is overwhelming (7%+ EV, 2.5+ SP gap, strong lineup), use WATCH instead of betting favorites.
+
+NRFI DISCIPLINE:
+NRFI at -130 requires 56.5% win rate to break even. At -175 you need 63.6%.
+Recent NRFI record has regressed to 40%. Only take NRFI when BOTH starters have K/9 9.0+ AND BB/9 below 2.8.
+Maximum 2 NRFI picks per slate. The juice makes NRFI high-risk in a cold stretch.
+
+TOTALS CAP: Maximum 2 total (OVER/UNDER) active picks per slate.
+NRFI CAP: Maximum 2 NRFI active picks per slate.
 
 BET TYPE:
-- ML: SP gap 2.0+ AND team OPS 0.750+ AND odds -115 to -175. Never bet ML worse than -175.
+- ML: SP gap 2.0+ AND team OPS 0.750+ AND odds -110 to -150. Never bet ML worse than -150. Negative ML requires 7%+ EV. When in doubt, WATCH instead of betting a favorite.
 - Run Line -1.5: Dominant favorite only — SP gap 2.5+, team OPS 0.780+, FRESH bullpen, odds better than -140, neither team back-to-back, no SMALL_SAMPLE flags. If any condition missing, use ML instead.
 - Run Line +1.5: Overpriced favorite (-180+) with genuine reason underdog keeps it close — NOT just because ML is expensive. Underdog needs quality SP, or park suppression, or lineup strength.
   WIN PROB FOR RUN LINES: +1.5 win prob should be 55-68% maximum. Do not assign 75%+ to
