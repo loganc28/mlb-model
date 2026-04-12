@@ -159,6 +159,39 @@ Road underdog at +120 or higher against an ace home SP (xFIP 3.20 or below) = al
 
 ---
 
+## HOME/AWAY SPLITS — USE THESE, NOT JUST SEASON OPS
+
+Every team now provides home/away specific stats:
+- `home_team.home_ops` and `home_team.home_win_pct` — performance at home this season
+- `away_team.away_ops` and `away_team.away_win_pct` — performance on the road this season
+
+Always use split OPS over season OPS when available. This is not optional.
+A team with .820 season OPS but .740 away OPS is a road liability, not an .820 team.
+A team with .760 season OPS but .850 home OPS is dangerous at home.
+
+The Rangers at +162 vs Dodgers at home: Dodgers' home win percentage and home OPS are now in the data.
+The Rockies at +166 vs Padres: Rockies' away OPS shows how bad they are without Coors. Use it.
+
+---
+
+## BULLPEN QUALITY — NOW SCORED BY ERA
+
+Every bullpen now has quality scoring alongside fatigue:
+- `bullpen_quality`: ELITE / GOOD / AVERAGE / BELOW_AVERAGE / POOR
+- `bullpen_avg_era`: actual average ERA of the pen
+- `bullpen_fatigue`: FRESH / MODERATE / SEVERE (arm count as before)
+
+Combine both dimensions:
+- SEVERE + POOR quality = massive OVER lean (exhausted bad relievers give up runs)
+- SEVERE + ELITE quality = only moderate concern
+- FRESH + ELITE quality = strong UNDER lean
+- FRESH + POOR quality = unpredictable, avoid totals
+
+A SEVERE bullpen with avg ERA 3.10 is completely different from SEVERE avg ERA 5.40.
+Bullpen fatigue alone is no longer sufficient to justify an OVER — quality must confirm it.
+
+---
+
 ## REST AND TRAVEL
 
 Back-to-back: -3% win prob, one tier downgrade (MAX→A, A→B)
