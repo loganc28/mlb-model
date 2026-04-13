@@ -2037,9 +2037,10 @@
       "tier": "B",
       "units": 1.0,
       "ev_pct": 6,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "L",
+      "units_result": -1.0,
+      "loss_reason": "",
+      "final_score": "New York Yankees 4 - Tampa Bay Rays 5"
     },
     {
       "date": "2026-04-12",
@@ -2054,9 +2055,10 @@
       "tier": "B",
       "units": 1.0,
       "ev_pct": 6.0,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "W",
+      "units_result": 1.0,
+      "loss_reason": "",
+      "final_score": "Boston Red Sox 9 - St. Louis Cardinals 3"
     },
     {
       "date": "2026-04-12",
@@ -2071,9 +2073,10 @@
       "tier": "B",
       "units": 1.0,
       "ev_pct": 7.0,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "W",
+      "units_result": 0.98,
+      "loss_reason": "",
+      "final_score": "Pittsburgh Pirates 6 - Chicago Cubs 7"
     },
     {
       "date": "2026-04-12",
@@ -2084,13 +2087,14 @@
       "away_sp": "Cody Bolton",
       "line": "+100",
       "open_line": "+100",
-      "close_line": "",
+      "close_line": "-108",
       "tier": "WATCH",
       "units": 0,
       "ev_pct": 6,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "W",
+      "units_result": 0.0,
+      "loss_reason": "",
+      "final_score": "Houston Astros 1 - Seattle Mariners 6"
     }
   ],
   "updated": "2026-04-12",
