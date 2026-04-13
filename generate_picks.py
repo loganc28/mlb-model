@@ -190,13 +190,11 @@ SAVANT_TEAM_MAP_REV = {v:k for k,v in SAVANT_TEAM_MAP.items()}
 def fetch_savant_pitcher_data(season):
     """
     Fetch pitcher Statcast data from Baseball Savant expected statistics leaderboard.
-    This endpoint is more stable than the custom leaderboard.
-    Returns xERA, xwOBA against, barrel_pct, hard_hit_pct keyed by player name.
-    Falls back gracefully if unavailable.
+    Returns xERA, xwOBA against, barrel_pct, hard_hit_pct, whiff_pct, avg_fastball_velo
+    keyed by player name. Falls back gracefully if unavailable.
     """
     try:
         import csv, io
-        # Use the expected statistics endpoint — stable, well-documented
         url = "https://baseballsavant.mlb.com/leaderboard/expected_statistics"
         params = {
             "type": "pitcher",
@@ -215,14 +213,12 @@ def fetch_savant_pitcher_data(season):
         if len(r.text) < 100:
             print(f"Savant pitcher returned empty ({len(r.text)} chars)")
             return {}
-        # Strip UTF-8 BOM and normalize line endings
         text = r.text.lstrip('\ufeff').replace('\r\n','\n')
         reader = csv.DictReader(io.StringIO(text))
         fieldnames = [f.strip().strip('"') for f in (reader.fieldnames or [])]
         print(f"Savant pitcher columns ({season}): {fieldnames[:12]}")
         result = {}
         for row in reader:
-            # Re-map keys stripping BOM/quotes
             clean_row = {k.strip().strip('"'): v for k,v in row.items()}
             last  = (clean_row.get("last_name","") or "").strip().strip('"').split(",")[0].strip()
             first = (clean_row.get("first_name","") or "").strip().strip('"')
@@ -244,7 +240,8 @@ def fetch_savant_pitcher_data(season):
                 "xwoba_against": sv("est_woba") or sv("xwoba") or sv("xwOBA"),
                 "xba": sv("est_ba") or sv("xba"),
             }
-        # Also try the exit velocity / barrels leaderboard for barrel/hard hit data
+
+        # Statcast leaderboard — barrel, hard hit, whiff, AND velocity
         url2 = "https://baseballsavant.mlb.com/leaderboard/statcast"
         params2 = {
             "type": "pitcher",
@@ -261,7 +258,7 @@ def fetch_savant_pitcher_data(season):
             text2 = r2.text.lstrip('\ufeff').replace('\r\n','\n')
             reader2 = csv.DictReader(io.StringIO(text2))
             fields2 = [f.strip().strip('"') for f in (reader2.fieldnames or [])]
-            print(f"Savant statcast pitcher columns ({season}): {fields2[:12]}")
+            print(f"Savant statcast pitcher columns ({season}): {fields2[:15]}")
             for row in reader2:
                 clean_row2 = {k.strip().strip('"'): v for k,v in row.items()}
                 last  = (clean_row2.get("last_name","") or "").strip().strip('"')
@@ -272,16 +269,13 @@ def fetch_savant_pitcher_data(season):
                     v = (clean_row2.get(k,"") or "").strip().strip('"')
                     try: return round(float(v),2) if v and v not in ("","null","NA","--","None") else None
                     except: return None
-                if full_name in result:
-                    result[full_name]["barrel_pct"] = sv2("barrel_batted_rate") or sv2("brl_percent") or sv2("barrel_percent")
-                    result[full_name]["hard_hit_pct"] = sv2("hard_hit_percent") or sv2("hard_hit_rate")
-                    result[full_name]["whiff_pct"] = sv2("whiff_percent") or sv2("whiff_rate")
-                else:
-                    result[full_name] = {
-                        "barrel_pct": sv2("barrel_batted_rate") or sv2("brl_percent"),
-                        "hard_hit_pct": sv2("hard_hit_percent"),
-                        "whiff_pct": sv2("whiff_percent"),
-                    }
+                entry = result.setdefault(full_name, {})
+                entry["barrel_pct"]    = sv2("barrel_batted_rate") or sv2("brl_percent") or sv2("barrel_percent")
+                entry["hard_hit_pct"]  = sv2("hard_hit_percent") or sv2("hard_hit_rate")
+                entry["whiff_pct"]     = sv2("whiff_percent") or sv2("whiff_rate")
+                # Fastball velocity — key for detecting declining SP
+                entry["avg_fastball_velo"] = sv2("fastball_avg_speed") or sv2("avg_best_speed") or sv2("release_speed")
+
         print(f"Baseball Savant: loaded {len(result)} pitcher records for {season}")
         return result
     except Exception as e:
@@ -456,7 +450,104 @@ def fetch_pitcher_recent_form(pid, season):
         "ip_per_start": round(total_ip/len(last3), 1),
     }
 
-def fetch_pitcher_splits(pid, season):
+_VELO_CACHE = {}  # savant_id → velo trend data
+
+def fetch_pitcher_velo_trend(savant_id, season_velo):
+    """
+    Fetch per-game fastball velocity for last 3 starts from Savant.
+    Compares to season average to detect declining velocity.
+    A drop of 1.5+ mph is a significant red flag — often precedes ERA spike.
+    Cached by savant_id.
+    """
+    if not savant_id: return {}
+    if savant_id in _VELO_CACHE: return _VELO_CACHE[savant_id]
+
+    try:
+        import csv, io, datetime
+        # Savant game log by pitcher
+        url = "https://baseballsavant.mlb.com/statcast_search/csv"
+        today = datetime.date.today()
+        start_date = (today - datetime.timedelta(days=30)).isoformat()
+        params = {
+            "hfGT": "R|",
+            "hfSea": f"{today.year}|",
+            "player_type": "pitcher",
+            "pitcherId": str(savant_id),
+            "group_by": "name_event",
+            "sort_col": "game_date",
+            "sort_order": "desc",
+            "min_pitches": "0",
+            "min_results": "0",
+            "min_abs": "0",
+            "type": "details",
+            "game_date_gt": start_date,
+        }
+        r = requests.get(url, params=params,
+                        headers={"User-Agent": "Mozilla/5.0"},
+                        timeout=15)
+        if not r.ok or len(r.text) < 100:
+            _VELO_CACHE[savant_id] = {}
+            return {}
+
+        text = r.text.lstrip('\ufeff').replace('\r\n', '\n')
+        reader = csv.DictReader(io.StringIO(text))
+
+        # Group pitches by game date, collect fastball velocities
+        from collections import defaultdict
+        game_velos = defaultdict(list)
+        for row in reader:
+            pitch_type = (row.get("pitch_type","") or "").strip().upper()
+            # Fastball types: FF=4-seam, SI=sinker, FC=cutter
+            if pitch_type not in ("FF","SI","FC"): continue
+            velo_str = (row.get("release_speed","") or "").strip()
+            game_date = (row.get("game_date","") or "").strip()
+            try:
+                velo = float(velo_str)
+                if velo > 70:  # sanity check
+                    game_velos[game_date].append(velo)
+            except: continue
+
+        if not game_velos:
+            _VELO_CACHE[savant_id] = {}
+            return {}
+
+        # Average velo per game, take last 3
+        game_avgs = {d: round(sum(v)/len(v),1) for d,v in game_velos.items() if v}
+        sorted_games = sorted(game_avgs.items(), reverse=True)[:3]
+        if not sorted_games:
+            _VELO_CACHE[savant_id] = {}
+            return {}
+
+        recent_avg = round(sum(v for _,v in sorted_games) / len(sorted_games), 1)
+        velo_drop = round((season_velo or 0) - recent_avg, 1) if season_velo else None
+
+        result = {
+            "recent_avg_velo": recent_avg,
+            "season_avg_velo": season_velo,
+            "velo_drop": velo_drop,
+            "starts_measured": len(sorted_games),
+        }
+
+        # Flag significant velocity drops
+        if velo_drop is not None:
+            if velo_drop >= 2.0:
+                result["velo_trend"] = f"DECLINING — down {velo_drop}mph last {len(sorted_games)} starts (now {recent_avg}mph)"
+                result["velo_flag"] = "DECLINING"
+            elif velo_drop >= 1.0:
+                result["velo_trend"] = f"SOFT DECLINE — down {velo_drop}mph last {len(sorted_games)} starts (now {recent_avg}mph)"
+                result["velo_flag"] = "SOFT_DECLINE"
+            elif velo_drop <= -1.0:
+                result["velo_trend"] = f"GAINING — up {abs(velo_drop)}mph last {len(sorted_games)} starts (now {recent_avg}mph)"
+                result["velo_flag"] = "GAINING"
+            else:
+                result["velo_trend"] = f"STABLE — {recent_avg}mph last {len(sorted_games)} starts"
+                result["velo_flag"] = "STABLE"
+
+        _VELO_CACHE[savant_id] = result
+        return result
+    except Exception as e:
+        _VELO_CACHE[savant_id] = {}
+        return {}
     """Fetch home/away and L/R splits for a pitcher."""
     if not pid: return {}
     splits_data = {}
@@ -634,7 +725,109 @@ def fetch_team_home_away_splits(team_id, season):
     _SPLITS_CACHE[cache_key] = result
     return result
 
-STATS_CACHE_VERSION = "v8"  # bump when fetch logic changes to force cache refresh
+STATS_CACHE_VERSION = "v9"  # bump when fetch logic changes to force cache refresh
+
+def fetch_pitch_arsenal(season):
+    """
+    Fetch pitch mix data for all pitchers from Savant pitch arsenal leaderboard.
+    Returns fastball%, slider%, changeup%, curveball% per pitcher.
+    Combined with platoon data: LHP who throws 70% sliders vs right-heavy lineup = elite edge.
+    One bulk CSV fetch — no per-pitcher calls needed.
+    """
+    try:
+        import csv, io
+        url = "https://baseballsavant.mlb.com/leaderboard/pitch-arsenal-stats"
+        params = {
+            "type": "pitcher",
+            "pitchType": "",
+            "year": str(season),
+            "team": "",
+            "min": "10",
+            "csv": "true",
+        }
+        r = requests.get(url, params=params,
+                        headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"},
+                        timeout=20)
+        if not r.ok or len(r.text) < 100:
+            print(f"Pitch arsenal fetch failed: HTTP {r.status_code if r else 'no response'}")
+            return {}
+
+        text = r.text.lstrip('\ufeff').replace('\r\n', '\n')
+        reader = csv.DictReader(io.StringIO(text))
+        fields = [f.strip().strip('"') for f in (reader.fieldnames or [])]
+        print(f"Pitch arsenal columns: {fields[:15]}")
+
+        # Aggregate pitch usage % per pitcher
+        pitcher_pitches = {}  # name → {pitch_type: {pct, whiff_pct, ...}}
+        for row in reader:
+            clean = {k.strip().strip('"'): (v or "").strip().strip('"') for k,v in row.items()}
+            last  = clean.get("last_name","").split(",")[0].strip()
+            first = clean.get("first_name","").strip()
+            if not last: continue
+            name = (first+" "+last).strip() if first else last
+
+            pitch_type = clean.get("pitch_type","").strip().upper()
+            if not pitch_type: continue
+
+            def pf(k):
+                v = clean.get(k,"")
+                try: return round(float(v), 2) if v and v not in ("","null","NA","--") else None
+                except: return None
+
+            pitch_data = {
+                "pct":       pf("pitch_usage") or pf("pitch_percent") or pf("pct"),
+                "whiff_pct": pf("whiff_percent") or pf("whiff_pct"),
+                "avg_speed": pf("avg_speed") or pf("release_speed"),
+            }
+            pitcher_pitches.setdefault(name, {})[pitch_type] = pitch_data
+
+        # Summarize into clean pitch mix per pitcher
+        result = {}
+        for name, pitches in pitcher_pitches.items():
+            # Categorize pitches
+            fastball_types = {"FF","SI","FC"}
+            breaking_types = {"SL","CU","KC","SV","CS"}
+            offspeed_types = {"CH","FS","FO","SC"}
+
+            fb_pct  = sum((p.get("pct") or 0) for t,p in pitches.items() if t in fastball_types)
+            brk_pct = sum((p.get("pct") or 0) for t,p in pitches.items() if t in breaking_types)
+            off_pct = sum((p.get("pct") or 0) for t,p in pitches.items() if t in offspeed_types)
+
+            # Primary pitch type (highest usage)
+            primary = max(pitches.items(), key=lambda x: x[1].get("pct") or 0, default=(None,{}))
+            primary_type = primary[0]
+            primary_pct  = primary[1].get("pct")
+            primary_speed = primary[1].get("avg_speed")
+
+            # Slider specifically — most platoon-relevant pitch
+            slider = pitches.get("SL",{})
+            slider_pct = slider.get("pct")
+            slider_whiff = slider.get("whiff_pct")
+
+            # Overall whiff rate from arsenal
+            whiff_vals = [p.get("whiff_pct") for p in pitches.values() if p.get("whiff_pct")]
+            avg_whiff = round(sum(whiff_vals)/len(whiff_vals),1) if whiff_vals else None
+
+            if fb_pct or brk_pct or off_pct:
+                result[name] = {
+                    "fastball_pct": round(fb_pct,1) if fb_pct else None,
+                    "breaking_pct": round(brk_pct,1) if brk_pct else None,
+                    "offspeed_pct": round(off_pct,1) if off_pct else None,
+                    "slider_pct":   round(slider_pct,1) if slider_pct else None,
+                    "slider_whiff": slider_whiff,
+                    "primary_pitch": primary_type,
+                    "primary_pct":   primary_pct,
+                    "avg_speed":     primary_speed,
+                    "avg_whiff_pct": avg_whiff,
+                    "pitch_count":   len(pitches),
+                }
+
+        print(f"Pitch arsenal: loaded {len(result)} pitcher profiles for {season}")
+        return result
+    except Exception as e:
+        print(f"Pitch arsenal fetch failed: {e}")
+        return {}
+
 
 def fetch_and_cache_stats():
     if STATS_CACHE.exists():
@@ -662,6 +855,7 @@ def fetch_and_cache_stats():
         f_sv_p25    = ex.submit(fetch_savant_pitcher_data, 2025)
         f_sv_b26    = ex.submit(fetch_savant_batter_data,  2026)
         f_sv_b25    = ex.submit(fetch_savant_batter_data,  2025)
+        f_arsenal   = ex.submit(fetch_pitch_arsenal, 2026)
 
     stats = {
         "date": TODAY,
@@ -678,11 +872,13 @@ def fetch_and_cache_stats():
         "savant_pitchers_2025":f_sv_p25.result(),
         "savant_batting_2026": f_sv_b26.result(),
         "savant_batting_2025": f_sv_b25.result(),
+        "pitch_arsenal_2026":  f_arsenal.result() if f_arsenal.exception() is None else {},
         "player_id_cache": {},
     }
     print(f"Stats fetch: {round(_t.time()-_t0,1)}s total (parallel)")
     print(f"SP stats: {len(stats['sp_2025'])} in 2025, {len(stats['sp_2026'])} in 2026")
     print(f"RP stats: {len(stats['rp_2025'])} in 2025, {len(stats['rp_2026'])} in 2026")
+    print(f"Pitch arsenal: {len(stats['pitch_arsenal_2026'])} pitchers")
     sv_p = len(stats['savant_pitchers_2026']) + len(stats['savant_pitchers_2025'])
     sv_b = len(stats['savant_batting_2026']) + len(stats['savant_batting_2025'])
     print(f"Savant: {sv_p} pitcher records, {sv_b} batting records")
@@ -939,6 +1135,36 @@ def get_pitcher_stats(name, stats, is_home=False):
         if sv.get("barrel_pct"): primary["barrel_pct"] = sv["barrel_pct"]
         if sv.get("hard_hit_pct"): primary["hard_hit_pct"] = sv["hard_hit_pct"]
         if sv.get("whiff_pct"): primary["whiff_pct"] = sv["whiff_pct"]
+        if sv.get("avg_fastball_velo"): primary["avg_fastball_velo"] = sv["avg_fastball_velo"]
+        # Fetch per-start velo trend using Savant player ID
+        savant_id = sv.get("player_id_savant") or sv.get("player_id")
+        season_velo = sv.get("avg_fastball_velo")
+        if savant_id and season_velo:
+            velo_data = fetch_pitcher_velo_trend(savant_id, season_velo)
+            if velo_data:
+                primary["velo_trend"] = velo_data.get("velo_trend","")
+                primary["velo_flag"] = velo_data.get("velo_flag","")
+                primary["recent_avg_velo"] = velo_data.get("recent_avg_velo")
+                primary["velo_drop"] = velo_data.get("velo_drop")
+
+    # Add pitch arsenal data
+    arsenal = stats.get("pitch_arsenal_2026",{})
+    if not arsenal:
+        arsenal = stats.get("pitch_arsenal_2025",{})
+    def find_arsenal(pool, n):
+        if n in pool: return pool[n]
+        last = n.split()[-1].lower() if n else ""
+        for k,v in pool.items():
+            if k.split()[-1].lower() == last and last: return v
+        return {}
+    arsen = find_arsenal(arsenal, name)
+    if arsen:
+        primary["fastball_pct"]  = arsen.get("fastball_pct")
+        primary["breaking_pct"]  = arsen.get("breaking_pct")
+        primary["slider_pct"]    = arsen.get("slider_pct")
+        primary["slider_whiff"]  = arsen.get("slider_whiff")
+        primary["primary_pitch"] = arsen.get("primary_pitch")
+        primary["primary_pct"]   = arsen.get("primary_pct")
 
     # Add reliability score — core fix for early-season overconfidence
     reliability, reliability_label = sp_reliability_score(primary)
@@ -1025,6 +1251,7 @@ def get_team_stats(team, stats, stat_type):
 # ── Lineups ───────────────────────────────────────────────────────────────────
 
 _BATTER_SPLITS_CACHE = {}  # pid → {vs_lhp_ops, vs_rhp_ops, vs_lhp_woba, vs_rhp_woba}
+_MATCHUP_CACHE = {}  # (batter_pid, pitcher_pid) → matchup stats
 
 def fetch_batter_splits(pid, season=2026):
     """
@@ -1093,6 +1320,120 @@ def fetch_batter_splits(pid, season=2026):
         return {}
 
 
+def fetch_batter_vs_pitcher(batter_pid, pitcher_pid):
+    """
+    Fetch historical matchup stats between a specific batter and pitcher.
+    This is elite-level signal — career 2-for-20 against Kirby is real.
+    Only use when AB >= 10 to ensure meaningful sample size.
+    Cached by (batter_pid, pitcher_pid) pair.
+    """
+    if not batter_pid or not pitcher_pid: return {}
+    cache_key = f"{batter_pid}_{pitcher_pid}"
+    if cache_key in _MATCHUP_CACHE: return _MATCHUP_CACHE[cache_key]
+
+    try:
+        data = mlb_api(f"/people/{batter_pid}/stats", {
+            "stats": "vsPlayer",
+            "opposingPlayerId": str(pitcher_pid),
+            "group": "hitting",
+            "sportId": "1",
+        })
+        stats_list = data.get("stats", [])
+        if not stats_list:
+            _MATCHUP_CACHE[cache_key] = {}
+            return {}
+
+        splits = stats_list[0].get("splits", [])
+        if not splits:
+            _MATCHUP_CACHE[cache_key] = {}
+            return {}
+
+        stat = splits[0].get("stat", {})
+        ab  = int(stat.get("atBats", 0) or 0)
+
+        # Minimum 10 AB for meaningful sample
+        if ab < 10:
+            _MATCHUP_CACHE[cache_key] = {}
+            return {}
+
+        h   = int(stat.get("hits", 0) or 0)
+        hr  = int(stat.get("homeRuns", 0) or 0)
+        bb  = int(stat.get("baseOnBalls", 0) or 0)
+        so  = int(stat.get("strikeOuts", 0) or 0)
+        hbp = int(stat.get("hitByPitch", 0) or 0)
+        d   = int(stat.get("doubles", 0) or 0)
+        t   = int(stat.get("triples", 0) or 0)
+        sf  = int(stat.get("sacFlies", 0) or 0)
+        singles = h - d - t - hr
+        pa = ab + bb + hbp + sf
+
+        avg  = round(h/ab, 3) if ab > 0 else 0
+        obp  = round((h+bb+hbp)/(ab+bb+hbp+sf), 3) if (ab+bb+hbp+sf) > 0 else 0
+        slg  = round((singles + 2*d + 3*t + 4*hr)/ab, 3) if ab > 0 else 0
+        ops  = round(obp + slg, 3)
+        woba = round((0.69*bb + 0.72*hbp + 0.89*singles + 1.27*d + 1.62*t + 2.10*hr)/pa, 3) if pa > 0 else 0
+        k_pct = round(so/ab*100, 1) if ab > 0 else 0
+
+        result = {
+            "ab": ab, "h": h, "hr": hr, "bb": bb, "so": so,
+            "avg": avg, "ops": ops, "woba": woba, "k_pct": k_pct,
+        }
+        _MATCHUP_CACHE[cache_key] = result
+        return result
+    except Exception:
+        _MATCHUP_CACHE[cache_key] = {}
+        return {}
+
+
+def analyze_lineup_vs_sp(batters, pitcher_pid):
+    """
+    Aggregate historical matchup data for entire lineup vs a specific SP.
+    Returns summary: how many batters have history, avg OPS vs this SP,
+    and lists of batters who struggle or dominate vs this pitcher.
+    Only counts batters with 10+ AB.
+    """
+    if not batters or not pitcher_pid: return {}
+
+    import concurrent.futures as _cf
+    matchups = {}
+    batter_pids = [(b.get("name",""), b.get("pid")) for b in batters if b.get("pid")]
+
+    if not batter_pids: return {}
+
+    with _cf.ThreadPoolExecutor(max_workers=min(len(batter_pids), 18)) as ex:
+        futures = {ex.submit(fetch_batter_vs_pitcher, pid, pitcher_pid): name
+                   for name, pid in batter_pids}
+        for fut in _cf.as_completed(futures, timeout=8):
+            name = futures[fut]
+            try:
+                result = fut.result()
+                if result:
+                    matchups[name] = result
+            except Exception:
+                pass
+
+    if not matchups: return {}
+
+    ops_list = [m["ops"] for m in matchups.values() if m.get("ops")]
+    avg_ops = round(sum(ops_list)/len(ops_list), 3) if ops_list else None
+
+    # Categorize batters
+    struggles = [n for n,m in matchups.items() if m.get("ops",1) < 0.550 and m.get("ab",0) >= 10]
+    dominates = [n for n,m in matchups.items() if m.get("ops",0) > 0.900 and m.get("ab",0) >= 10]
+
+    return {
+        "batters_with_history": len(matchups),
+        "avg_ops_vs_sp": avg_ops,
+        "struggles_vs_sp": struggles[:3],   # batters who are 0-fer vs this guy
+        "dominates_sp": dominates[:3],      # batters who own this pitcher
+        "matchup_note": (
+            f"{len(struggles)} batters historically struggle vs this SP" if struggles else
+            f"{len(dominates)} batters have owned this SP" if dominates else
+            f"{len(matchups)} batters have history vs this SP (avg OPS {avg_ops})"
+        ) if matchups else "No significant matchup history",
+    }
+
+
 def fetch_lineup(game_pk):
     data = mlb_api("/game/"+str(game_pk)+"/boxscore")
     lineups = {}
@@ -1147,6 +1488,7 @@ def fetch_lineup(game_pk):
             batter = {
                 "name": b["name"], "pos": b["pos"],
                 "bats": b["bats"], "avg": b["avg"], "ops": b["ops"],
+                "pid": b["pid"],  # keep pid for matchup analysis
             }
             if splits.get("vs_lhp_ops"): batter["vs_lhp_ops"] = splits["vs_lhp_ops"]
             if splits.get("vs_rhp_ops"): batter["vs_rhp_ops"] = splits["vs_rhp_ops"]
@@ -1156,6 +1498,63 @@ def fetch_lineup(game_pk):
 
         lineups[side] = {"team": team_name, "batters": batters}
     return lineups
+
+def analyze_pitch_mix_vs_lineup(sp_stats, platoon_data):
+    """
+    Cross-reference SP pitch mix with lineup handedness.
+    A LHP throwing 70% sliders against 7 righties = elite platoon edge.
+    Sliders break away from righties vs LHP = very hard to hit.
+    Returns a pitch_mix_edge string for Claude to use.
+    """
+    if not sp_stats or not platoon_data: return {}
+
+    throws      = (sp_stats.get("throws","") or "").upper()
+    slider_pct  = sp_stats.get("slider_pct") or 0
+    breaking_pct = sp_stats.get("breaking_pct") or 0
+    fastball_pct = sp_stats.get("fastball_pct") or 0
+    primary     = sp_stats.get("primary_pitch","")
+    slider_whiff = sp_stats.get("slider_whiff") or 0
+
+    disadvantaged_pct = platoon_data.get("disadvantaged_pct", 0)
+    edge_score        = platoon_data.get("edge_score", 0)
+
+    insights = []
+
+    # LHP with heavy slider usage vs right-heavy lineup
+    if throws == "L" and slider_pct >= 30 and disadvantaged_pct >= 60:
+        if slider_whiff and slider_whiff >= 35:
+            insights.append(
+                f"ELITE: LHP throws {slider_pct}% sliders (back-door to RHBs, {slider_whiff}% whiff) "
+                f"vs {disadvantaged_pct}% right-handed lineup"
+            )
+        else:
+            insights.append(
+                f"STRONG: LHP {slider_pct}% sliders vs {disadvantaged_pct}% RHB lineup"
+            )
+
+    # RHP with heavy slider usage vs left-heavy lineup
+    elif throws == "R" and slider_pct >= 30 and disadvantaged_pct >= 60:
+        insights.append(
+            f"STRONG: RHP {slider_pct}% sliders vs {disadvantaged_pct}% LHB lineup"
+        )
+
+    # Heavy fastball pitcher facing lineup with platoon advantage (lineup can sit on FB)
+    elif fastball_pct >= 60 and edge_score <= -1:
+        insights.append(
+            f"LINEUP EDGE: {fastball_pct}% fastball pitcher facing lineup with platoon advantage — hitters can sit on FB"
+        )
+
+    # Breaking ball dominant pitcher regardless of platoon
+    elif breaking_pct >= 55:
+        insights.append(
+            f"Breaking ball heavy ({breaking_pct}%) — generates weak contact regardless of lineup hand"
+        )
+
+    return {
+        "pitch_mix_edge": insights[0] if insights else "",
+        "has_pitch_mix_edge": len(insights) > 0,
+    }
+
 
 def analyze_lineup_handedness(batters, sp_throws):
     """
@@ -2140,6 +2539,24 @@ def enforce_ev_rules(picks):
         elif p["tier"] == "C": p["units"] = 0.5
         elif p["tier"] in ("WATCH","SKIP"): p["units"] = 0
 
+    # Velocity decline gate — DECLINING SP velo is a red flag Claude may miss
+    # A 2mph+ drop over last 3 starts often precedes an ERA spike
+    for p in enforced:
+        if p.get("tier") not in ("MAX","A","B","C"): continue
+        flags = (p.get("flags","") + " " + p.get("sp_analysis","") + " " + p.get("rationale","")).lower()
+        if "declining" not in flags and "velo_flag" not in flags: continue
+        # Only penalize if the pick is riding a specific SP's edge (UNDER or F5 UNDER)
+        bet_type = p.get("bet_type","")
+        if "UNDER" not in p.get("pick","").upper() and bet_type not in ("ML","F5 UNDER"): continue
+        if "declining" in flags:
+            game = p.get("game","")
+            if p["tier"] == "MAX":
+                print(f"VELO DECLINE: {game} — SP velocity declining, downgrading MAX→A")
+                p["tier"] = "A"; p["units"] = 1.5
+            elif p["tier"] == "A":
+                print(f"VELO DECLINE: {game} — SP velocity declining, downgrading A→B")
+                p["tier"] = "B"; p["units"] = 1.0
+
         # Validate run line price matches actual odds data
         if bet_type == "Run Line" and p.get("game"):
             pick_str = p.get("pick","").upper()
@@ -2650,6 +3067,16 @@ def summarize_game(g):
             "reliability": away_sp.get("reliability",0.5),
             "reliability_label": away_sp.get("reliability_label","UNKNOWN"),
             "throws": away_sp.get("throws",""),
+            "avg_fastball_velo": away_sp.get("avg_fastball_velo"),
+            "velo_trend": away_sp.get("velo_trend",""),
+            "velo_flag": away_sp.get("velo_flag",""),
+            "recent_avg_velo": away_sp.get("recent_avg_velo"),
+            "velo_drop": away_sp.get("velo_drop"),
+            "fastball_pct": away_sp.get("fastball_pct"),
+            "breaking_pct": away_sp.get("breaking_pct"),
+            "slider_pct": away_sp.get("slider_pct"),
+            "slider_whiff": away_sp.get("slider_whiff"),
+            "primary_pitch": away_sp.get("primary_pitch"),
         },
         "home_sp_stats": {
             "era": home_sp.get("era",0),
@@ -2672,6 +3099,16 @@ def summarize_game(g):
             "reliability": home_sp.get("reliability",0.5),
             "reliability_label": home_sp.get("reliability_label","UNKNOWN"),
             "throws": home_sp.get("throws",""),
+            "avg_fastball_velo": home_sp.get("avg_fastball_velo"),
+            "velo_trend": home_sp.get("velo_trend",""),
+            "velo_flag": home_sp.get("velo_flag",""),
+            "recent_avg_velo": home_sp.get("recent_avg_velo"),
+            "velo_drop": home_sp.get("velo_drop"),
+            "fastball_pct": home_sp.get("fastball_pct"),
+            "breaking_pct": home_sp.get("breaking_pct"),
+            "slider_pct": home_sp.get("slider_pct"),
+            "slider_whiff": home_sp.get("slider_whiff"),
+            "primary_pitch": home_sp.get("primary_pitch"),
         },
         "away_team": {
             "ops": away_bat.get("ops",0),
@@ -2695,6 +3132,8 @@ def summarize_game(g):
             "bullpen_quality_note": away_bp.get("quality_note",""),
             "fatigued_arms": away_bp.get("fatigued_arms",[])[:3],
             "platoon_vs_home_sp": g.get("away_platoon",{}),
+            "matchups_vs_home_sp": g.get("away_matchups_vs_home_sp",{}),
+            "pitch_mix_edge": g.get("away_pitch_mix",{}).get("pitch_mix_edge",""),
             "injuries": [i["name"] for i in g.get("away_injuries",[])[:2]],
             "streak": str(away_streak.get("streak_type",""))+str(away_streak.get("streak_number","")) if away_streak else "",
             "rest_days": away_rest.get("rest_days", 2),
@@ -2722,6 +3161,8 @@ def summarize_game(g):
             "bullpen_quality_note": home_bp.get("quality_note",""),
             "fatigued_arms": home_bp.get("fatigued_arms",[])[:3],
             "platoon_vs_away_sp": g.get("home_platoon",{}),
+            "matchups_vs_away_sp": g.get("home_matchups_vs_away_sp",{}),
+            "pitch_mix_edge": g.get("home_pitch_mix",{}).get("pitch_mix_edge",""),
             "injuries": [i["name"] for i in g.get("home_injuries",[])[:2]],
             "streak": str(home_streak.get("streak_type",""))+str(home_streak.get("streak_number","")) if home_streak else "",
             "rest_days": home_rest.get("rest_days", 2),
@@ -3927,15 +4368,27 @@ def main():
         home_sp_stats = get_pitcher_stats(g["home_sp"], stats, is_home=True)
         away_sp_stats = get_pitcher_stats(g["away_sp"], stats, is_home=False)
 
-        # Platoon
+        # Platoon + historical matchup + pitch mix analysis
         home_platoon = {}; away_platoon = {}
+        away_matchups = {}; home_matchups = {}
+        home_pitch_mix = {}; away_pitch_mix = {}
         if lineups:
             home_throws = home_sp_stats.get("throws","")
             away_throws = away_sp_stats.get("throws","")
             if lineups.get("away",{}).get("batters") and away_throws:
                 home_platoon = analyze_lineup_handedness(lineups["away"]["batters"], away_throws)
+                home_pitch_mix = analyze_pitch_mix_vs_lineup(home_sp_stats, home_platoon)
             if lineups.get("home",{}).get("batters") and home_throws:
                 away_platoon = analyze_lineup_handedness(lineups["home"]["batters"], home_throws)
+                away_pitch_mix = analyze_pitch_mix_vs_lineup(away_sp_stats, away_platoon)
+
+            # Historical batter vs SP matchups — run in parallel
+            home_sp_pid = home_sp_stats.get("player_id")
+            away_sp_pid = away_sp_stats.get("player_id")
+            if home_sp_pid and lineups.get("away",{}).get("batters"):
+                away_matchups = analyze_lineup_vs_sp(lineups["away"]["batters"], home_sp_pid)
+            if away_sp_pid and lineups.get("home",{}).get("batters"):
+                home_matchups = analyze_lineup_vs_sp(lineups["home"]["batters"], away_sp_pid)
 
         # Bullpen, injuries, splits, rest, line movement — run in parallel per game
         import concurrent.futures as _cf
@@ -3987,6 +4440,10 @@ def main():
         gd["away_lineup"]           = lineups.get("away",{})
         gd["home_platoon"]          = home_platoon
         gd["away_platoon"]          = away_platoon
+        gd["away_matchups_vs_home_sp"] = away_matchups  # away lineup history vs home SP
+        gd["home_matchups_vs_away_sp"] = home_matchups  # home lineup history vs away SP
+        gd["home_pitch_mix"]           = home_pitch_mix  # home SP pitch mix vs away lineup
+        gd["away_pitch_mix"]           = away_pitch_mix  # away SP pitch mix vs home lineup
         gd["home_bullpen_fatigue"]  = home_bullpen
         gd["away_bullpen_fatigue"]  = away_bullpen
         gd["home_injuries"]         = home_injuries[:5]
