@@ -521,7 +521,7 @@ def fetch_team_pitching(season):
     })
     result = {}
     for split in data.get("stats",[{}])[0].get("splits",[]):
-        team = split.get("team",{}).get("name","")
+        team = normalize_team(split.get("team",{}).get("name",""))
         stat = split.get("stat",{})
         if not team: continue
         ip = safe_float(stat.get("inningsPitched","0"))
@@ -541,18 +541,16 @@ def fetch_team_batting(season):
     })
     result = {}
     for split in data.get("stats",[{}])[0].get("splits",[]):
-        team = split.get("team",{}).get("name","")
+        team_raw = split.get("team",{}).get("name","")
+        team = normalize_team(team_raw)  # normalize at fetch time
         stat = split.get("stat",{})
         if not team: continue
         g = int(stat.get("gamesPlayed",1) or 1)
         runs = int(stat.get("runs",0) or 0)
-        # Lower threshold — by April 9 every team has 8+ games
         if g < 3 and season == 2026: continue
         ops = safe_float(stat.get("ops"))
-        # Skip clearly bad data
         if ops > 1.2: continue
-        if ops <= 0 and season == 2026: continue  # 0.000 OPS means fetch failed, skip
-        # Calculate wOBA from component stats
+        if ops <= 0 and season == 2026: continue
         bb  = int(stat.get("baseOnBalls",0) or 0)
         hbp = int(stat.get("hitByPitch",0) or 0)
         h   = int(stat.get("hits",0) or 0)
@@ -636,7 +634,7 @@ def fetch_team_home_away_splits(team_id, season):
     _SPLITS_CACHE[cache_key] = result
     return result
 
-STATS_CACHE_VERSION = "v7"  # bump when fetch logic changes to force cache refresh
+STATS_CACHE_VERSION = "v8"  # bump when fetch logic changes to force cache refresh
 
 def fetch_and_cache_stats():
     if STATS_CACHE.exists():
