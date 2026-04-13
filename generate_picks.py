@@ -1026,6 +1026,75 @@ def get_team_stats(team, stats, stat_type):
 
 # ── Lineups ───────────────────────────────────────────────────────────────────
 
+_BATTER_SPLITS_CACHE = {}  # pid → {vs_lhp_ops, vs_rhp_ops, vs_lhp_woba, vs_rhp_woba}
+
+def fetch_batter_splits(pid, season=2026):
+    """
+    Fetch individual batter vs LHP and vs RHP splits.
+    This is the data most models miss — season OPS hides massive platoon variance.
+    A .780 OPS hitter might be .920 vs RHP but .580 vs LHP.
+    Cached per player — fetched once, reused all day.
+    """
+    if not pid: return {}
+    cache_key = f"{pid}_{season}"
+    if cache_key in _BATTER_SPLITS_CACHE:
+        return _BATTER_SPLITS_CACHE[cache_key]
+
+    try:
+        data = mlb_api(f"/people/{pid}/stats", {
+            "stats": "statSplits",
+            "season": str(season),
+            "group": "hitting",
+            "sportId": "1",
+            "sitCodes": "vl,vr",
+        })
+        result = {}
+        stats_list = data.get("stats", [])
+        if not stats_list:
+            # Try 2025 as fallback
+            if season == 2026:
+                _BATTER_SPLITS_CACHE[cache_key] = {}
+                return fetch_batter_splits(pid, 2025)
+            _BATTER_SPLITS_CACHE[cache_key] = {}
+            return {}
+
+        for split in stats_list[0].get("splits", []):
+            sit = split.get("split", {}).get("code", "")
+            stat = split.get("stat", {})
+            ab = int(stat.get("atBats", 0) or 0)
+            if ab < 10: continue  # need meaningful sample
+            ops = safe_float(stat.get("ops"))
+            avg = safe_float(stat.get("avg"))
+            # Calculate wOBA
+            bb  = int(stat.get("baseOnBalls", 0) or 0)
+            hbp = int(stat.get("hitByPitch", 0) or 0)
+            h   = int(stat.get("hits", 0) or 0)
+            d   = int(stat.get("doubles", 0) or 0)
+            t   = int(stat.get("triples", 0) or 0)
+            hr  = int(stat.get("homeRuns", 0) or 0)
+            sf  = int(stat.get("sacFlies", 0) or 0)
+            singles = h - d - t - hr
+            pa = ab + bb + hbp + sf
+            woba = round((0.69*bb + 0.72*hbp + 0.89*singles + 1.27*d + 1.62*t + 2.10*hr) / pa, 3) if pa > 0 else None
+
+            if sit == "vl":  # vs LHP
+                result["vs_lhp_ops"] = ops
+                result["vs_lhp_avg"] = avg
+                result["vs_lhp_woba"] = woba
+                result["vs_lhp_ab"] = ab
+            elif sit == "vr":  # vs RHP
+                result["vs_rhp_ops"] = ops
+                result["vs_rhp_avg"] = avg
+                result["vs_rhp_woba"] = woba
+                result["vs_rhp_ab"] = ab
+
+        _BATTER_SPLITS_CACHE[cache_key] = result
+        return result
+    except Exception:
+        _BATTER_SPLITS_CACHE[cache_key] = {}
+        return {}
+
+
 def fetch_lineup(game_pk):
     data = mlb_api("/game/"+str(game_pk)+"/boxscore")
     lineups = {}
@@ -1035,7 +1104,6 @@ def fetch_lineup(game_pk):
         batters = []
         batting_order = team_data.get("battingOrder",[])
         players = team_data.get("players",{})
-        # Get injured player names to filter from lineup
         injured_ids = set()
         for pid_str, pdata in players.items():
             status = pdata.get("gameStatus",{})
@@ -1044,46 +1112,76 @@ def fetch_lineup(game_pk):
                 if il_status in ("IL10","IL15","IL60","DL10","DL15","DL60","DTD","SCR"):
                     injured_ids.add(str(pid_str).replace("ID",""))
 
+        # Collect batters first
+        raw_batters = []
         for pid in batting_order[:9]:
             player = players.get("ID"+str(pid),{})
             name = player.get("person",{}).get("fullName","")
             pos = player.get("position",{}).get("abbreviation","")
-            bats = player.get("batSide",{}).get("code","") # L or R
+            bats = player.get("batSide",{}).get("code","")
             s = player.get("seasonStats",{}).get("batting",{})
             avg = safe_float(s.get("avg","0"))
             ops = safe_float(s.get("ops","0"))
-            # Skip if player is on IL/injured list
-            if str(pid) in injured_ids:
-                continue
+            if str(pid) in injured_ids: continue
             if name:
-                batters.append({"name":name,"pos":pos,"bats":bats,"avg":avg,"ops":ops})
-        lineups[side] = {"team":team_name,"batters":batters}
+                raw_batters.append({
+                    "pid": pid, "name": name, "pos": pos,
+                    "bats": bats, "avg": avg, "ops": ops,
+                })
+
+        # Fetch batter splits in parallel — zero sequential overhead
+        import concurrent.futures as _cf
+        split_results = {}
+        if raw_batters:
+            pids = [b["pid"] for b in raw_batters]
+            with _cf.ThreadPoolExecutor(max_workers=min(len(pids), 20)) as ex:
+                futures = {ex.submit(fetch_batter_splits, pid): pid for pid in pids}
+                for fut in _cf.as_completed(futures, timeout=8):
+                    pid = futures[fut]
+                    try:
+                        split_results[pid] = fut.result()
+                    except Exception:
+                        split_results[pid] = {}
+
+        # Attach splits to each batter
+        for b in raw_batters:
+            splits = split_results.get(b["pid"], {})
+            batter = {
+                "name": b["name"], "pos": b["pos"],
+                "bats": b["bats"], "avg": b["avg"], "ops": b["ops"],
+            }
+            if splits.get("vs_lhp_ops"): batter["vs_lhp_ops"] = splits["vs_lhp_ops"]
+            if splits.get("vs_rhp_ops"): batter["vs_rhp_ops"] = splits["vs_rhp_ops"]
+            if splits.get("vs_lhp_woba"): batter["vs_lhp_woba"] = splits["vs_lhp_woba"]
+            if splits.get("vs_rhp_woba"): batter["vs_rhp_woba"] = splits["vs_rhp_woba"]
+            batters.append(batter)
+
+        lineups[side] = {"team": team_name, "batters": batters}
     return lineups
 
 def analyze_lineup_handedness(batters, sp_throws):
     """
-    Calculate platoon advantage — full breakdown of lineup vs SP handedness.
+    Calculate platoon advantage using ACTUAL vs-LHP/RHP split OPS where available.
+    This is elite-level analysis — uses real split data not season averages.
     Same hand = platoon disadvantage for hitters (e.g. RHB vs RHP).
     Opposite hand = platoon advantage for hitters (e.g. LHB vs RHP).
-    
-    Returns rich data: % disadvantaged, avg OPS by hand matchup, named disadvantaged hitters.
     """
     if not batters or not sp_throws:
         return {}
 
-    sp_throws = sp_throws.upper()  # normalize to L or R
-    same_hand = []    # hitters at platoon disadvantage
-    opp_hand  = []    # hitters with platoon advantage
+    sp_throws = sp_throws.upper()
+    same_hand = []   # disadvantaged
+    opp_hand  = []   # advantaged
     unknown   = []
 
     for b in batters:
         bats = (b.get("bats") or "").upper()
-        if not bats or bats == "S":  # switch hitters get advantage
-            opp_hand.append(b)
+        if not bats or bats == "S":
+            opp_hand.append(b)   # switch hitters always have advantage
         elif bats == sp_throws:
-            same_hand.append(b)   # disadvantage
+            same_hand.append(b)  # disadvantage
         else:
-            opp_hand.append(b)    # advantage
+            opp_hand.append(b)   # advantage
 
     total = len(batters)
     if total == 0:
@@ -1092,24 +1190,43 @@ def analyze_lineup_handedness(batters, sp_throws):
     disadvantaged_pct = round(len(same_hand) / total * 100)
     advantaged_pct    = round(len(opp_hand)  / total * 100)
 
-    # Average OPS for each group (when available)
-    same_ops = [b.get("ops",0) for b in same_hand if b.get("ops",0) > 0.400]
-    opp_ops  = [b.get("ops",0) for b in opp_hand  if b.get("ops",0) > 0.400]
-    avg_same_ops = round(sum(same_ops)/len(same_ops), 3) if same_ops else None
-    avg_opp_ops  = round(sum(opp_ops)/len(opp_ops),   3) if opp_ops  else None
+    # Use SPLIT OPS (vs LHP or vs RHP) where available — fall back to season OPS
+    # This is the key improvement: .780 season OPS hitter might be .920 vs RHP or .580 vs LHP
+    split_key_same = "vs_lhp_ops" if sp_throws == "L" else "vs_rhp_ops"
+    split_key_opp  = "vs_rhp_ops" if sp_throws == "L" else "vs_lhp_ops"
+    split_woba_same = "vs_lhp_woba" if sp_throws == "L" else "vs_rhp_woba"
+    split_woba_opp  = "vs_rhp_woba" if sp_throws == "L" else "vs_lhp_woba"
 
-    # Determine overall platoon edge
+    def best_ops(batter, split_key):
+        """Use split OPS if available and meaningful, else fall back to season OPS."""
+        split = batter.get(split_key)
+        if split and split > 0.300:  # sanity check — split OPS should be real
+            return split
+        return batter.get("ops", 0) or 0
+
+    def best_woba(batter, woba_key):
+        return batter.get(woba_key) or None
+
+    same_ops_list  = [best_ops(b, split_key_same) for b in same_hand if best_ops(b, split_key_same) > 0.300]
+    opp_ops_list   = [best_ops(b, split_key_opp)  for b in opp_hand  if best_ops(b, split_key_opp)  > 0.300]
+    avg_same_ops   = round(sum(same_ops_list)/len(same_ops_list), 3) if same_ops_list else None
+    avg_opp_ops    = round(sum(opp_ops_list)/len(opp_ops_list),   3) if opp_ops_list  else None
+
+    # How many batters have real split data vs season average fallback
+    has_split_data = sum(1 for b in batters if b.get(split_key_same) or b.get(split_key_opp))
+
+    # Overall platoon edge assessment
     if disadvantaged_pct >= 70:
-        platoon_edge = "STRONG — SP throws " + sp_throws + ", " + str(disadvantaged_pct) + "% of lineup at platoon disadvantage"
-        edge_score = 2  # significant edge for SP
+        platoon_edge = f"STRONG — SP throws {sp_throws}, {disadvantaged_pct}% of lineup at platoon disadvantage"
+        edge_score = 2
     elif disadvantaged_pct >= 55:
-        platoon_edge = "MODERATE — " + str(disadvantaged_pct) + "% of lineup same-handed as SP"
+        platoon_edge = f"MODERATE — {disadvantaged_pct}% of lineup same-handed as SP ({sp_throws})"
         edge_score = 1
     elif advantaged_pct >= 70:
-        platoon_edge = "LINEUP ADVANTAGE — " + str(advantaged_pct) + "% of lineup has platoon edge vs SP"
-        edge_score = -1  # edge for offense
+        platoon_edge = f"LINEUP ADVANTAGE — {advantaged_pct}% of lineup has platoon edge vs {sp_throws}HP"
+        edge_score = -1
     else:
-        platoon_edge = "NEUTRAL — balanced lineup vs SP"
+        platoon_edge = f"NEUTRAL — balanced lineup vs {sp_throws}HP"
         edge_score = 0
 
     return {
@@ -1118,10 +1235,12 @@ def analyze_lineup_handedness(batters, sp_throws):
         "advantaged_pct": advantaged_pct,
         "disadvantaged_batters": [b["name"] for b in same_hand[:4]],
         "advantaged_batters": [b["name"] for b in opp_hand[:4]],
-        "avg_ops_disadvantaged": avg_same_ops,
-        "avg_ops_advantaged": avg_opp_ops,
+        "avg_ops_vs_this_sp_type": avg_same_ops,   # actual split OPS for disadvantaged group
+        "avg_ops_with_platoon_edge": avg_opp_ops,  # actual split OPS for advantaged group
+        "batters_with_split_data": has_split_data,
         "platoon_edge": platoon_edge,
-        "edge_score": edge_score,  # positive = SP advantage, negative = lineup advantage
+        "edge_score": edge_score,
+        "data_note": f"{has_split_data}/{total} batters have real split data" if has_split_data < total else "All batters have split data",
     }
 
 # ── Bullpen fatigue ───────────────────────────────────────────────────────────
