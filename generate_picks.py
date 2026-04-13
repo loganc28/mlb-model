@@ -4600,7 +4600,6 @@ def main():
             affected_games = set()
             for reason in regen_reasons:
                 if "SP scratch:" in reason:
-                    # Extract game from trigger — format "SP SCRATCH: OldSP → NewSP (Team)"
                     for gd in games_with_data:
                         team_name = reason.split("(")[-1].replace(")","").strip()
                         if team_name in [gd["home"], gd["away"]]:
@@ -4621,7 +4620,30 @@ def main():
                 record["picks"] = [p for p in record["picks"]
                                    if not (p.get("date")==TODAY and not p.get("result"))]
 
+        elif FORCE_REGEN:
+            # Manual FORCE_REGENERATE=yes — preserve existing valid picks,
+            # only wipe picks for games with no odds or that are already final
+            existing_today = [p for p in record.get("picks",[])
+                              if p.get("date")==TODAY and not p.get("result")
+                              and p.get("tier") in ("MAX","A","B","C")]
+            if existing_today:
+                print(f"FORCE_REGEN: Preserving {len(existing_today)} existing picks, adding new ones only")
+                # Remove only games that have no existing active pick
+                existing_games = {p.get("game","") for p in existing_today}
+                games_to_regen = [g for g in games_with_data
+                                  if (g["away"]+" @ "+g["home"]) not in existing_games]
+                games_with_data = games_to_regen if games_to_regen else games_with_data
+
         picks, ai_model = call_ai(games_with_data)
+        # Merge new picks with any preserved existing picks
+        if FORCE_REGEN and not force_regen:
+            preserved = [p for p in record.get("picks",[])
+                        if p.get("date")==TODAY and not p.get("result")
+                        and p.get("tier") in ("MAX","A","B","C")]
+            new_games = {p.get("game","") for p in picks}
+            # Only keep preserved picks for games not covered by new run
+            preserved = [p for p in preserved if p.get("game","") not in new_games]
+            picks = preserved + picks
         active = [p for p in picks if p.get("tier") in ("MAX","A","B","C")]
         record["ai_model"] = ai_model
         if regen_reasons:
