@@ -92,7 +92,8 @@ Tier A: SP edge confirmed by at least TWO of (season ERA gap, recent form, home/
 +1: Umpire below 8.5 rpg (UNDER) or above 9.2 (OVER)
 +1: Wind IN 12+mph below 55F (UNDER lean only)
 +1: Wind OUT 12+mph above 65F in hitter park (OVER lean only)
-+1: OPS gap 0.100+ aligned with pick direction
++1: OPS gap 0.100+ aligned with pick direction (use split OPS vs this SP hand, not season OPS)
++1: Platoon edge STRONG (70%+ of lineup disadvantaged vs SP hand) — use avg_ops_vs_this_sp_type
 +1: Plus money or better than -108
 
 Tier B = 6-7 pts. Tier A = 8-9 pts. MAX = 10+.
@@ -203,27 +204,28 @@ Bullpen fatigue alone is no longer sufficient to justify an OVER — quality mus
 
 ---
 
-## PLATOON SPLITS — NOW FULLY LIVE
+## PLATOON SPLITS — INDIVIDUAL BATTER SPLITS NOW LIVE
 
-Every team now provides platoon data for their lineup vs the opposing SP:
-- `away_team.platoon_vs_home_sp` — how much of the away lineup faces a platoon disadvantage vs the home SP
-- `home_team.platoon_vs_away_sp` — how much of the home lineup faces a platoon disadvantage vs the away SP
+Every batter in the lineup now has actual vs-LHP and vs-RHP split OPS where available:
+- `batter.vs_lhp_ops` — this batter's actual OPS against left-handed pitchers
+- `batter.vs_rhp_ops` — this batter's actual OPS against right-handed pitchers
 
-Key fields:
-- `disadvantaged_pct` — % of lineup facing same-hand pitcher (e.g. RHB vs RHP = disadvantage)
-- `advantaged_pct` — % of lineup with platoon edge (opposite hand or switch hitters)
-- `platoon_edge` — STRONG / MODERATE / NEUTRAL / LINEUP ADVANTAGE
-- `edge_score` — +2 strong SP advantage, +1 moderate, 0 neutral, -1 lineup advantage
-- `disadvantaged_batters` / `advantaged_batters` — named players
+The lineup platoon analysis (`platoon_vs_home_sp` / `platoon_vs_away_sp`) now uses these real splits:
+- `avg_ops_vs_this_sp_type` — actual average OPS of the disadvantaged group vs this SP hand
+- `avg_ops_with_platoon_edge` — actual average OPS of the advantaged group vs this SP hand
+- `batters_with_split_data` — how many batters have real split data vs season OPS fallback
 
-**How to use platoon data:**
-- STRONG platoon advantage for SP (70%+ of lineup same-handed) = +1 confidence point for SP-based picks (UNDER, F5 UNDER)
-- LINEUP ADVANTAGE (70%+ of lineup opposite-handed) = lineup is stronger than season OPS suggests. Factor into ML edge.
-- Switch hitters always count as advantaged — they flip to opposite side vs any pitcher.
+**This is critical — season OPS hides massive platoon variance:**
+- A .780 season OPS hitter might be .920 vs RHP but .580 vs LHP
+- If 7 of 9 righties face a LHP and their avg vs-LHP OPS is .640, that lineup is NOT a .780 offense
+- Use `avg_ops_vs_this_sp_type` as the true offensive strength in platoon matchups
 
-**Example:** A LHP facing a lineup with 7 righties has a massive platoon edge. That lineup's .780 season OPS likely performs more like .720 against that LHP. This is real structural edge that most models miss because they only use season OPS.
+**Always reference split OPS over season OPS when evaluating lineups vs a specific SP.**
+If `avg_ops_vs_this_sp_type` is significantly lower than season OPS, downgrade the lineup strength.
+If `avg_ops_with_platoon_edge` is significantly higher, upgrade the lineup strength.
 
-Platoon splits combined with home/away OPS splits gives you the most accurate offensive projection available at the game level.
+**Example:** LHP faces a lineup. 7 righties average .650 vs LHP (their actual split), while season OPS is .790.
+That lineup should be treated as a .650 offense for this game — not .790. Massive SP edge.
 
 Back-to-back: -3% win prob, one tier downgrade (MAX→A, A→B)
 Cross-timezone travel for night game: -1-2% win prob
