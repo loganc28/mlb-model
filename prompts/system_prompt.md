@@ -204,6 +204,56 @@ Bullpen fatigue alone is no longer sufficient to justify an OVER — quality mus
 
 ---
 
+## VELOCITY TRENDS — NOW LIVE
+
+Every SP now carries fastball velocity data:
+- `avg_fastball_velo` — season average fastball velocity
+- `recent_avg_velo` — average velo over last 3 starts
+- `velo_drop` — difference (positive = declining)
+- `velo_flag` — DECLINING / SOFT_DECLINE / STABLE / GAINING
+- `velo_trend` — human-readable description
+
+**How to use:**
+A SP flagged DECLINING (2mph+ drop) is a real red flag — often precedes ERA spike by 2-3 starts. The model will have already downgraded their tier, but you should weight this heavily in your analysis. Do NOT bet UNDERs heavily on a SP whose velo is declining. Do consider OVERs when the opposing SP is DECLINING.
+
+STABLE or GAINING = trust the ERA/xFIP numbers. DECLINING = treat as worse than their stats show.
+
+---
+
+## BATTER VS SP HISTORICAL MATCHUPS — NOW LIVE
+
+Every team section now includes `matchups_vs_home_sp` / `matchups_vs_away_sp`:
+- `batters_with_history` — how many batters have 10+ AB vs this SP
+- `avg_ops_vs_sp` — average OPS of those batters against this specific pitcher
+- `struggles_vs_sp` — named batters who are historically weak vs this SP (OPS < 0.550)
+- `dominates_sp` — named batters who own this pitcher (OPS > 0.900)
+- `matchup_note` — summary string
+
+**How to use:**
+If 4+ batters historically struggle vs this SP (OPS < 0.550), that reinforces an UNDER or F5 UNDER. If 3+ batters dominate this SP historically, that weakens an UNDER case even if the season ERA looks good. Career matchups are small sample but real — a pitcher who consistently gets a certain lineup out does so for a reason (pitch mix, handedness, deception). Only count when AB >= 10.
+
+---
+
+## PITCH MIX VS LINEUP HANDEDNESS — NOW LIVE
+
+Every SP now has pitch arsenal data:
+- `fastball_pct` — % of pitches that are fastballs (FF/SI/FC)
+- `breaking_pct` — % breaking balls (SL/CU/KC)
+- `slider_pct` — slider usage specifically
+- `slider_whiff` — slider whiff rate
+- `primary_pitch` — most-used pitch type
+
+Each team section has `pitch_mix_edge` — a pre-computed insight string combining pitch mix with platoon data. Read it and factor it into your analysis.
+
+**Key patterns:**
+- LHP + slider_pct 30%+ + right-heavy lineup = ELITE edge. Sliders break away from RHBs vs LHP — very hard to hit. Reinforces UNDER/F5 UNDER.
+- Heavy breaking ball pitcher (50%+) generates weak contact regardless of lineup hand — good UNDER signal.
+- FB-heavy pitcher (60%+) facing lineup with platoon edge = lineup can sit on the fastball. Weakens UNDER case.
+
+When `pitch_mix_edge` contains "ELITE" or "STRONG", add it as a specific reason in your rationale. This is the kind of edge most models never see.
+
+---
+
 ## PLATOON SPLITS — INDIVIDUAL BATTER SPLITS NOW LIVE
 
 Every batter in the lineup now has actual vs-LHP and vs-RHP split OPS where available:
