@@ -18,7 +18,7 @@ STADIUMS = {
     "Houston Astros":        {"lat":29.7572,"lon":-95.3555,"of_facing":  0,"dome":True},
     "Texas Rangers":         {"lat":32.7513,"lon":-97.0832,"of_facing":  0,"dome":True},
     "Los Angeles Angels":    {"lat":33.8003,"lon":-117.8827,"of_facing":340},
-    "Oakland Athletics":     {"lat":37.7516,"lon":-122.2005,"of_facing": 60},
+    "Athletics":             {"lat":38.5802,"lon":-121.4927,"of_facing": 45},  # Sutter Health Park, Sacramento
     "Seattle Mariners":      {"lat":47.5914,"lon":-122.3325,"of_facing":  5},
     "Los Angeles Dodgers":   {"lat":34.0739,"lon":-118.2400,"of_facing":  0},
     "San Francisco Giants":  {"lat":37.7786,"lon":-122.3893,"of_facing":100},
@@ -35,11 +35,13 @@ STADIUMS = {
 }
 
 TEAM_NAME_MAP = {
-    # Athletics name chaos — API uses different names across endpoints
+    # Angels name variant
     "Los Angeles Angels of Anaheim": "Los Angeles Angels",
-    "Athletics":                     "Oakland Athletics",
-    "Oakland Athletics":             "Oakland Athletics",
-    "Las Vegas Athletics":           "Oakland Athletics",
+    # Athletics name chaos — team moved, no longer Oakland
+    # MLB Stats API returns "Athletics", Odds API returns "Oakland Athletics"
+    # Canonical name is now just "Athletics"
+    "Oakland Athletics":             "Athletics",
+    "Las Vegas Athletics":           "Athletics",
     # Other known variations
     "Cleveland Indians":             "Cleveland Guardians",
     "Miami Marlins":                 "Miami Marlins",
