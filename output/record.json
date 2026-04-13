@@ -2098,7 +2098,7 @@
     }
   ],
   "updated": "2026-04-13",
-  "ai_model": "None",
+  "ai_model": "Claude Sonnet 4.5",
   "regen_reasons": [
     "Manual force regeneration",
     "Manual force regeneration",
