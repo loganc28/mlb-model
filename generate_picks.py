@@ -230,8 +230,8 @@ def fetch_savant_pitcher_data(season):
                     first = parts[1].strip().strip('"') if len(parts) > 1 else ""
             if not last: continue
             full_name = (first+" "+last).strip() if first else last
-            def sv(k):
-                v = (clean_row.get(k,"") or "").strip().strip('"')
+            def sv(k, _c=clean_row):
+                v = (_c.get(k,"") or "").strip().strip('"')
                 try: return round(float(v),3) if v and v not in ("","null","NA","--","None") else None
                 except: return None
             result[full_name] = {
@@ -265,8 +265,8 @@ def fetch_savant_pitcher_data(season):
                 first = (clean_row2.get("first_name","") or "").strip().strip('"')
                 if not last: continue
                 full_name = (first+" "+last).strip() if first else last
-                def sv2(k):
-                    v = (clean_row2.get(k,"") or "").strip().strip('"')
+                def sv2(k, _c=clean_row2):
+                    v = (_c.get(k,"") or "").strip().strip('"')
                     try: return round(float(v),2) if v and v not in ("","null","NA","--","None") else None
                     except: return None
                 entry = result.setdefault(full_name, {})
@@ -313,8 +313,8 @@ def fetch_savant_batter_data(season):
         for row in reader:
             team = (row.get("team_name_alt","") or "").strip()
             if not team: continue
-            def sv(k):
-                v = row.get(k,"")
+            def sv(k, _r=row):
+                v = _r.get(k,"")
                 try: return float(v) if v and v not in ("","null","NA","--") else None
                 except: return None
             woba = sv("woba"); xwoba = sv("xwoba")
@@ -451,6 +451,29 @@ def fetch_pitcher_recent_form(pid, season):
     }
 
 _VELO_CACHE = {}  # savant_id → velo trend data
+
+def fetch_pitcher_splits(pid, season):
+    """Fetch home/away splits for a pitcher."""
+    if not pid: return {}
+    splits_data = {}
+    data = mlb_api("/people/"+str(pid)+"/stats", {
+        "stats":"statSplits","season":str(season),"group":"pitching",
+        "sportId":"1","sitCodes":"h,a",
+    })
+    stats_list = data.get("stats",[])
+    if not stats_list: return {}
+    for split in stats_list[0].get("splits",[]):
+        sit = split.get("split",{}).get("code","")
+        stat = split.get("stat",{})
+        ip = safe_float(stat.get("inningsPitched","0"))
+        so = int(stat.get("strikeOuts",0) or 0)
+        if sit == "h":
+            splits_data["home_era"] = safe_float(stat.get("era"))
+            splits_data["home_k9"] = round(so/ip*9,2) if ip > 0 else 0
+        elif sit == "a":
+            splits_data["away_era"] = safe_float(stat.get("era"))
+            splits_data["away_k9"] = round(so/ip*9,2) if ip > 0 else 0
+    return splits_data
 
 def fetch_pitcher_velo_trend(savant_id, season_velo):
     """
@@ -761,17 +784,27 @@ def fetch_pitch_arsenal(season):
         pitcher_pitches = {}  # name → {pitch_type: {pct, whiff_pct, ...}}
         for row in reader:
             clean = {k.strip().strip('"'): (v or "").strip().strip('"') for k,v in row.items()}
-            last  = clean.get("last_name","").split(",")[0].strip()
-            first = clean.get("first_name","").strip()
+
+            # Handle combined "last_name, first_name" column (Savant format)
+            combined = clean.get("last_name, first_name","") or clean.get("player_name","")
+            if combined and "," in combined:
+                parts = combined.split(",", 1)
+                last  = parts[0].strip()
+                first = parts[1].strip() if len(parts) > 1 else ""
+            else:
+                last  = clean.get("last_name","").strip()
+                first = clean.get("first_name","").strip()
+
             if not last: continue
             name = (first+" "+last).strip() if first else last
 
             pitch_type = clean.get("pitch_type","").strip().upper()
             if not pitch_type: continue
 
-            def pf(k):
-                v = clean.get(k,"")
-                try: return round(float(v), 2) if v and v not in ("","null","NA","--") else None
+            # Use default arg to capture current 'clean' value — avoids loop closure bug
+            def pf(k, _c=clean):
+                v = _c.get(k,"")
+                try: return round(float(v), 4) if v and v not in ("","null","NA","--") else None
                 except: return None
 
             pitch_data = {
@@ -1044,8 +1077,8 @@ def get_pitcher_stats(name, stats, is_home=False):
             if k.split()[-1].lower() == last and last: return v
         return {}
 
-    s25 = find_in(stats["sp_2025"], name)
-    s26 = find_in(stats["sp_2026"], name)
+    s25 = find_in(stats.get("sp_2025",{}), name)
+    s26 = find_in(stats.get("sp_2026",{}), name)
 
     if not s25 and not s26:
         pid = stats.get("player_id_cache",{}).get(name)
@@ -4482,7 +4515,9 @@ def main():
                 games_with_data.append(gd)
                 print(f"  ✓ {g['away']} @ {g['home']}")
             except Exception as e:
+                import traceback
                 print(f"  ✗ {g['away']} @ {g['home']}: {str(e)}")
+                print(f"    {traceback.format_exc().splitlines()[-2]}")
     print(f"Enrichment: {round(_et.time()-_enrich_t,1)}s for {len(games_with_data)} games")
 
     # Save updated stats cache (may have new player ID lookups)
