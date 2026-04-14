@@ -2942,46 +2942,49 @@ def estimate_win_prob(home_sp_era, away_sp_era, home_ops, away_ops,
     """
     Estimate home team win probability using Pythagorean run expectation.
     Uses FIP over ERA when available. Uses wOBA over OPS when available.
-    Clamps output to 35-65% — extreme values indicate bad data not real edge.
+    Clamps output to 38-62% — extreme values indicate bad data not real edge.
     Claude adjusts this baseline by max ±5%.
+    
+    NOTE: Bullpen ERA is intentionally excluded from baseline.
+    Bullpen quality is a separate signal Claude evaluates directly.
+    Including it here caused 35% baselines on teams with poor pens,
+    making the cap enforcement block every pick.
     """
     lg_era = 4.20; lg_ops = 0.720; lg_woba = 0.320; lg_runs_pg = 4.5
 
-    # Prefer xFIP > FIP > ERA
-    h_era = (home_sp_fip if home_sp_fip and home_sp_fip > 0 else
-             (home_recent_era if home_recent_era and home_recent_era > 0 else home_sp_era))
-    a_era = (away_sp_fip if away_sp_fip and away_sp_fip > 0 else
-             (away_recent_era if away_recent_era and away_recent_era > 0 else away_sp_era))
+    # Prefer xFIP > FIP > ERA (not recent ERA — too noisy early season)
+    h_era = home_sp_fip if home_sp_fip and home_sp_fip > 0 else home_sp_era
+    a_era = away_sp_fip if away_sp_fip and away_sp_fip > 0 else away_sp_era
 
-    # Blend SP with bullpen ERA (SP ~5 innings, bullpen ~4 innings)
-    if home_bullpen_era and home_bullpen_era > 0:
-        h_era = h_era * 0.55 + home_bullpen_era * 0.45
-    if away_bullpen_era and away_bullpen_era > 0:
-        a_era = a_era * 0.55 + away_bullpen_era * 0.45
+    # Blend in recent ERA only if meaningful sample (avoid 1-start noise)
+    if home_recent_era and home_recent_era > 0 and home_recent_era < 9.0:
+        h_era = h_era * 0.65 + home_recent_era * 0.35
+    if away_recent_era and away_recent_era > 0 and away_recent_era < 9.0:
+        a_era = a_era * 0.65 + away_recent_era * 0.35
 
-    h_era = min(max(h_era, 1.5), 8.0)  # tighter clamp — extreme ERA values are bad data
-    a_era = min(max(a_era, 1.5), 8.0)
+    h_era = min(max(h_era, 1.5), 7.5)
+    a_era = min(max(a_era, 1.5), 7.5)
 
-    # Use wOBA when available — fall back to league average if OPS is zero (missing data)
+    # Use wOBA when available — fall back to league average if OPS is zero
     if home_woba and home_woba > 0.200:
-        h_off = min(max(home_woba / lg_woba, 0.65), 1.45)
+        h_off = min(max(home_woba / lg_woba, 0.70), 1.40)
     elif home_ops and home_ops > 0.400:
-        h_ops = min(max(home_ops, 0.550), 1.000)
+        h_ops = min(max(home_ops, 0.580), 0.980)
         h_off = h_ops / lg_ops
     else:
-        h_off = 1.0  # missing data — use league average, don't distort the calc
+        h_off = 1.0
 
     if away_woba and away_woba > 0.200:
-        a_off = min(max(away_woba / lg_woba, 0.65), 1.45)
+        a_off = min(max(away_woba / lg_woba, 0.70), 1.40)
     elif away_ops and away_ops > 0.400:
-        a_ops = min(max(away_ops, 0.550), 1.000)
+        a_ops = min(max(away_ops, 0.580), 0.980)
         a_off = a_ops / lg_ops
     else:
-        a_off = 1.0  # missing data — use league average
+        a_off = 1.0
 
     pf = min(max(park_runs, 0.80), 1.35)
 
-    # Expected runs per game
+    # Expected runs per game — SP quality vs opposing offense
     home_runs = lg_runs_pg * (a_era / lg_era) * h_off * pf * 1.03  # home advantage
     away_runs = lg_runs_pg * (h_era / lg_era) * a_off * pf
 
@@ -2992,8 +2995,8 @@ def estimate_win_prob(home_sp_era, away_sp_era, home_ops, away_ops,
     exp = 1.83
     home_win_pct = home_runs**exp / (home_runs**exp + away_runs**exp)
 
-    # Clamp to realistic range — no game is truly 90%+ from pre-game data alone
-    result = round(min(max(home_win_pct * 100, 35.0), 65.0), 1)
+    # Tighter clamp — 38-62% is realistic range from SP/lineup data alone
+    result = round(min(max(home_win_pct * 100, 38.0), 62.0), 1)
     return result
 
 def estimate_nrfi_odds(away_sp_stats, home_sp_stats, park_factor, game_total):
