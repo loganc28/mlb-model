@@ -2478,12 +2478,10 @@ def enforce_ev_rules(picks):
 
         win_prob = p.get("win_prob_pct",0)
         implied  = p.get("implied_prob_pct",0)
-        baseline = p.get("baseline_win_prob_pct", 0)
         try:
             win_prob = float(win_prob); implied = float(implied)
-            baseline = float(baseline) if baseline else 0
         except:
-            win_prob = 0; implied = 0; baseline = 0
+            win_prob = 0; implied = 0
 
         # Auto-calculate implied prob from the actual line if Claude got it wrong or left it 0
         line_str = str(p.get("line","")).replace("+","")
@@ -2491,29 +2489,6 @@ def enforce_ev_rules(picks):
         if calc_implied > 0 and (implied == 0 or abs(calc_implied - implied) > 3):
             implied = calc_implied
             p["implied_prob_pct"] = implied
-
-        # Win prob cap — prevent Claude from claiming impossible edges
-        # CRITICAL: baseline is always HOME team win prob
-        # Claude's win_prob_pct is for the PICK SIDE (could be away team)
-        # Must compare apples to apples
-        if baseline > 0 and win_prob > 0:
-            game = p.get("game","")
-            pick_str = (p.get("pick","") + " " + p.get("bet_type","")).lower()
-            # Determine if this is an away team pick
-            away_team = game.split(" @ ")[0].lower() if " @ " in game else ""
-            home_team = game.split(" @ ")[-1].lower() if " @ " in game else ""
-            is_away_pick = (away_team and away_team.split()[-1] in pick_str)
-
-            # Convert baseline to pick-side perspective
-            baseline_for_pick = (100 - baseline) if is_away_pick else baseline
-
-            # Allow ±10% adjustment — 5% was too tight, caused 0-pick slates
-            max_allowed = baseline_for_pick + 10.0
-            min_allowed = max(baseline_for_pick - 10.0, 30.0)
-            if win_prob > max_allowed:
-                print(f"WIN PROB CAP: {p.get('game','')} — Claude set {win_prob}% but baseline ({('away' if is_away_pick else 'home')}) is {baseline_for_pick}%, capping at {max_allowed}%")
-                win_prob = max_allowed
-                p["win_prob_pct"] = win_prob
 
         # Recalculate EV from win/implied prob for accuracy
         calc_ev = ev  # default to stated ev
@@ -3378,30 +3353,6 @@ def call_ai(games_with_data):
             picks = []
         
         model_used = model or model_used
-        # Inject baseline_home_win_prob from game data into each pick
-        # This gives the EV cap enforcer the correct reference number
-        game_baseline_map = {g["game"]: g.get("baseline_home_win_prob", 0) for g in batch}
-        for p in picks:
-            game = p.get("game","")
-            if game in game_baseline_map and game_baseline_map[game]:
-                baseline = game_baseline_map[game]
-                # For away team picks, invert (away win prob = 100 - home win prob)
-                pick_str = p.get("pick","").lower()
-                bet_type = p.get("bet_type","")
-                is_away_pick = False
-                for g in batch:
-                    if g["game"] == game:
-                        away = g.get("away_sp","") or ""
-                        home_team = game.split(" @ ")[-1] if " @ " in game else ""
-                        away_team = game.split(" @ ")[0] if " @ " in game else ""
-                        # Check if pick is on away team
-                        if away_team.lower() in pick_str or "away" in pick_str:
-                            is_away_pick = True
-                        break
-                if is_away_pick:
-                    p["baseline_win_prob_pct"] = round(100 - baseline, 1)
-                else:
-                    p["baseline_win_prob_pct"] = round(baseline, 1)
         all_picks.extend(picks)
 
     if all_picks:
