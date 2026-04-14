@@ -4499,18 +4499,45 @@ def main():
         park    = get_park_factor(g["venue"])
         ump     = get_ump_stats(g.get("hp_ump",""))
 
-        # Lineups
-        lineups = {}
-        status = g.get("status","")
-        if pk and status not in ("In Progress","Live","Final","Game Over","Completed","Pre-Game"):
-            try: lineups = fetch_lineup(pk)
-            except: pass
-
-        # SP stats
+        # SP stats — from cache, no network call
         home_sp_stats = get_pitcher_stats(g["home_sp"], stats, is_home=True)
         away_sp_stats = get_pitcher_stats(g["away_sp"], stats, is_home=False)
 
-        # Platoon + historical matchup + pitch mix analysis
+        # All network calls in one parallel block — lineup, bullpen, injuries, splits, rest, movement
+        import concurrent.futures as _cf
+        game_date = TODAY
+        status = g.get("status","")
+        needs_lineup = bool(pk and status not in ("In Progress","Live","Final","Game Over","Completed","Pre-Game"))
+
+        with _cf.ThreadPoolExecutor(max_workers=12) as ex:
+            f_lineup = ex.submit(fetch_lineup, pk) if needs_lineup else None
+            f_hbp    = ex.submit(fetch_bullpen_fatigue, g["home_id"], stats.get("rp_2026",{}), stats.get("rp_2025",{}))
+            f_abp    = ex.submit(fetch_bullpen_fatigue, g["away_id"], stats.get("rp_2026",{}), stats.get("rp_2025",{}))
+            f_hinj   = ex.submit(fetch_injuries, g["home_id"])
+            f_ainj   = ex.submit(fetch_injuries, g["away_id"])
+            f_hspl   = ex.submit(fetch_team_home_away_splits, g["home_id"], 2026)
+            f_aspl   = ex.submit(fetch_team_home_away_splits, g["away_id"], 2026)
+            f_hspl25 = ex.submit(fetch_team_home_away_splits, g["home_id"], 2025)
+            f_aspl25 = ex.submit(fetch_team_home_away_splits, g["away_id"], 2025)
+            f_hrest  = ex.submit(fetch_team_rest_days, g["home_id"], game_date)
+            f_arest  = ex.submit(fetch_team_rest_days, g["away_id"], game_date)
+            f_lines  = ex.submit(fetch_line_movement, g["away"], g["home"])
+
+        lineups       = (f_lineup.result() if f_lineup and f_lineup.exception() is None else {}) if f_lineup else {}
+        home_bullpen  = f_hbp.result()   if f_hbp.exception()   is None else {}
+        away_bullpen  = f_abp.result()   if f_abp.exception()   is None else {}
+        home_injuries = f_hinj.result()  if f_hinj.exception()  is None else []
+        away_injuries = f_ainj.result()  if f_ainj.exception()  is None else []
+        home_splits   = f_hspl.result()  if f_hspl.exception()  is None else {}
+        away_splits   = f_aspl.result()  if f_aspl.exception()  is None else {}
+        # Use 2025 fallback if 2026 unavailable — already fetched in parallel, no extra wait
+        if not home_splits: home_splits = f_hspl25.result() if f_hspl25.exception() is None else {}
+        if not away_splits: away_splits = f_aspl25.result() if f_aspl25.exception() is None else {}
+        home_rest     = f_hrest.result() if f_hrest.exception() is None else {}
+        away_rest     = f_arest.result() if f_arest.exception() is None else {}
+        line_movement = f_lines.result() if f_lines.exception() is None else {}
+
+        # Platoon + historical matchup + pitch mix analysis — CPU only, no network
         home_platoon = {}; away_platoon = {}
         away_matchups = {}; home_matchups = {}
         home_pitch_mix = {}; away_pitch_mix = {}
@@ -4523,46 +4550,12 @@ def main():
             if lineups.get("home",{}).get("batters") and home_throws:
                 away_platoon = analyze_lineup_handedness(lineups["home"]["batters"], home_throws)
                 away_pitch_mix = analyze_pitch_mix_vs_lineup(away_sp_stats, away_platoon)
-
-            # Historical batter vs SP matchups — run in parallel
             home_sp_pid = home_sp_stats.get("player_id")
             away_sp_pid = away_sp_stats.get("player_id")
             if home_sp_pid and lineups.get("away",{}).get("batters"):
                 away_matchups = analyze_lineup_vs_sp(lineups["away"]["batters"], home_sp_pid)
             if away_sp_pid and lineups.get("home",{}).get("batters"):
                 home_matchups = analyze_lineup_vs_sp(lineups["home"]["batters"], away_sp_pid)
-
-        # Bullpen, injuries, splits, rest, line movement — run in parallel per game
-        import concurrent.futures as _cf
-        game_date = TODAY
-        with _cf.ThreadPoolExecutor(max_workers=10) as ex:
-            f_hbp   = ex.submit(fetch_bullpen_fatigue, g["home_id"], stats.get("rp_2026",{}), stats.get("rp_2025",{}))
-            f_abp   = ex.submit(fetch_bullpen_fatigue, g["away_id"], stats.get("rp_2026",{}), stats.get("rp_2025",{}))
-            f_hinj  = ex.submit(fetch_injuries, g["home_id"])
-            f_ainj  = ex.submit(fetch_injuries, g["away_id"])
-            f_hspl  = ex.submit(fetch_team_home_away_splits, g["home_id"], 2026)
-            f_aspl  = ex.submit(fetch_team_home_away_splits, g["away_id"], 2026)
-            f_hrest = ex.submit(fetch_team_rest_days, g["home_id"], game_date)
-            f_arest = ex.submit(fetch_team_rest_days, g["away_id"], game_date)
-            f_lines = ex.submit(fetch_line_movement, g["away"], g["home"])
-
-        home_bullpen  = f_hbp.result() if f_hbp.exception() is None else {}
-        away_bullpen  = f_abp.result() if f_abp.exception() is None else {}
-        home_injuries = f_hinj.result() if f_hinj.exception() is None else []
-        away_injuries = f_ainj.result() if f_ainj.exception() is None else []
-        home_splits   = f_hspl.result() if f_hspl.exception() is None else {}
-        away_splits   = f_aspl.result() if f_aspl.exception() is None else {}
-        home_rest     = f_hrest.result() if f_hrest.exception() is None else {}
-        away_rest     = f_arest.result() if f_arest.exception() is None else {}
-        line_movement = f_lines.result() if f_lines.exception() is None else {}
-
-        # Fall back to 2025 splits if 2026 unavailable
-        if not home_splits:
-            try: home_splits = fetch_team_home_away_splits(g["home_id"], 2025)
-            except: pass
-        if not away_splits:
-            try: away_splits = fetch_team_home_away_splits(g["away_id"], 2025)
-            except: pass
 
         home_injuries = get_team_injuries_with_espn(g["home"], home_injuries, espn_injuries)
         away_injuries = get_team_injuries_with_espn(g["away"], away_injuries, espn_injuries)
@@ -4612,7 +4605,7 @@ def main():
     import time as _et
     _enrich_t = _et.time()
     print(f"Enriching {len(unique_games)} games in parallel...")
-    with _cf2.ThreadPoolExecutor(max_workers=8) as ex:
+    with _cf2.ThreadPoolExecutor(max_workers=15) as ex:  # one thread per game
         futures = {ex.submit(enrich_game, g): g for g in unique_games}
         for future in _cf2.as_completed(futures):
             g = futures[future]
