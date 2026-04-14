@@ -34,6 +34,18 @@ if LOCK_FILE.exists() and not FORCE_REGEN and INDEX_FILE.exists():
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+def american_to_implied(odds):
+    """Convert American odds to implied probability percentage."""
+    try:
+        o = float(str(odds).replace("+",""))
+        if o < 0:
+            return round(abs(o) / (abs(o) + 100) * 100, 1)
+        else:
+            return round(100 / (o + 100) * 100, 1)
+    except:
+        return 0
+
+
 def safe_float(val, default=0.0):
     try:
         if val in (None,"","-","--","-.--","---"): return default
@@ -2466,10 +2478,32 @@ def enforce_ev_rules(picks):
 
         win_prob = p.get("win_prob_pct",0)
         implied  = p.get("implied_prob_pct",0)
+        baseline = p.get("baseline_win_prob_pct", 0)
         try:
             win_prob = float(win_prob); implied = float(implied)
+            baseline = float(baseline) if baseline else 0
         except:
-            win_prob = 0; implied = 0
+            win_prob = 0; implied = 0; baseline = 0
+
+        # Auto-calculate implied prob from the actual line if Claude got it wrong or left it 0
+        line_str = str(p.get("line","")).replace("+","")
+        calc_implied = american_to_implied(line_str)
+        if calc_implied > 0 and (implied == 0 or abs(calc_implied - implied) > 3):
+            implied = calc_implied
+            p["implied_prob_pct"] = implied
+
+        # Enforce ±5% win prob adjustment cap — Claude cannot move baseline by more than 5%
+        # This prevents inflated EV from overly optimistic win probability adjustments
+        if baseline > 0 and win_prob > 0:
+            max_allowed = baseline + 5.0
+            min_allowed = baseline - 5.0
+            if win_prob > max_allowed:
+                print(f"WIN PROB CAP: {p.get('game','')} — Claude set {win_prob}% but baseline is {baseline}%, capping at {max_allowed}%")
+                win_prob = max_allowed
+                p["win_prob_pct"] = win_prob
+            elif win_prob < min_allowed and win_prob > 0:
+                win_prob = min_allowed
+                p["win_prob_pct"] = win_prob
 
         # Recalculate EV from win/implied prob for accuracy
         calc_ev = ev  # default to stated ev
@@ -3331,6 +3365,30 @@ def call_ai(games_with_data):
             picks = []
         
         model_used = model or model_used
+        # Inject baseline_home_win_prob from game data into each pick
+        # This gives the EV cap enforcer the correct reference number
+        game_baseline_map = {g["game"]: g.get("baseline_home_win_prob", 0) for g in batch}
+        for p in picks:
+            game = p.get("game","")
+            if game in game_baseline_map and game_baseline_map[game]:
+                baseline = game_baseline_map[game]
+                # For away team picks, invert (away win prob = 100 - home win prob)
+                pick_str = p.get("pick","").lower()
+                bet_type = p.get("bet_type","")
+                is_away_pick = False
+                for g in batch:
+                    if g["game"] == game:
+                        away = g.get("away_sp","") or ""
+                        home_team = game.split(" @ ")[-1] if " @ " in game else ""
+                        away_team = game.split(" @ ")[0] if " @ " in game else ""
+                        # Check if pick is on away team
+                        if away_team.lower() in pick_str or "away" in pick_str:
+                            is_away_pick = True
+                        break
+                if is_away_pick:
+                    p["baseline_win_prob_pct"] = round(100 - baseline, 1)
+                else:
+                    p["baseline_win_prob_pct"] = round(baseline, 1)
         all_picks.extend(picks)
 
     if all_picks:
