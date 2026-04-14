@@ -2600,9 +2600,13 @@ def enforce_ev_rules(picks):
                     continue
         except: pass
 
-        # Check EV threshold — enforce on BOTH stated ev_pct AND calculated ev
+        # Check EV threshold — use calc_ev only for ML bets where recalculation is valid
+        # For totals/run lines, trust Claude's stated EV — win_prob is home win prob, not bet prob
         min_ev = MIN_EV.get(bet_type, 5)
-        effective_ev = min(ev, calc_ev) if win_prob > 0 and implied > 0 else ev
+        if bet_type in ("ML", "F5 ML") and win_prob > 0 and implied > 0:
+            effective_ev = min(ev, calc_ev)
+        else:
+            effective_ev = ev  # trust Claude's EV for totals, NRFI, run lines
         if effective_ev < min_ev and tier in ("A","B","C"):
             print("ENFORCING: "+p.get("game","")+" — EV "+str(effective_ev)+"% below "+str(min_ev)+"% threshold for "+bet_type+", converting to SKIP")
             p["tier"] = "SKIP"
@@ -4874,3 +4878,4 @@ if __name__ == "__main__":
     main()
     _rec_css_path = Path(__file__).parent / "templates" / "record.css"
     rec_css = _rec_css_path.read_text() if _rec_css_path.exists() else ""
+
