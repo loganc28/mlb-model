@@ -2861,7 +2861,7 @@ def enforce_ev_rules(picks):
             p["avoid_reason"] = "Run line cap — maximum 1 run line pick per slate"
 
     # OVER slate cap — max 2 active OVERs per slate
-    MAX_OVERS = 2
+    MAX_OVERS = 3  # allow 3 OVERs on high-temp/wind slates
     over_picks = [p for p in enforced if p.get("bet_type") == "Total OVER" and p.get("tier") in ("MAX","A","B","C")]
     if len(over_picks) > MAX_OVERS:
         over_sorted = sorted(over_picks, key=lambda x: float(x.get("ev_pct",0) or 0), reverse=True)
@@ -2920,39 +2920,19 @@ def enforce_ev_rules(picks):
                     p["avoid_reason"] = f"Negative ML requires 7%+ EV. Only {ev}% — no edge at this juice."
         except: pass
 
-    # KELLY SIZING — quarter-Kelly based on EV and win probability
-    # Win prob recalibration: model consistently runs +6% high — apply correction
-    # Formula: quarter-Kelly = (win_prob - implied_prob) / (1 - win_prob) * 0.25
-    # Capped at tier max units. Min 0.5u for any active pick.
-    WIN_PROB_CORRECTION = 0.06  # model runs 6% high historically
+    # UNIT SIZING — tier-based flat sizing, Kelly suspended until win prob is calibrated
+    # Kelly was producing 0.5u on MAX picks due to win prob inflation — reverted to flat
+    # Revisit Kelly after 100 settled picks with calibrated win probabilities
     for p in enforced:
         tier = p.get("tier","")
-        if tier not in ("MAX","A","B","C"): continue
-        try:
-            win_prob = float(p.get("win_prob_pct",0) or 0) / 100
-            implied = float(p.get("implied_prob_pct",0) or 0) / 100
-            if win_prob > 0 and implied > 0 and implied < 1:
-                # Apply correction factor — model historically overestimates by 6%
-                calibrated_win = win_prob - WIN_PROB_CORRECTION
-                if calibrated_win <= implied:
-                    # After correction, no edge — keep tier but use minimum units
-                    p["units"] = 0.5
-                    continue
-                # Quarter-Kelly
-                edge = calibrated_win - implied
-                odds_ratio = implied / (1 - implied)  # b in Kelly formula
-                kelly = edge / odds_ratio
-                quarter_kelly = kelly * 0.25
-                # Scale to unit sizes: 0.5u min, tier-based max
-                tier_max = {"MAX":3.0,"A":1.5,"B":1.0,"C":0.5}.get(tier,1.0)
-                units = round(max(0.5, min(tier_max, quarter_kelly * 10)), 1)
-                p["units"] = units
-        except:
-            pass  # keep existing units if calculation fails
+        if tier == "MAX": p["units"] = 3.0
+        elif tier == "A": p["units"] = 1.5
+        elif tier == "B": p["units"] = 1.0
+        elif tier == "C": p["units"] = 0.5
 
     # Hard daily pick cap — 5 active picks max
     # April 11 had 8 picks and went 2-6. Volume is the enemy right now.
-    MAX_DAILY_PICKS = 5  # 4-pick slates historically outperform 8-pick slates significantly
+    MAX_DAILY_PICKS = 6
     active = [p for p in enforced if p.get("tier") in ("MAX","A","B","C")]
     if len(active) > MAX_DAILY_PICKS:
         active_sorted = sorted(active, key=lambda x: float(x.get("ev_pct",0) or 0), reverse=True)
