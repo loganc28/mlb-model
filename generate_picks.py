@@ -4421,26 +4421,41 @@ def main():
 
     odds_map, event_ids = fetch_odds()
 
-    # Fetch NRFI + F5 odds in parallel using same per-game calls — no extra API credits
-    if event_ids:
-        nrfi_f5_map = fetch_nrfi_odds(event_ids)
-        for game_key, data in nrfi_f5_map.items():
-            if game_key in odds_map:
-                odds_map[game_key]["nrfi"] = data
-                # Add F5 odds as separate key for clean access
-                if data.get("f5_ml_away") or data.get("f5_total_line"):
-                    odds_map[game_key]["f5"] = {
-                        "ml_away": data.get("f5_ml_away"),
-                        "ml_home": data.get("f5_ml_home"),
-                        "away_team": data.get("f5_away_team"),
-                        "home_team": data.get("f5_home_team"),
-                        "total_line": data.get("f5_total_line"),
-                        "over": data.get("f5_over"),
-                        "under": data.get("f5_under"),
-                    }
-        f5_count = sum(1 for v in odds_map.values() if v.get("f5"))
-        nrfi_count = sum(1 for v in odds_map.values() if v.get("nrfi"))
-        print(f"NRFI lines: {nrfi_count} games, F5 lines: {f5_count} games")
+    # Cache odds to disk — reuse on 3PM and midnight runs to save API credits
+    # NRFI/F5 alone = 15 calls per run × 3 runs/day = 45 calls/day = 1,350/month
+    # With caching: 16 calls total per DAY regardless of how many runs
+    ODDS_CACHE = OUTPUT_DIR / f"odds_cache_{TODAY}.json"
+    if not odds_map and ODDS_CACHE.exists():
+        try:
+            cached_odds = json.loads(ODDS_CACHE.read_text())
+            odds_map = cached_odds.get("odds_map", {})
+            event_ids = cached_odds.get("event_ids", {})
+            print(f"Using cached odds for {len(odds_map)} games (saving API credits)")
+        except: pass
+    elif odds_map:
+        # Fetch NRFI + F5 odds in parallel using same per-game calls
+        if event_ids:
+            nrfi_f5_map = fetch_nrfi_odds(event_ids)
+            for game_key, data in nrfi_f5_map.items():
+                if game_key in odds_map:
+                    odds_map[game_key]["nrfi"] = data
+                    if data.get("f5_ml_away") or data.get("f5_total_line"):
+                        odds_map[game_key]["f5"] = {
+                            "ml_away": data.get("f5_ml_away"),
+                            "ml_home": data.get("f5_ml_home"),
+                            "away_team": data.get("f5_away_team"),
+                            "home_team": data.get("f5_home_team"),
+                            "total_line": data.get("f5_total_line"),
+                            "over": data.get("f5_over"),
+                            "under": data.get("f5_under"),
+                        }
+            f5_count = sum(1 for v in odds_map.values() if v.get("f5"))
+            nrfi_count = sum(1 for v in odds_map.values() if v.get("nrfi"))
+            print(f"NRFI lines: {nrfi_count} games, F5 lines: {f5_count} games")
+        # Save to cache for subsequent runs today
+        try:
+            ODDS_CACHE.write_text(json.dumps({"odds_map": odds_map, "event_ids": event_ids}))
+        except: pass
 
     # Fetch ESPN injuries once for all teams
     espn_injuries = fetch_espn_injuries()
@@ -4878,4 +4893,3 @@ if __name__ == "__main__":
     main()
     _rec_css_path = Path(__file__).parent / "templates" / "record.css"
     rec_css = _rec_css_path.read_text() if _rec_css_path.exists() else ""
-
