@@ -2077,8 +2077,95 @@ def best_book_value(bookmakers, market_key):
 
     return list(best_outcomes.values())
 
+def fetch_odds_draftkings_fallback():
+    """
+    Fallback odds source using DraftKings public endpoint.
+    No API key required. Used when The Odds API is unavailable or quota exceeded.
+    Returns same format as fetch_odds: (odds_map, event_ids)
+    """
+    try:
+        import datetime as _dt
+        # DraftKings public odds endpoint — no auth required
+        url = "https://sportsbook.draftkings.com/api/odds/v1/leagues/84240/offers/gamelines"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+            "Accept": "application/json",
+            "Referer": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
+        }
+        r = requests.get(url, headers=headers, timeout=15)
+        if not r.ok:
+            print(f"DraftKings fallback HTTP {r.status_code}")
+            return {}, {}
+
+        data = r.json()
+        odds_map = {}
+        event_ids = {}
+
+        for offer_cat in data.get("offerCategories", []):
+            for offer_subcat in offer_cat.get("offerSubcategoryDescriptors", []):
+                for offer in offer_subcat.get("offerSubcategory", {}).get("offers", []):
+                    for sub_offer in offer:
+                        outcomes = sub_offer.get("outcomes", [])
+                        event_id = str(sub_offer.get("providerEventId", ""))
+                        label = sub_offer.get("label", "")
+
+                        # Parse team names from outcomes
+                        if len(outcomes) < 2: continue
+                        teams = [normalize_team(o.get("label","")) for o in outcomes]
+                        if len(teams) < 2: continue
+
+                        # Determine home/away from outcomes
+                        home = teams[1]; away = teams[0]
+                        key = away+"@"+home
+                        if key not in odds_map:
+                            odds_map[key] = {"moneyline":{}, "total":{}, "runline":{}}
+                        if event_id:
+                            event_ids[key] = event_id
+
+                        # Parse moneyline
+                        if "Moneyline" in label or label == "":
+                            for o in outcomes:
+                                team = normalize_team(o.get("label",""))
+                                price = o.get("oddsDecimal") or o.get("oddsAmerican")
+                                if price and team:
+                                    try:
+                                        # Convert decimal to American if needed
+                                        p = float(str(price))
+                                        if p > 2.0 and "." in str(price):
+                                            # Decimal odds — convert
+                                            american = round((p-1)*100) if p >= 2 else round(-100/(p-1))
+                                        else:
+                                            american = int(p)
+                                        odds_map[key]["moneyline"][team] = american
+                                    except: pass
+
+                        # Parse totals
+                        elif "Total" in label:
+                            for o in outcomes:
+                                name = o.get("label","").upper()
+                                line = o.get("line") or o.get("points")
+                                price_raw = o.get("oddsAmerican") or o.get("oddsDecimal")
+                                try:
+                                    price = int(float(str(price_raw)))
+                                    if name == "OVER":
+                                        odds_map[key]["total"]["over"] = price
+                                        if line: odds_map[key]["total"]["line"] = str(line)
+                                    elif name == "UNDER":
+                                        odds_map[key]["total"]["under"] = price
+                                except: pass
+
+        if odds_map:
+            print(f"DraftKings fallback: fetched odds for {len(odds_map)} games")
+        return odds_map, event_ids
+    except Exception as e:
+        print(f"DraftKings fallback error: {str(e)}")
+        return {}, {}
+
+
 def fetch_odds():
-    if not ODDS_API_KEY: return {}
+    if not ODDS_API_KEY:
+        print("No ODDS_API_KEY — trying DraftKings fallback...")
+        return fetch_odds_draftkings_fallback()
     try:
         r = requests.get(
             "https://api.the-odds-api.com/v4/sports/baseball_mlb/odds/",
@@ -2089,6 +2176,9 @@ def fetch_odds():
             },
             timeout=10
         )
+        if r.status_code == 401:
+            print("Odds API 401 — quota exceeded or key invalid. Trying DraftKings fallback...")
+            return fetch_odds_draftkings_fallback()
         r.raise_for_status()
         print("Odds API remaining: "+str(r.headers.get("x-requests-remaining","?")))
         odds_map = {}
