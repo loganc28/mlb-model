@@ -2460,7 +2460,8 @@ def enforce_ev_rules(picks):
     Hard Python-level EV enforcement.
     Claude sometimes miscalculates or ignores thresholds — this catches it.
     """
-    MIN_EV = {"ML":5,"Run Line":5,"Total OVER":5,"Total UNDER":5,"NRFI":7,"YRFI":5,"F5 OVER":5,"F5 UNDER":5}
+    MIN_EV = {"ML":3,"Run Line":999,"Total OVER":3,"Total UNDER":3,"NRFI":6,"YRFI":3,"F5 OVER":3,"F5 UNDER":3}
+    # Run Line ban: 4-4 (50%) historically, negative EV after juice over time. Skip all run lines.
     MAX_ML_ODDS = -150  # tightened — negative ML favorites have been losing, juice is brutal
     enforced = []
     for p in picks:
@@ -2636,35 +2637,47 @@ def enforce_ev_rules(picks):
             if reasons:
                 print("MAX downgrade ("+p.get("game","")+") — "+", ".join(reasons))
                 p["tier"] = "A"
+        # Tier A requires 7%+ EV. Below that, drop to B.
+        # Note: Tier A losses were almost entirely run lines and OVERs — both now restricted.
+        # Tier A on UNDERs and ML is the correct focus.
         if p["tier"] == "A" and ev_val < 7:
             p["tier"] = "B" if ev_val >= 5 else "SKIP"
             if p["tier"] == "SKIP":
                 p["bet_type"] = "SKIP"; p["units"] = 0
                 p["avoid_reason"] = f"EV {ev_val}% insufficient for Tier A — below 5% minimum"
 
-        # ── SP Reliability Gate — core fix for early-season overconfidence ────
-        # When SP data is unreliable (small sample), cap confidence accordingly
+        # ── SP Reliability Gate — SP_OUTPERFORMED is 6 of 13 losses ────────────
+        # The model trusts early-season SP stats too much.
+        # VERY_SMALL/UNRELIABLE SPs have caused repeated losses — hard cap.
         sp_analysis = p.get("sp_analysis","").lower()
         flags_lower = p.get("flags","").lower()
-        small_sample_count = sp_analysis.count("small_sample") + sp_analysis.count("small sample") + \
-                             flags_lower.count("small_sample") + flags_lower.count("small sample")
 
-        # Both SPs unreliable → cap at Tier B, cap EV at 7%
+        very_small_count = sp_analysis.count("very_small") + flags_lower.count("very_small") +                            sp_analysis.count("unreliable") + flags_lower.count("unreliable")
+        small_sample_count = sp_analysis.count("small_sample") + sp_analysis.count("small sample") +                              flags_lower.count("small_sample") + flags_lower.count("small sample")
+
+        # VERY_SMALL or UNRELIABLE SP → do not trust SP-dependent picks (UNDER, F5, ML based on SP gap)
+        # These are the SP_OUTPERFORMED losses — cap EV hard and downgrade
+        if very_small_count >= 1:
+            bet_type_lower = p.get("bet_type","").lower()
+            if "under" in bet_type_lower or "f5" in bet_type_lower:
+                if ev_val > 5:
+                    print(f"SP RELIABILITY CAP: {p.get('game','')} — VERY_SMALL/UNRELIABLE SP, capping EV at 5%")
+                    p["ev_pct"] = 5.0; ev_val = 5.0
+            if p["tier"] in ("MAX","A","B") and ev_val <= 5:
+                p["tier"] = "C"
+                p["units"] = 0.5
+
+        # Both SPs SMALL_SAMPLE → cap at Tier B, cap EV at 6%
         if small_sample_count >= 2:
             if p["tier"] in ("MAX","A"):
                 print(f"RELIABILITY GATE: {p.get('game','')} — both SPs SMALL SAMPLE, capping at Tier B")
                 p["tier"] = "B"
-                if ev_val > 7:
-                    p["ev_pct"] = 7.0
-                    ev_val = 7.0
-        # One SP unreliable → cap at Tier A max, cap EV at 9%
+            if ev_val > 6:
+                p["ev_pct"] = 6.0; ev_val = 6.0
+        # One SP SMALL_SAMPLE → cap EV at 8%
         elif small_sample_count == 1:
-            if p["tier"] == "MAX":
-                print(f"RELIABILITY GATE: {p.get('game','')} — one SP SMALL SAMPLE, capping at Tier A")
-                p["tier"] = "A"
-            if ev_val > 9:
-                p["ev_pct"] = 9.0
-                ev_val = 9.0
+            if ev_val > 8:
+                p["ev_pct"] = 8.0; ev_val = 8.0
 
         # Always enforce correct unit size regardless of what Claude said
         if p["tier"] == "MAX": p["units"] = 3.0
@@ -2847,32 +2860,6 @@ def enforce_ev_rules(picks):
             p["tier"] = "SKIP"; p["bet_type"] = "SKIP"; p["units"] = 0
             p["avoid_reason"] = "Run line cap — maximum 1 run line pick per slate"
 
-    # OVER cap — audit showed 5-5 coin flip. Require stronger signal.
-    # Hard requirement: park factor 1.10+ OR temp above 65F to qualify as active pick
-    for p in enforced:
-        if p.get("tier") not in ("MAX","A","B","C"): continue
-        if p.get("bet_type") != "Total OVER": continue
-        park = p.get("park_note","").lower()
-        weather = p.get("weather_impact","").lower()
-        # Extract park factor from park note
-        import re
-        pf_match = re.search(r'runs?\s*(?:factor\s*)?([0-9]\.[0-9]+)', park)
-        park_factor = float(pf_match.group(1)) if pf_match else 1.0
-        # Extract temp
-        temp_match = re.search(r'(\d+)f', weather)
-        temp = int(temp_match.group(1)) if temp_match else 72
-        # Check bullpen condition
-        bullpen = (p.get("bullpen_note","") or "").lower()
-        both_severe = bullpen.count("severe") >= 2
-        # OVER needs: Coors-level park OR warm + wind out OR both bullpens SEVERE + hitter park
-        has_park_edge = park_factor >= 1.10
-        has_weather_edge = temp >= 65 and "blowing out" in weather
-        has_bullpen_edge = both_severe and park_factor >= 1.05
-        if not (has_park_edge or has_weather_edge or has_bullpen_edge):
-            print(f"OVER SIGNAL GATE: {p.get('game','')} — insufficient OVER signal (park {park_factor}, temp {temp}F), downgrading to WATCH")
-            p["tier"] = "SKIP"; p["bet_type"] = "SKIP"; p["units"] = 0
-            p["avoid_reason"] = f"OVER requires park factor 1.10+ or warm+wind out or both SEVERE pens + hitter park. Park: {park_factor}"
-
     # OVER slate cap — max 2 active OVERs per slate
     MAX_OVERS = 2
     over_picks = [p for p in enforced if p.get("bet_type") == "Total OVER" and p.get("tier") in ("MAX","A","B","C")]
@@ -2933,17 +2920,39 @@ def enforce_ev_rules(picks):
                     p["avoid_reason"] = f"Negative ML requires 7%+ EV. Only {ev}% — no edge at this juice."
         except: pass
 
-    # KELLY SIZING SUSPENDED — cold stretch April 8-11, 6-15 overall
-    # Flat 1.0u on all picks until we string together 3 winning days
-    # Do NOT apply 1.25u sizing during losing streaks
+    # KELLY SIZING — quarter-Kelly based on EV and win probability
+    # Win prob recalibration: model consistently runs +6% high — apply correction
+    # Formula: quarter-Kelly = (win_prob - implied_prob) / (1 - win_prob) * 0.25
+    # Capped at tier max units. Min 0.5u for any active pick.
+    WIN_PROB_CORRECTION = 0.06  # model runs 6% high historically
     for p in enforced:
-        if p.get("units") == 1.25:
-            p["units"] = 1.0
-            print(f"KELLY SUSPENDED: {p.get('game','')} — reverting to flat 1.0u during cold stretch")
+        tier = p.get("tier","")
+        if tier not in ("MAX","A","B","C"): continue
+        try:
+            win_prob = float(p.get("win_prob_pct",0) or 0) / 100
+            implied = float(p.get("implied_prob_pct",0) or 0) / 100
+            if win_prob > 0 and implied > 0 and implied < 1:
+                # Apply correction factor — model historically overestimates by 6%
+                calibrated_win = win_prob - WIN_PROB_CORRECTION
+                if calibrated_win <= implied:
+                    # After correction, no edge — keep tier but use minimum units
+                    p["units"] = 0.5
+                    continue
+                # Quarter-Kelly
+                edge = calibrated_win - implied
+                odds_ratio = implied / (1 - implied)  # b in Kelly formula
+                kelly = edge / odds_ratio
+                quarter_kelly = kelly * 0.25
+                # Scale to unit sizes: 0.5u min, tier-based max
+                tier_max = {"MAX":3.0,"A":1.5,"B":1.0,"C":0.5}.get(tier,1.0)
+                units = round(max(0.5, min(tier_max, quarter_kelly * 10)), 1)
+                p["units"] = units
+        except:
+            pass  # keep existing units if calculation fails
 
     # Hard daily pick cap — 5 active picks max
     # April 11 had 8 picks and went 2-6. Volume is the enemy right now.
-    MAX_DAILY_PICKS = 5
+    MAX_DAILY_PICKS = 5  # 4-pick slates historically outperform 8-pick slates significantly
     active = [p for p in enforced if p.get("tier") in ("MAX","A","B","C")]
     if len(active) > MAX_DAILY_PICKS:
         active_sorted = sorted(active, key=lambda x: float(x.get("ev_pct",0) or 0), reverse=True)
