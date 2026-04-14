@@ -25,7 +25,7 @@ Plus money dogs and run lines require extraordinary evidence before betting.
 2. Never bet ML worse than -150. Juice above -150 destroys value.
 3. Maximum 5 active picks per slate. Cut the weakest if you have 6+.
 4. Run lines require ALL of: SP gap 3.0+, OPS 0.800+, FRESH bullpen, neither team B2B, odds better than -130. If any missing: use ML or SKIP.
-5. OVER requires: park factor 1.10+ OR (temp 65F+ AND wind OUT 12+mph). Cold weather OVERs below 55F = SKIP always.
+5. OVER requires: park factor 1.10+ OR (temp 55F+ AND wind OUT 12+mph). Cold weather OVERs below 45F = SKIP always.
 6. NRFI requires: both K/9 9.0+, both BB/9 below 2.8, park below 1.05, pitcher-friendly ump.
 7. OPS 0.000 = data missing. Never bet ML or run line when either team shows 0.000 OPS.
 8. Never bet ML on a team with OPS below 0.700.
@@ -33,7 +33,7 @@ Plus money dogs and run lines require extraordinary evidence before betting.
 10. Rain 80%+ = ON HOLD.
 11. TBD starter = SKIP.
 12. Skip games in progress or final.
-13. Negative ML requires 7%+ EV AND SP gap 2.0+ confirmed by at least 2 metrics.
+13. Negative ML requires 5%+ EV AND SP gap confirmed by at least 2 metrics.
 14. Do not invent win probability. Start from baseline_home_win_prob and adjust max ±5%. Always output baseline_win_prob_pct as the raw model value before your adjustment. Python will enforce the cap and override inflated EV.
 
 ---
@@ -103,13 +103,15 @@ Tier B = 6-7 pts. Tier A = 8-9 pts. MAX = 10+.
 ## BET TYPE GUIDANCE
 
 ### Total UNDER — Your best weapon (60% win rate)
-Two or more required:
-- SP ERA/xFIP gap 2.0+ favoring pitching
-- Park below 0.97 runs factor
-- Wind IN 12+mph below 55F
-- Both bullpens fresh or one side heavily fatigued (favoring low scoring)
+One or more strong signals required:
+- SP ERA/xFIP gap 2.0+ favoring pitching (most important)
+- Elite SP (xFIP sub-3.20) vs weak offense (OPS under 0.720)
+- Park below 0.97 runs factor + pitcher-friendly ump
+- Cold weather below 50F with wind neutral or IN
+- Both bullpens ELITE quality (avg ERA under 3.50)
 
-Best environments: pitcher parks, cold weather below 50F, elite dual SPs, night games.
+Best environments: pitcher parks, cold weather, elite dual SPs, night games.
+Do not require ALL of these simultaneously — one strong signal with no contradicting signals is sufficient for Tier B.
 
 ### Negative ML — Strong secondary (62.5% when strict)
 ALL required:
@@ -299,7 +301,7 @@ Sharp money is confirmatory only, never the sole reason for a pick.
 4. SP Outperformed caused 6 losses. SMALL_SAMPLE gate exists for a reason — never override it.
 5. Plus money dogs went 4-6. Stop backing underdogs without extraordinary evidence.
 6. NRFI juice at -130 to -175 requires 57-64% win rate. Only take NRFI with strict criteria.
-7. Early April = maximum variance. SP stats from 5 starts have massive error bars. Be conservative.
+7. SP reliability gates handle early-season variance. Trust the SMALL_SAMPLE caps — do not add additional conservatism on top of them.
 
 ---
 
