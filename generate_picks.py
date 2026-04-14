@@ -2077,95 +2077,81 @@ def best_book_value(bookmakers, market_key):
 
     return list(best_outcomes.values())
 
-def fetch_odds_draftkings_fallback():
+def fetch_odds_espn_fallback():
     """
-    Fallback odds source using DraftKings public endpoint.
-    No API key required. Used when The Odds API is unavailable or quota exceeded.
-    Returns same format as fetch_odds: (odds_map, event_ids)
+    Fallback odds source using ESPN's public API.
+    No API key required. Returns ML and totals only (no run line).
+    Used when The Odds API is unavailable or quota exceeded.
     """
     try:
         import datetime as _dt
-        # DraftKings public odds endpoint — no auth required
-        url = "https://sportsbook.draftkings.com/api/odds/v1/leagues/84240/offers/gamelines"
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-            "Accept": "application/json",
-            "Referer": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
-        }
-        r = requests.get(url, headers=headers, timeout=15)
+        today = _dt.date.today().isoformat()
+        url = f"https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard?dates={today.replace('-','')}"
+        r = requests.get(url,
+                        headers={"User-Agent": "Mozilla/5.0"},
+                        timeout=15)
         if not r.ok:
-            print(f"DraftKings fallback HTTP {r.status_code}")
+            print(f"ESPN odds fallback HTTP {r.status_code}")
             return {}, {}
 
         data = r.json()
         odds_map = {}
         event_ids = {}
 
-        for offer_cat in data.get("offerCategories", []):
-            for offer_subcat in offer_cat.get("offerSubcategoryDescriptors", []):
-                for offer in offer_subcat.get("offerSubcategory", {}).get("offers", []):
-                    for sub_offer in offer:
-                        outcomes = sub_offer.get("outcomes", [])
-                        event_id = str(sub_offer.get("providerEventId", ""))
-                        label = sub_offer.get("label", "")
+        for event in data.get("events", []):
+            competition = event.get("competitions", [{}])[0]
+            competitors = competition.get("competitors", [])
+            if len(competitors) < 2: continue
 
-                        # Parse team names from outcomes
-                        if len(outcomes) < 2: continue
-                        teams = [normalize_team(o.get("label","")) for o in outcomes]
-                        if len(teams) < 2: continue
+            home = away = ""
+            for c in competitors:
+                name = normalize_team(c.get("team", {}).get("displayName", ""))
+                if c.get("homeAway") == "home":
+                    home = name
+                else:
+                    away = name
 
-                        # Determine home/away from outcomes
-                        home = teams[1]; away = teams[0]
-                        key = away+"@"+home
-                        if key not in odds_map:
-                            odds_map[key] = {"moneyline":{}, "total":{}, "runline":{}}
-                        if event_id:
-                            event_ids[key] = event_id
+            if not home or not away: continue
+            key = away + "@" + home
+            event_ids[key] = str(event.get("id", ""))
 
-                        # Parse moneyline
-                        if "Moneyline" in label or label == "":
-                            for o in outcomes:
-                                team = normalize_team(o.get("label",""))
-                                price = o.get("oddsDecimal") or o.get("oddsAmerican")
-                                if price and team:
-                                    try:
-                                        # Convert decimal to American if needed
-                                        p = float(str(price))
-                                        if p > 2.0 and "." in str(price):
-                                            # Decimal odds — convert
-                                            american = round((p-1)*100) if p >= 2 else round(-100/(p-1))
-                                        else:
-                                            american = int(p)
-                                        odds_map[key]["moneyline"][team] = american
-                                    except: pass
+            # ESPN odds
+            odds_data = competition.get("odds", [{}])[0] if competition.get("odds") else {}
+            ml = {}
+            total = {}
 
-                        # Parse totals
-                        elif "Total" in label:
-                            for o in outcomes:
-                                name = o.get("label","").upper()
-                                line = o.get("line") or o.get("points")
-                                price_raw = o.get("oddsAmerican") or o.get("oddsDecimal")
-                                try:
-                                    price = int(float(str(price_raw)))
-                                    if name == "OVER":
-                                        odds_map[key]["total"]["over"] = price
-                                        if line: odds_map[key]["total"]["line"] = str(line)
-                                    elif name == "UNDER":
-                                        odds_map[key]["total"]["under"] = price
-                                except: pass
+            # Moneyline
+            home_odds = odds_data.get("homeTeamOdds", {})
+            away_odds = odds_data.get("awayTeamOdds", {})
+            if home_odds.get("moneyLine"):
+                ml[home] = int(home_odds["moneyLine"])
+            if away_odds.get("moneyLine"):
+                ml[away] = int(away_odds["moneyLine"])
+
+            # Total
+            over_under = odds_data.get("overUnder")
+            if over_under:
+                total["line"] = str(over_under)
+                total["over"] = odds_data.get("overOdds", -110)
+                total["under"] = odds_data.get("underOdds", -110)
+
+            if ml or total:
+                odds_map[key] = {"moneyline": ml, "total": total, "runline": {}}
 
         if odds_map:
-            print(f"DraftKings fallback: fetched odds for {len(odds_map)} games")
+            print(f"ESPN fallback: fetched odds for {len(odds_map)} games")
+        else:
+            print("ESPN fallback: no odds data returned")
         return odds_map, event_ids
     except Exception as e:
-        print(f"DraftKings fallback error: {str(e)}")
+        print(f"ESPN odds fallback error: {str(e)}")
         return {}, {}
 
 
 def fetch_odds():
     if not ODDS_API_KEY:
-        print("No ODDS_API_KEY — trying DraftKings fallback...")
-        return fetch_odds_draftkings_fallback()
+        print("No ODDS_API_KEY — trying ESPN fallback...")
+        return fetch_odds_espn_fallback()
     try:
         r = requests.get(
             "https://api.the-odds-api.com/v4/sports/baseball_mlb/odds/",
@@ -2177,8 +2163,8 @@ def fetch_odds():
             timeout=10
         )
         if r.status_code == 401:
-            print("Odds API 401 — quota exceeded or key invalid. Trying DraftKings fallback...")
-            return fetch_odds_draftkings_fallback()
+            print("Odds API 401 — quota exceeded or key invalid. Trying ESPN fallback...")
+            return fetch_odds_espn_fallback()
         r.raise_for_status()
         print("Odds API remaining: "+str(r.headers.get("x-requests-remaining","?")))
         odds_map = {}
