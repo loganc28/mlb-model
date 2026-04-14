@@ -2566,9 +2566,11 @@ def enforce_ev_rules(picks):
             implied = calc_implied
             p["implied_prob_pct"] = implied
 
-        # Recalculate EV from win/implied prob for accuracy
+        # Recalculate EV from win/implied prob — ONLY for ML bets
+        # For totals, win_prob_pct is home team win prob, NOT probability of OVER/UNDER
+        # Recalculating EV from win_prob on totals produces garbage numbers
         calc_ev = ev  # default to stated ev
-        if win_prob > 0 and implied > 0:
+        if win_prob > 0 and implied > 0 and bet_type in ("ML", "F5 ML"):
             calc_ev = round(win_prob - implied, 1)
             if abs(calc_ev - ev) > 2:
                 print("EV mismatch for "+p.get("game","")+" — Claude said "+str(ev)+"%, calc: "+str(calc_ev)+"%. Using calculated.")
