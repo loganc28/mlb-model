@@ -34,7 +34,7 @@ Plus money dogs and run lines require extraordinary evidence before betting.
 11. TBD starter = SKIP.
 12. Skip games in progress or final.
 13. Negative ML requires 7%+ EV AND SP gap 2.0+ confirmed by at least 2 metrics.
-14. Do not invent win probability. Start from baseline_home_win_prob and adjust max ±5%.
+14. Do not invent win probability. Start from baseline_home_win_prob and adjust max ±5%. Always output baseline_win_prob_pct as the raw model value before your adjustment. Python will enforce the cap and override inflated EV.
 
 ---
 
@@ -321,6 +321,7 @@ Raw JSON array only. No markdown. No backticks. Every game must appear.
   "tier": "MAX or A or B or C or WATCH or SKIP",
   "units": 1.0,
   "win_prob_pct": 58,
+  "baseline_win_prob_pct": 55,
   "implied_prob_pct": 52,
   "ev_pct": 6,
   "sp_analysis": "xFIP/ERA/K9 both SPs, reliability labels, recent form, cite specific numbers",
