@@ -2492,17 +2492,27 @@ def enforce_ev_rules(picks):
             implied = calc_implied
             p["implied_prob_pct"] = implied
 
-        # Enforce ±5% win prob adjustment cap — Claude cannot move baseline by more than 5%
-        # This prevents inflated EV from overly optimistic win probability adjustments
+        # Win prob cap — prevent Claude from claiming impossible edges
+        # CRITICAL: baseline is always HOME team win prob
+        # Claude's win_prob_pct is for the PICK SIDE (could be away team)
+        # Must compare apples to apples
         if baseline > 0 and win_prob > 0:
-            max_allowed = baseline + 5.0
-            min_allowed = baseline - 5.0
+            game = p.get("game","")
+            pick_str = (p.get("pick","") + " " + p.get("bet_type","")).lower()
+            # Determine if this is an away team pick
+            away_team = game.split(" @ ")[0].lower() if " @ " in game else ""
+            home_team = game.split(" @ ")[-1].lower() if " @ " in game else ""
+            is_away_pick = (away_team and away_team.split()[-1] in pick_str)
+
+            # Convert baseline to pick-side perspective
+            baseline_for_pick = (100 - baseline) if is_away_pick else baseline
+
+            # Allow ±10% adjustment — 5% was too tight, caused 0-pick slates
+            max_allowed = baseline_for_pick + 10.0
+            min_allowed = max(baseline_for_pick - 10.0, 30.0)
             if win_prob > max_allowed:
-                print(f"WIN PROB CAP: {p.get('game','')} — Claude set {win_prob}% but baseline is {baseline}%, capping at {max_allowed}%")
+                print(f"WIN PROB CAP: {p.get('game','')} — Claude set {win_prob}% but baseline ({('away' if is_away_pick else 'home')}) is {baseline_for_pick}%, capping at {max_allowed}%")
                 win_prob = max_allowed
-                p["win_prob_pct"] = win_prob
-            elif win_prob < min_allowed and win_prob > 0:
-                win_prob = min_allowed
                 p["win_prob_pct"] = win_prob
 
         # Recalculate EV from win/implied prob for accuracy
