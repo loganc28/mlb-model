@@ -4754,6 +4754,8 @@ def main():
                 games_with_data = games_to_regen if games_to_regen else games_with_data
 
         picks, ai_model = call_ai(games_with_data)
+        tier_summary = {t: sum(1 for p in picks if p.get("tier")==t) for t in set(p.get("tier","?") for p in picks)}
+        print(f"After enforce — tier breakdown: {tier_summary}")
         # Merge new picks with any preserved existing picks
         if FORCE_REGEN and not force_regen:
             preserved = [p for p in record.get("picks",[])
