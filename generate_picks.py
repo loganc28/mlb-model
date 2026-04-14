@@ -2673,6 +2673,9 @@ def enforce_ev_rules(picks):
         elif p["tier"] == "C": p["units"] = 0.5
         elif p["tier"] in ("WATCH","SKIP"): p["units"] = 0
 
+        # Add pick to enforced list — THIS IS THE CRITICAL LINE
+        enforced.append(p)
+
     # Velocity decline gate — DECLINING SP velo is a red flag Claude may miss
     # A 2mph+ drop over last 3 starts often precedes an ERA spike
     for p in enforced:
@@ -2720,8 +2723,6 @@ def enforce_ev_rules(picks):
                                 break
                         except: pass
             except: pass
-
-        enforced.append(p)
 
     # No daily unit cap — EV and scoring rubric are the only filters
 
@@ -4754,8 +4755,6 @@ def main():
                 games_with_data = games_to_regen if games_to_regen else games_with_data
 
         picks, ai_model = call_ai(games_with_data)
-        tier_summary = {t: sum(1 for p in picks if p.get("tier")==t) for t in set(p.get("tier","?") for p in picks)}
-        print(f"After enforce — tier breakdown: {tier_summary}")
         # Merge new picks with any preserved existing picks
         if FORCE_REGEN and not force_regen:
             preserved = [p for p in record.get("picks",[])
