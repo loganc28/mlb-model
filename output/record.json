@@ -2109,9 +2109,10 @@
       "tier": "A",
       "units": 1.5,
       "ev_pct": 10,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "L",
+      "units_result": -1.5,
+      "loss_reason": "",
+      "final_score": "Boston Red Sox 0 - Minnesota Twins 6"
     },
     {
       "date": "2026-04-14",
@@ -2126,9 +2127,10 @@
       "tier": "MAX",
       "units": 3.0,
       "ev_pct": 13,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "W",
+      "units_result": 3.12,
+      "loss_reason": "",
+      "final_score": "Seattle Mariners 1 - San Diego Padres 4"
     },
     {
       "date": "2026-04-14",
@@ -2143,9 +2145,10 @@
       "tier": "MAX",
       "units": 3.0,
       "ev_pct": 13,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "W",
+      "units_result": 3.15,
+      "loss_reason": "",
+      "final_score": "Tampa Bay Rays 8 - Chicago White Sox 5"
     },
     {
       "date": "2026-04-14",
@@ -2160,9 +2163,10 @@
       "tier": "WATCH",
       "units": 0,
       "ev_pct": 9,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "L",
+      "units_result": -0.0,
+      "loss_reason": "",
+      "final_score": "San Francisco Giants 1 - Cincinnati Reds 2"
     },
     {
       "date": "2026-04-14",
@@ -2177,9 +2181,10 @@
       "tier": "WATCH",
       "units": 0,
       "ev_pct": 6,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "W",
+      "units_result": 0.0,
+      "loss_reason": "",
+      "final_score": "Washington Nationals 5 - Pittsburgh Pirates 4"
     },
     {
       "date": "2026-04-14",
@@ -2194,9 +2199,10 @@
       "tier": "WATCH",
       "units": 0,
       "ev_pct": 6,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "W",
+      "units_result": 0.0,
+      "loss_reason": "",
+      "final_score": "New York Mets 1 - Los Angeles Dodgers 2"
     }
   ],
   "updated": "2026-04-14",
