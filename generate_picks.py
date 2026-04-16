@@ -454,12 +454,20 @@ def fetch_pitcher_recent_form(pid, season):
         if ip > 0:
             era_last3.append(round(er/ip*9, 2))
     if total_ip == 0: return {}
+    # Sanity check: require minimum 3 IP per start average to be meaningful
+    # Single-inning appearances produce absurd ERAs (225.0, 67.5 seen in production)
+    avg_ip = total_ip / len(last3)
+    if avg_ip < 2.0:
+        return {}  # insufficient sample — don't send garbage to Claude
+    era = round(total_er/total_ip*9, 2) if total_ip > 0 else 0
+    # Hard cap: ERA above 20.0 is a data artifact, not real
+    era = min(era, 20.0)
     return {
         "starts": len(last3),
-        "era_last3": round(total_er/total_ip*9, 2) if total_ip > 0 else 0,
+        "era_last3": era,
         "k9_last3": round(total_so/total_ip*9, 2) if total_ip > 0 else 0,
         "bb9_last3": round(total_bb/total_ip*9, 2) if total_ip > 0 else 0,
-        "ip_per_start": round(total_ip/len(last3), 1),
+        "ip_per_start": round(avg_ip, 1),
     }
 
 _VELO_CACHE = {}  # savant_id → velo trend data
@@ -479,12 +487,20 @@ def fetch_pitcher_splits(pid, season):
         stat = split.get("stat",{})
         ip = safe_float(stat.get("inningsPitched","0"))
         so = int(stat.get("strikeOuts",0) or 0)
+        # Only use splits with meaningful IP — 3+ innings minimum
+        # Below that, single bad appearances create absurd ERAs (67.5, 225.0 seen)
+        if ip < 3.0:
+            continue
+        era_raw = safe_float(stat.get("era"))
+        era_clean = min(era_raw, 20.0) if era_raw else None  # cap at 20.0
         if sit == "h":
-            splits_data["home_era"] = safe_float(stat.get("era"))
+            splits_data["home_era"] = era_clean
             splits_data["home_k9"] = round(so/ip*9,2) if ip > 0 else 0
+            splits_data["home_ip"] = ip
         elif sit == "a":
-            splits_data["away_era"] = safe_float(stat.get("era"))
+            splits_data["away_era"] = era_clean
             splits_data["away_k9"] = round(so/ip*9,2) if ip > 0 else 0
+            splits_data["away_ip"] = ip
     return splits_data
 
 def fetch_pitcher_velo_trend(savant_id, season_velo):
@@ -598,12 +614,20 @@ def fetch_pitcher_velo_trend(savant_id, season_velo):
         stat = split.get("stat",{})
         ip = safe_float(stat.get("inningsPitched","0"))
         so = int(stat.get("strikeOuts",0) or 0)
+        # Only use splits with meaningful IP — 3+ innings minimum
+        # Below that, single bad appearances create absurd ERAs (67.5, 225.0 seen)
+        if ip < 3.0:
+            continue
+        era_raw = safe_float(stat.get("era"))
+        era_clean = min(era_raw, 20.0) if era_raw else None  # cap at 20.0
         if sit == "h":
-            splits_data["home_era"] = safe_float(stat.get("era"))
+            splits_data["home_era"] = era_clean
             splits_data["home_k9"] = round(so/ip*9,2) if ip > 0 else 0
+            splits_data["home_ip"] = ip
         elif sit == "a":
-            splits_data["away_era"] = safe_float(stat.get("era"))
+            splits_data["away_era"] = era_clean
             splits_data["away_k9"] = round(so/ip*9,2) if ip > 0 else 0
+            splits_data["away_ip"] = ip
     return splits_data
 
 def search_player_id(name):
@@ -2460,8 +2484,7 @@ def enforce_ev_rules(picks):
     Hard Python-level EV enforcement.
     Claude sometimes miscalculates or ignores thresholds — this catches it.
     """
-    MIN_EV = {"ML":3,"Run Line":999,"Total OVER":3,"Total UNDER":3,"NRFI":6,"YRFI":3,"F5 OVER":3,"F5 UNDER":3}
-    # Run Line ban: 4-4 (50%) historically, negative EV after juice over time. Skip all run lines.
+    MIN_EV = {"ML":3,"Run Line":3,"Total OVER":3,"Total UNDER":3,"NRFI":5,"YRFI":3,"F5 OVER":3,"F5 UNDER":3,"F5 ML":3}
     MAX_ML_ODDS = -150  # tightened — negative ML favorites have been losing, juice is brutal
     enforced = []
     for p in picks:
@@ -2637,14 +2660,12 @@ def enforce_ev_rules(picks):
             if reasons:
                 print("MAX downgrade ("+p.get("game","")+") — "+", ".join(reasons))
                 p["tier"] = "A"
-        # Tier A requires 7%+ EV. Below that, drop to B.
-        # Note: Tier A losses were almost entirely run lines and OVERs — both now restricted.
-        # Tier A on UNDERs and ML is the correct focus.
+        # Tier A: requires 7%+ EV
         if p["tier"] == "A" and ev_val < 7:
-            p["tier"] = "B" if ev_val >= 5 else "SKIP"
+            p["tier"] = "B" if ev_val >= 3 else "SKIP"
             if p["tier"] == "SKIP":
                 p["bet_type"] = "SKIP"; p["units"] = 0
-                p["avoid_reason"] = f"EV {ev_val}% insufficient for Tier A — below 5% minimum"
+                p["avoid_reason"] = f"EV {ev_val}% insufficient for any active pick"
 
         # ── SP Reliability Gate — SP_OUTPERFORMED is 6 of 13 losses ────────────
         # The model trusts early-season SP stats too much.
@@ -2860,8 +2881,8 @@ def enforce_ev_rules(picks):
             p["tier"] = "SKIP"; p["bet_type"] = "SKIP"; p["units"] = 0
             p["avoid_reason"] = "Run line cap — maximum 1 run line pick per slate"
 
-    # OVER slate cap — max 2 active OVERs per slate
-    MAX_OVERS = 3  # allow 3 OVERs on high-temp/wind slates
+    # OVER slate cap — max 4 active OVERs per slate
+    MAX_OVERS = 4
     over_picks = [p for p in enforced if p.get("bet_type") == "Total OVER" and p.get("tier") in ("MAX","A","B","C")]
     if len(over_picks) > MAX_OVERS:
         over_sorted = sorted(over_picks, key=lambda x: float(x.get("ev_pct",0) or 0), reverse=True)
@@ -3174,7 +3195,7 @@ def summarize_game(g):
         "away_sp": g["away_sp"],
         "home_sp": g["home_sp"],
         "away_sp_stats": {
-            "era": away_sp.get("era",0),
+            "era": away_sp.get("era") or None,  # None = missing data, not 0.00 ERA
             "fip": away_sp.get("fip"),
             "xfip": away_sp.get("xfip"),
             "xera": away_sp.get("xera"),
@@ -3206,7 +3227,7 @@ def summarize_game(g):
             "primary_pitch": away_sp.get("primary_pitch"),
         },
         "home_sp_stats": {
-            "era": home_sp.get("era",0),
+            "era": home_sp.get("era") or None,  # None = missing data, not 0.00 ERA
             "fip": home_sp.get("fip"),
             "xfip": home_sp.get("xfip"),
             "xera": home_sp.get("xera"),
@@ -3238,7 +3259,7 @@ def summarize_game(g):
             "primary_pitch": home_sp.get("primary_pitch"),
         },
         "away_team": {
-            "ops": away_bat.get("ops",0),
+            "ops": away_bat.get("ops") or None,  # None = missing data
             "woba": away_bat.get("woba"),
             "xwoba": away_bat.get("xwoba"),
             "barrel_pct": away_bat.get("barrel_pct"),
@@ -3247,9 +3268,9 @@ def summarize_game(g):
             "runs_per_game": away_bat.get("runs_per_game",0),
             "games_played": away_bat.get("games_played",0),
             "data_note": away_bat.get("note",""),
-            # Road-specific performance — critical for evaluating away teams
-            "away_ops": away_splits.get("away",{}).get("ops"),
-            "away_woba": away_splits.get("away",{}).get("woba"),
+            # Road-specific performance — only use if 6+ games (stable sample)
+            "away_ops": away_splits.get("away",{}).get("ops") if (away_splits.get("away",{}).get("games") or 0) >= 6 else None,
+            "away_woba": away_splits.get("away",{}).get("woba") if (away_splits.get("away",{}).get("games") or 0) >= 6 else None,
             "away_rpg": away_splits.get("away",{}).get("runs_per_game"),
             "away_games": away_splits.get("away",{}).get("games"),
             "away_win_pct": away_splits.get("away",{}).get("win_pct"),
@@ -3267,7 +3288,7 @@ def summarize_game(g):
             "back_to_back": away_rest.get("back_to_back", False),
         },
         "home_team": {
-            "ops": home_bat.get("ops",0),
+            "ops": home_bat.get("ops") or None,  # None = missing data
             "woba": home_bat.get("woba"),
             "xwoba": home_bat.get("xwoba"),
             "barrel_pct": home_bat.get("barrel_pct"),
@@ -3276,9 +3297,9 @@ def summarize_game(g):
             "runs_per_game": home_bat.get("runs_per_game",0),
             "games_played": home_bat.get("games_played",0),
             "data_note": home_bat.get("note",""),
-            # Home-specific performance — home teams play differently at home
-            "home_ops": home_splits.get("home",{}).get("ops"),
-            "home_woba": home_splits.get("home",{}).get("woba"),
+            # Home-specific performance — only use if 6+ games (stable sample)
+            "home_ops": home_splits.get("home",{}).get("ops") if (home_splits.get("home",{}).get("games") or 0) >= 6 else None,
+            "home_woba": home_splits.get("home",{}).get("woba") if (home_splits.get("home",{}).get("games") or 0) >= 6 else None,
             "home_rpg": home_splits.get("home",{}).get("runs_per_game"),
             "home_games": home_splits.get("home",{}).get("games"),
             "home_win_pct": home_splits.get("home",{}).get("win_pct"),
