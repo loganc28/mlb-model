@@ -2217,9 +2217,10 @@
       "tier": "A",
       "units": 1.5,
       "ev_pct": 8.0,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "L",
+      "units_result": -1.5,
+      "loss_reason": "",
+      "final_score": "Cleveland Guardians 3 - St. Louis Cardinals 5"
     },
     {
       "date": "2026-04-15",
@@ -2234,9 +2235,10 @@
       "tier": "MAX",
       "units": 3.0,
       "ev_pct": 13,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "L",
+      "units_result": -3.0,
+      "loss_reason": "",
+      "final_score": "Seattle Mariners 6 - San Diego Padres 7"
     },
     {
       "date": "2026-04-15",
@@ -2251,9 +2253,10 @@
       "tier": "A",
       "units": 1.5,
       "ev_pct": 8.0,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "L",
+      "units_result": -1.5,
+      "loss_reason": "",
+      "final_score": "New York Mets 2 - Los Angeles Dodgers 8"
     },
     {
       "date": "2026-04-15",
@@ -2268,9 +2271,10 @@
       "tier": "WATCH",
       "units": 0,
       "ev_pct": 6,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "W",
+      "units_result": 0.0,
+      "loss_reason": "",
+      "final_score": "Toronto Blue Jays 1 - Milwaukee Brewers 2"
     },
     {
       "date": "2026-04-15",
@@ -2285,9 +2289,10 @@
       "tier": "WATCH",
       "units": 0,
       "ev_pct": 6,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "L",
+      "units_result": -0.0,
+      "loss_reason": "",
+      "final_score": "Los Angeles Angels 4 - New York Yankees 5"
     },
     {
       "date": "2026-04-15",
@@ -2302,9 +2307,10 @@
       "tier": "WATCH",
       "units": 0,
       "ev_pct": 6,
-      "result": "",
-      "units_result": 0,
-      "loss_reason": ""
+      "result": "L",
+      "units_result": -0.0,
+      "loss_reason": "",
+      "final_score": "Colorado Rockies 1 - Houston Astros 3"
     }
   ],
   "updated": "2026-04-15",
